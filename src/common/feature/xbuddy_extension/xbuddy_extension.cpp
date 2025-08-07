@@ -306,6 +306,14 @@ void XBuddyExtension::set_heatbreak_fan_pwm(uint32_t value) {
     buddy::puppies::xbuddy_extension.set_fan_pwm(0, value);
     buddy::puppies::xbuddy_extension.set_fan_pwm(1, value);
 }
+
+void XBuddyExtension::set_white_led(uint32_t intensity) {
+    buddy::puppies::xbuddy_extension.set_white_led(intensity);
+}
+
+void XBuddyExtension::set_rgbw_led(leds::ColorRGBW rgbw) {
+    buddy::puppies::xbuddy_extension.set_rgbw_led({ rgbw.r, rgbw.g, rgbw.b, rgbw.w });
+}
 #endif
 
 std::optional<XBuddyExtension::FilamentSensorState> XBuddyExtension::filament_sensor() {

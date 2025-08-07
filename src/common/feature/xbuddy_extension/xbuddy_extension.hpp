@@ -148,6 +148,8 @@ public: // Other
 
 #elif XBUDDY_EXTENSION_VARIANT_IX()
     void set_heatbreak_fan_pwm(uint32_t value);
+    void set_white_led(uint32_t intensity);
+    void set_rgbw_led(leds::ColorRGBW rgbw);
 #endif
 
     /// \returns state of the filament sensor
