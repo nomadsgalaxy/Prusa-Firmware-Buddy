@@ -29,6 +29,9 @@ XBuddyExtension &xbuddy_extension() {
 }
 
 XBuddyExtension::XBuddyExtension() {
+#if XBUDDY_EXTENSION_VARIANT_IS_iX()
+    buddy::puppies::xbuddy_extension.set_mmu_power(true);
+#endif
 }
 
 XBuddyExtension::Status XBuddyExtension::status() const {
