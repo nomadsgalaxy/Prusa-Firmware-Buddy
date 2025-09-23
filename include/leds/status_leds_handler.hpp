@@ -62,6 +62,8 @@ public:
      */
     void set_custom_animation(const ColorRGBW &color, AnimationType type, uint16_t period_ms);
 
+    ColorRGBW get_color() const;
+
     bool get_active();
     void set_active(bool val);
 
@@ -77,6 +79,8 @@ private:
 
     std::array<FrameAnimation<3>::Params, 2> custom_params_banks;
     uint8_t custom_params_bank_index { 0 };
+
+    ColorRGBW color;
 };
 
 } // namespace leds

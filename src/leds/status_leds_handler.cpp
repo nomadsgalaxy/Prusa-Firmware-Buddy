@@ -242,6 +242,10 @@ void StatusLedsHandler::set_animation(StateAnimation state) {
     controller_instance().set(animations[state]);
 }
 
+ColorRGBW StatusLedsHandler::get_color() const {
+    return color;
+}
+
 bool StatusLedsHandler::get_active() {
     std::lock_guard lock(mutex);
     return active;
@@ -288,7 +292,9 @@ void StatusLedsHandler::update() {
 
     if (state != old_state) {
         old_state = state;
-        controller_instance().set(animations[state]);
+        const auto &animation = animations[state];
+        color = animation.color;
+        controller_instance().set(animation);
     }
 
     controller_instance().update();

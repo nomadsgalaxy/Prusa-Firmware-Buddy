@@ -24,6 +24,10 @@
 #include <option/xbuddy_extension_variant_standard.h>
 #include <option/xbuddy_extension_variant_ix.h>
 
+#if XBUDDY_EXTENSION_VARIANT_IX()
+    #include "leds/afs_design_strip_handler.hpp"
+#endif
+
 #include <option/has_ac_controller.h>
 #if HAS_AC_CONTROLLER()
     #include <puppies/ac_controller.hpp>
@@ -109,6 +113,11 @@ void LEDManager::update() {
     // Bed LEDs copy LCD status bar strip
     buddy::xbuddy_extension().set_bed_leds_color(data[1].data);
 #elif XBUDDY_EXTENSION_VARIANT_IX()
+    // Colored leds show the status LEDs color, unanimated
+    auto &design_strip_handler = AFSDesignStripHandler::instance();
+    design_strip_handler.update();
+    buddy::xbuddy_extension().set_rgbw_led(design_strip_handler.color().data);
+
     // The white led is always fully on
     buddy::xbuddy_extension().set_white_led(255);
 #endif
