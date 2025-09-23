@@ -845,94 +845,52 @@ std::vector<HarmonicPeaksFit> find_harmonic_peaks(
     return best_fits;
 }
 
-// Find best fitting num_peaks peaks in the signal that are evenly spaced with
-// the target_spacing. Return position of the peaks in the signal. If there are
-// no fitting peaks, empty vector is returned.
+// Find best peaks in the signal that are evenly spaced with the target_spacing.
+// Return position of the first peak in the signal. If there are no fitting
+// peaks, NaN is returned.
 template <typename It, typename PosConverter>
-std::vector<float> find_evenly_spaced_peaks(It begin, It end,
-    PosConverter idx_to_pos, float target_spacing, std::size_t num_peaks,
-    int n_closest = 2, // Number of closest peaks to consider for each position
-    float min_prominence = 0.1) {
+float find_evenly_spaced_peaks(It begin, It end,
+    PosConverter idx_to_pos, float target_spacing) {
     static_assert(std::is_same_v<typename std::iterator_traits<It>::value_type, float>);
     static_assert(std::is_same_v<typename std::iterator_traits<It>::iterator_category, std::random_access_iterator_tag>);
-    assert(num_peaks >= 2);
 
-    std::vector<SignalPeak> all_peaks = find_peaks(begin, end, min_prominence);
-
-    if (all_peaks.size() < num_peaks) {
-        return {};
+    const int signal_size = std::distance(begin, end);
+    if (signal_size <= 1) {
+        return std::numeric_limits<float>::quiet_NaN();
     }
 
-    std::vector<std::vector<std::size_t>> position_candidates(num_peaks);
-    float best_error = std::numeric_limits<float>::infinity();
-    std::vector<std::size_t> best_peak_indices;
+    // Convert target_spacing from position space to index space
+    float pos_per_sample = (idx_to_pos(signal_size - 1) - idx_to_pos(0)) / (signal_size - 1);
+    if (pos_per_sample <= 0) {
+        return std::numeric_limits<float>::quiet_NaN();
+    }
 
-    // Try each peak as an anchor
-    for (size_t anchor_idx = 0; anchor_idx < all_peaks.size(); ++anchor_idx) {
-        float anchor_pos = idx_to_pos(all_peaks[anchor_idx].idx);
+    int chunk_size = static_cast<int>(std::round(target_spacing / pos_per_sample));
+    if (chunk_size <= 0 || chunk_size >= signal_size) {
+        return std::numeric_limits<float>::quiet_NaN();
+    }
 
-        position_candidates[0] = { anchor_idx };
-        for (std::size_t i = 1; i < num_peaks; ++i) {
-            position_candidates[i].clear();
-            float expected_pos = anchor_pos + i * target_spacing;
+    // Create summed signal by adding chunks together
+    std::vector<float> summed_signal(chunk_size, 0.0f);
+    int num_chunks = 0;
 
-            // Find n_closest peaks to this expected position
-            std::vector<std::pair<float, int>> distance_to_expected;
-            for (size_t j = 0; j < all_peaks.size(); ++j) {
-                float peak_pos = idx_to_pos(all_peaks[j].idx);
-                float distance = std::abs(peak_pos - expected_pos);
-                distance_to_expected.push_back({ distance, j });
-            }
-            std::sort(distance_to_expected.begin(), distance_to_expected.end());
-            for (int j = 0; j < std::min<int>(n_closest, distance_to_expected.size()); ++j) {
-                position_candidates[i].push_back(distance_to_expected[j].second);
-            }
+    for (int start_idx = 0; start_idx + chunk_size <= signal_size; start_idx += chunk_size) {
+        for (int i = 0; i < chunk_size; ++i) {
+            summed_signal[i] += *(begin + start_idx + i);
         }
-
-        auto calculate_error = [&](const std::vector<size_t> &combination) -> float {
-            float total_squared_error = 0.0f;
-            float anchor_pos = idx_to_pos(all_peaks[combination[0]].idx);
-
-            for (std::size_t i = 1; i < num_peaks; ++i) {
-                int peak_idx = combination[i];
-                float expected_pos = anchor_pos + i * target_spacing;
-                float actual_pos = idx_to_pos(all_peaks[peak_idx].idx);
-                float error = actual_pos - expected_pos;
-                total_squared_error += error * error;
-            }
-            return total_squared_error;
-        };
-
-        // Lambda for recursive exploration of combinations
-        std::vector<std::size_t> current_combination(num_peaks);
-        auto explore_combinations = [&](auto &&self, std::size_t pos) -> void {
-            // Recursive stop: we have a complete combination
-            if (pos == num_peaks) {
-                // We have a complete combination, evaluate its error
-                float error = calculate_error(current_combination);
-
-                if (error < best_error) {
-                    best_error = error;
-                    best_peak_indices = current_combination;
-                }
-                return;
-            }
-
-            // Otherwise, try each candidate for the current position
-            for (std::size_t idx : position_candidates[pos]) {
-                current_combination[pos] = idx;
-                self(self, pos + 1);
-            }
-        };
-        explore_combinations(explore_combinations, 0);
+        num_chunks++;
     }
 
-    std::vector<float> result;
-    for (int idx : best_peak_indices) {
-        result.push_back(idx_to_pos(all_peaks[idx].idx));
+    if (num_chunks == 0) {
+        return std::numeric_limits<float>::quiet_NaN();
     }
 
-    return result;
+    // Find the maximum in the summed signal
+    auto max_it = std::max_element(summed_signal.begin(), summed_signal.end());
+    int max_idx = std::distance(summed_signal.begin(), max_it);
+
+    // Convert back to position space
+    return idx_to_pos(max_idx);
 }
 
 // Compute a centered moving average over ± half_window samples. The result is
@@ -1871,22 +1829,16 @@ std::expected<std::array<float, 2>, CalibrateAxisError> find_best_pha(AxisEnum a
         auto idx_to_phase = [&](int idx) {
             return PHA_START + idx * (PHA_END - PHA_START) / (response.size() - 1);
         };
-        auto peak_positions = find_evenly_spaced_peaks(response.begin(), response.end(),
-            idx_to_phase, 2 * std::numbers::pi_v<float>, PHA_CYCLES);
-        if (peak_positions.size() != PHA_CYCLES) {
-            log_error(PhaseStepping, "Cannot find %d peaks in phase sweep", PHA_CYCLES);
+        float peak_position = find_evenly_spaced_peaks(response.begin(), response.end(),
+            idx_to_phase, 2 * std::numbers::pi_v<float>);
+        if (std::isnan(peak_position)) {
+            log_error(PhaseStepping, "Cannot find peaks in phase sweep");
             return std::unexpected(CalibrateAxisError::cannot_find_peaks_in_phase_sweep);
         }
 
         ABORT_CHECK();
 
-        float avg = 0;
-        for (auto &peak_position : peak_positions) {
-            avg += std::fmod(peak_position, 2 * std::numbers::pi_v<float>);
-        }
-        avg /= peak_positions.size();
-
-        sweep_phases[i] = avg;
+        sweep_phases[i] = std::fmod(peak_position, 2 * std::numbers::pi_v<float>);
     }
 
     return sweep_phases;
