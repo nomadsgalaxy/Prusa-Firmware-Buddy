@@ -31,10 +31,16 @@ struct Config {
     uint16_t bed_target_temp; ///< bed target temperature (decidegree Celsius) (0 = not set)
     uint16_t bed_fan_pwm; ///< bed fan PWM (0-255) (shared by both bed fans)
     uint16_t psu_fan_pwm; ///< PSU fan PWM (0-255)
+};
+
+struct LedConfig {
+    static constexpr uint16_t address = 0x9100;
+    uint16_t animation_type; /// LED animation type (0 = off, 1 = static color, 2 = progress percent)
     uint16_t led_r; ///< LED red component (0-255)
     uint16_t led_g; ///< LED green component (0-255)
     uint16_t led_b; ///< LED blue component (0-255)
     uint16_t led_w; ///< LED white component (0-255)
+    uint16_t progress_percent; /// Progress percentage to display on bed led strip (0-100) (0 = not set)
 };
 
 } // namespace ac_controller::modbus

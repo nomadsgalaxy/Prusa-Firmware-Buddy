@@ -5,3 +5,4 @@
 
 static_assert(std::is_standard_layout_v<ac_controller::modbus::Status>);
 static_assert(std::is_standard_layout_v<ac_controller::modbus::Config>);
+static_assert(std::is_standard_layout_v<ac_controller::modbus::LedConfig>);

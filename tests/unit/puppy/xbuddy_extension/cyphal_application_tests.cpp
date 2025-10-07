@@ -6,6 +6,10 @@
 #include <catch2/catch.hpp>
 #include <vector>
 
+// This is needed for linking but we don't need the actual implementation in tests
+void cyphal::Application::log_from_app([[maybe_unused]] std::string_view s) {
+}
+
 using Application = cyphal::ApplicationImpl;
 using cyphal::Command;
 using cyphal::Health;
@@ -127,7 +131,11 @@ public:
         file_responses.push_back(FileResponse { remote_node_id, transfer_id, std::vector(data.begin(), data.end()) });
     }
 
-    void transmit_ac_controller_config_request(NodeId remote_node_id, const ac_controller::Config &) {
+    void transmit_ac_controller_config_request([[maybe_unused]] NodeId remote_node_id, [[maybe_unused]] const ac_controller::Config &) {
+        abort();
+    }
+
+    void transmit_ac_controller_leds_config_request([[maybe_unused]] NodeId, [[maybe_unused]] const ac_controller::LedConfig &) {
         abort();
     }
 

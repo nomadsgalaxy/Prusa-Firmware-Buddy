@@ -145,6 +145,8 @@ private:
     struct AcController {
         ac_controller::Config desired;
         ac_controller::Config active;
+        ac_controller::LedConfig led_desired;
+        ac_controller::LedConfig led_active;
         ac_controller::Status status;
         bool seen_status = false;
     };
@@ -484,6 +486,11 @@ private:
             if (alive.ac_controller->active != alive.ac_controller->desired) {
                 alive.ac_controller->active = alive.ac_controller->desired;
                 presentation.transmit_ac_controller_config_request(node_id, alive.ac_controller->active);
+                return true;
+            }
+            if (alive.ac_controller->led_active != alive.ac_controller->led_desired) {
+                alive.ac_controller->led_active = alive.ac_controller->led_desired;
+                presentation.transmit_ac_controller_leds_config_request(node_id, alive.ac_controller->led_active);
                 return true;
             }
             return false;
@@ -857,6 +864,11 @@ public:
         return true;
     }
 
+    bool receive(const ac_controller::LedConfig &config) final {
+        ac_controller.led_desired = config;
+        return true;
+    }
+
     void request(xbuddy_extension::NodeState &node_state, ac_controller::Status &status) final {
         node_state = get_node_state(NodeName::cz_prusa3d_honeybee_ac_controller);
         status = ac_controller.status;
@@ -866,6 +878,10 @@ public:
         ac_controller.active = config;
         ac_controller.status = status;
         ac_controller.seen_status = true;
+    }
+
+    void log_from_app(std::string_view s) {
+        receive_diagnostic_record(NodeId {}, as_bytes(std::span { s }));
     }
 
     void receive_diagnostic_record(NodeId, const Bytes &text) final {

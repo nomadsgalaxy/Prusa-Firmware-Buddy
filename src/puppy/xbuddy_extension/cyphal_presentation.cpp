@@ -68,6 +68,7 @@ struct NunavutTraits;
 #if HAS_AC_CONTROLLER()
     #define prusa3d_ac_controller_Config_Request_1_0_FIXED_PORT_ID_ 21
     #define prusa3d_ac_controller_Status_1_0_FIXED_PORT_ID_         600
+    #define prusa3d_common_leds_Config_1_0_FIXED_PORT_ID_           601
 #endif
 
 // Define traits for all transfers we are using.
@@ -83,21 +84,13 @@ TRAITS(uavcan_pnp_NodeIDAllocationData_2_0, CanardTransferKindMessage)
 #if HAS_AC_CONTROLLER()
 TRAITS(prusa3d_ac_controller_Config_Request_1_0, CanardTransferKindRequest)
 TRAITS(prusa3d_ac_controller_Status_1_0, CanardTransferKindMessage)
+TRAITS(prusa3d_common_leds_Config_1_0, CanardTransferKindMessage)
 
 static std::optional<float> convert(const prusa3d_common_TargetTemperature_1_0 &target_temperature) {
     if (target_temperature._tag_ == 0) {
         return {};
     } else {
         return { target_temperature.target_temp.celsius };
-    }
-}
-
-static std::optional<ac_controller::ColorRGBW> convert(const prusa3d_common_RGBWLedConfiguration_1_0 &rgb_config) {
-    if (rgb_config._tag_ == 0) {
-        return {};
-    } else {
-        const auto &color = rgb_config.color;
-        return { ac_controller::ColorRGBW(color.red, color.green, color.blue, color.white) };
     }
 }
 
@@ -150,6 +143,7 @@ private:
         uint8_t pnp = 0;
 #if HAS_AC_CONTROLLER()
         uint8_t ac_controller_config = 0;
+        uint8_t leds_config = 0;
 #endif
     } transfer_id;
     cyphal::Application &application = cyphal::application();
@@ -288,7 +282,6 @@ private:
                 convert(message.bed_target_temp),
                 message.external_fan0_state.current_pwm.pwm,
                 message.psu_fan_state.current_pwm.pwm,
-                convert(message.rgb_led_strip),
             },
             ac_controller::Status {
                 .mcu_temp = message.mcu_temp.celsius,
@@ -382,17 +375,48 @@ private:
             request.psu_fan_config._tag_ = 0;
         }
 
-        if (r.led_color.has_value()) {
-            request.rgb_led_strip._tag_ = 1;
-            request.rgb_led_strip.color.red = r.led_color->r;
-            request.rgb_led_strip.color.green = r.led_color->g;
-            request.rgb_led_strip.color.blue = r.led_color->b;
-            request.rgb_led_strip.color.white = r.led_color->w;
+        (void)transmit(request, (uint8_t)remote_node_id, transfer_id.ac_controller_config++);
+#else
+        (void)remote_node_id;
+        (void)r;
+#endif
+    }
+
+    void transmit_ac_controller_leds_config_request([[maybe_unused]] cyphal::NodeId remote_node_id, const ac_controller::LedConfig &r) override {
+#if HAS_AC_CONTROLLER()
+        prusa3d_common_leds_Config_1_0 request;
+
+        // If we have progress, send progress mode (which includes color)
+        if (r.progress_percent.has_value()) {
+            request._tag_ = 2; // progress mode
+            request.progress.progress = static_cast<float>(r.progress_percent.value()) / 100.0f; // Convert percent to [0, 1]
+            // Set color for progress bar (default to black if not specified)
+            if (r.color.has_value()) {
+                request.progress.color.red = r.color->r;
+                request.progress.color.green = r.color->g;
+                request.progress.color.blue = r.color->b;
+                request.progress.color.white = r.color->w;
+            } else {
+                request.progress.color.red = 0;
+                request.progress.color.green = 0;
+                request.progress.color.blue = 0;
+                request.progress.color.white = 0;
+            }
+        } else if (r.color.has_value()) {
+            // Static color mode (no progress)
+            request._tag_ = 1;
+            request.color.red = r.color->r;
+            request.color.green = r.color->g;
+            request.color.blue = r.color->b;
+            request.color.white = r.color->w;
         } else {
-            request.rgb_led_strip._tag_ = 0;
+            // Off mode
+            request._tag_ = 0;
         }
 
-        (void)transmit(request, (uint8_t)remote_node_id, transfer_id.ac_controller_config++);
+        // LED config is a broadcast message (CanardTransferKindMessage), not a request
+        // Therefore we must use CANARD_NODE_ID_UNSET instead of a specific node ID
+        (void)transmit(request, (uint8_t)CANARD_NODE_ID_UNSET, transfer_id.leds_config++);
 #else
         (void)remote_node_id;
         (void)r;

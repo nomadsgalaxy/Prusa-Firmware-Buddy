@@ -34,7 +34,9 @@ public:
     void set_bed_target_temp(float);
     void set_bed_fan_pwm(uint8_t);
     void set_psu_fan_pwm(uint8_t);
+    void turn_off_bed_leds();
     void set_rgbw_led(std::array<uint8_t, 4> rgbw);
+    void set_progress_percent(uint8_t percent);
 
     // These are called from the puppy task.
     CommunicationStatus refresh();
@@ -50,10 +52,11 @@ private:
 
     using Status = ac_controller::modbus::Status;
     using Config = ac_controller::modbus::Config;
+    using LedConfig = ac_controller::modbus::LedConfig;
     ModbusInputRegisterBlock<Status::address, Status> status;
     ModbusHoldingRegisterBlock<Config::address, Config> config;
+    ModbusHoldingRegisterBlock<LedConfig::address, LedConfig> led_config;
 
-    CommunicationStatus refresh_holding();
     CommunicationStatus refresh_input(uint32_t max_age);
 
     bool all_valid() const;

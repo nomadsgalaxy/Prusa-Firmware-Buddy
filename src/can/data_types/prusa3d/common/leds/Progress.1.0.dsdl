@@ -1,0 +1,6 @@
+# Show progress bar
+
+prusa3d.common.leds.RGBWColor.1.0 color # Progress bar color
+float32 progress # How much progress [0, 1]
+
+@sealed

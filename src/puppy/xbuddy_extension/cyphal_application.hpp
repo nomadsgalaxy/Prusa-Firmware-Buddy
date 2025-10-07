@@ -69,12 +69,14 @@ public:
     virtual void receive_file_read_request(NodeId remote_node_id, TimePoint now, uint8_t transfer_id, uint32_t offset) = 0;
     virtual void receive_ac_controller_status(const ac_controller::Config &, const ac_controller::Status &) = 0;
     virtual void receive_diagnostic_record(NodeId remote_node_id, const Bytes &text) = 0;
+    virtual void log_from_app(std::string_view s);
 
     // Called by modbus handlers.
 
     [[nodiscard]] virtual bool receive_chunk(const uint8_t *data, size_t size, bool is_last, uint16_t file_id, uint32_t offset) = 0;
     [[nodiscard]] virtual bool receive_digest(FirmwareFile file, uint32_t salt, std::span<const std::byte, 32> digest) = 0;
     [[nodiscard]] virtual bool receive(const ac_controller::Config &) = 0;
+    [[nodiscard]] virtual bool receive(const ac_controller::LedConfig &) = 0;
     virtual const ModbusRequest &request() = 0;
     virtual void request(xbuddy_extension::NodeState &, ac_controller::Status &) = 0;
 

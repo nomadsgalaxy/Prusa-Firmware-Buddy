@@ -3,6 +3,7 @@
 #include "led_lcd_cs_selector.hpp"
 
 #include <leds/status_leds_handler.hpp>
+#include <marlin_vars.hpp>
 #include "neopixel.hpp"
 #include <option/has_side_leds.h>
 
@@ -29,7 +30,7 @@
 
 #include <option/has_ac_controller.h>
 #if HAS_AC_CONTROLLER()
-    #include <puppies/ac_controller.hpp>
+    #include <leds/ac_controller_leds_handler.hpp>
 #endif
 
 #include <option/xl_enclosure_support.h>
@@ -122,7 +123,9 @@ void LEDManager::update() {
 #endif
 
 #if HAS_AC_CONTROLLER()
-    buddy::puppies::ac_controller.set_rgbw_led({ data[1].r, data[1].g, data[1].b, data[1].w });
+    // If we are printing set status as progress, otherwise static color
+    auto color = ColorRGBW(data[1].r, data[1].g, data[1].b, data[1].w);
+    leds::AcControllerLedsHandler::update(color, marlin_vars().sd_percent_done);
 #endif
 
     status_leds.update();

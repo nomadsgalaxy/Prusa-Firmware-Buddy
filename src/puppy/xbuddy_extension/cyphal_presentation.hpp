@@ -18,6 +18,7 @@ public:
     virtual void transmit_node_execute_command_request(NodeId remote_node_id, Command, std::span<std::byte>) = 0;
     virtual void transmit_file_read_response(NodeId remote_node_id, uint8_t transfer_id, std::span<std::byte> data) = 0;
     virtual void transmit_ac_controller_config_request(NodeId remote_node_id, const ac_controller::Config &) = 0;
+    virtual void transmit_ac_controller_leds_config_request(cyphal::NodeId remote_node_id, const ac_controller::LedConfig &r) = 0;
 
     constexpr auto operator<=>(const Presentation &) const = default;
 };

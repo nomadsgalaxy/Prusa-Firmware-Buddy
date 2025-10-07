@@ -109,13 +109,59 @@ bool write_register_file_callback(const ac_controller::modbus::Config &modbus_co
     return cyphal::application().receive(ac_controller::Config {
         .bed_target_temp = modbus_parse_target_temperature(modbus_config.bed_target_temp),
         .bed_fan_pwm = modbus_parse_pwm(modbus_config.bed_fan_pwm),
-        .psu_fan_pwm = modbus_parse_pwm(modbus_config.psu_fan_pwm),
-        .led_color = ac_controller::ColorRGBW {
-            .r = static_cast<uint8_t>(modbus_config.led_r),
-            .g = static_cast<uint8_t>(modbus_config.led_g),
-            .b = static_cast<uint8_t>(modbus_config.led_b),
-            .w = static_cast<uint8_t>(modbus_config.led_w),
-        },
+        .psu_fan_pwm = modbus_parse_pwm(modbus_config.psu_fan_pwm) });
+}
+
+static ac_controller::AnimationType modbus_parse_animation_type(uint16_t animation_type) {
+    if (animation_type > static_cast<uint16_t>(ac_controller::AnimationType::_last)) {
+        cyphal::application().log_from_app("ERROR: XBE: Invalid animation type received");
+        return ac_controller::AnimationType::OFF;
+    }
+    return static_cast<ac_controller::AnimationType>(animation_type);
+}
+
+static std::optional<uint8_t> modbus_parse_progress(uint16_t progress) {
+    if (progress > 100) {
+        cyphal::application().log_from_app("ERROR: XBE: Invalid progress percent received");
+        return std::nullopt;
+    }
+    return std::optional<uint8_t> { progress };
+}
+
+bool write_register_file_callback(const ac_controller::modbus::LedConfig &modbus_led_config) {
+    ac_controller::AnimationType animation_type = modbus_parse_animation_type(modbus_led_config.animation_type);
+    std::optional<uint8_t> progress_percent = std::nullopt;
+    std::optional<ac_controller::ColorRGBW> color = std::nullopt;
+
+    switch (animation_type) {
+    case ac_controller::AnimationType::PROGRESS_PERCENT:
+        progress_percent = modbus_parse_progress(modbus_led_config.progress_percent);
+        color = ac_controller::ColorRGBW {
+            static_cast<uint8_t>(modbus_led_config.led_r),
+            static_cast<uint8_t>(modbus_led_config.led_g),
+            static_cast<uint8_t>(modbus_led_config.led_b),
+            static_cast<uint8_t>(modbus_led_config.led_w),
+        };
+        break;
+    case ac_controller::AnimationType::STATIC_COLOR:
+        color = ac_controller::ColorRGBW {
+            static_cast<uint8_t>(modbus_led_config.led_r),
+            static_cast<uint8_t>(modbus_led_config.led_g),
+            static_cast<uint8_t>(modbus_led_config.led_b),
+            static_cast<uint8_t>(modbus_led_config.led_w),
+        };
+        break;
+    case ac_controller::AnimationType::OFF:
+        break;
+    default:
+        [[unlikely]] abort(); // ERROR: Invalid animation type, already handled in modbus_parse_animation_type
+        break;
+    }
+
+    return cyphal::application().receive(ac_controller::LedConfig {
+        .color = color,
+        .progress_percent = progress_percent,
+        .animation_type = std::optional<ac_controller::AnimationType>(animation_type),
     });
 }
 
@@ -154,6 +200,13 @@ Status write_register_file(uint16_t address, std::span<const uint16_t> in) {
 
 #if HAS_AC_CONTROLLER()
 
+template <class... Ts>
+Status write_multiple_register_files(uint16_t address, std::span<const uint16_t> in) {
+    Status result = Status::IllegalAddress;
+    ((result = write_register_file<Ts>(address, in), result != Status::IllegalAddress) || ...);
+    return result;
+}
+
 constexpr uint16_t AC_CONTROLLER_MODBUS_ADDR = 0x1a + 8;
 
 class AcController final : public modbus::Callbacks {
@@ -163,7 +216,7 @@ public:
     }
 
     Status write_registers(uint16_t address, std::span<const uint16_t> in) final {
-        return write_register_file<ac_controller::modbus::Config>(address, in);
+        return write_multiple_register_files<ac_controller::modbus::Config, ac_controller::modbus::LedConfig>(address, in);
     }
 };
 #endif

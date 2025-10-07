@@ -8,3 +8,7 @@ if(XBUDDY_EXTENSION_VARIANT_IS_iX)
   target_sources(firmware PRIVATE afs_design_strip_handler.cpp)
   target_link_libraries(firmware PRIVATE led_animation_controller)
 endif()
+
+if(HAS_AC_CONTROLLER)
+  target_sources(firmware PRIVATE ac_controller_leds_handler.cpp)
+endif()

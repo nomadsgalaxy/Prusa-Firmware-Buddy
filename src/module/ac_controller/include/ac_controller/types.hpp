@@ -34,9 +34,22 @@ struct Config {
     std::optional<float> bed_target_temp; ///< bed target temperature (Celsius)
     std::optional<uint8_t> bed_fan_pwm; ///< bed fan PWM (0-255) (shared by both bed fans)
     std::optional<uint8_t> psu_fan_pwm; ///< PSU fan PWM (0-255)
-    std::optional<ColorRGBW> led_color; ///< LED color
 
     auto operator<=>(const Config &) const = default;
 };
 
+enum class AnimationType : uint16_t {
+    OFF = 0,
+    STATIC_COLOR = 1,
+    PROGRESS_PERCENT = 2,
+    _last = PROGRESS_PERCENT
+};
+
+struct LedConfig {
+    std::optional<ColorRGBW> color; ///< LED color
+    std::optional<uint8_t> progress_percent; /// Progress percentage to display on bed led strip (0-100)
+    std::optional<AnimationType> animation_type; /// Animation type
+
+    bool operator<=>(const LedConfig &other) const = default;
+};
 } // namespace ac_controller

@@ -1,9 +1,0 @@
-# RGBW LED configuration for AC Controller
-# Controls LED state and visual effects
-
-@union
-
-uavcan.primitive.Empty.1.0 off   # RGB LED is turned off
-prusa3d.common.RGBWColor.1.0 color # RGBW LED color and effect configuration
-
-@sealed

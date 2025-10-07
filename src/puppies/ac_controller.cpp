@@ -2,6 +2,7 @@
 #include <puppies/ac_controller.hpp>
 
 #include <puppies/PuppyBootstrap.hpp>
+#include <utils/led_color.hpp>
 
 using Lock = std::unique_lock<freertos::Mutex>;
 using xbuddy_extension::NodeState;
@@ -122,24 +123,57 @@ void AcController::set_psu_fan_pwm(uint8_t pwm) {
     }
 }
 
+void AcController::turn_off_bed_leds() {
+    Lock lock(mutex);
+    if (led_config.value.animation_type != 0) {
+        led_config.value.animation_type = 0; // off
+        led_config.dirty = true;
+    }
+}
+
 void AcController::set_rgbw_led(std::array<uint8_t, 4> rgbw) {
     Lock lock(mutex);
+    if (led_config.value.animation_type != 1) {
+        led_config.value.animation_type = 1; // static_color
+        led_config.dirty = true;
+    }
+    if (led_config.value.led_r != rgbw[0]) {
+        led_config.value.led_r = rgbw[0];
+        led_config.dirty = true;
+    }
+    if (led_config.value.led_g != rgbw[1]) {
+        led_config.value.led_g = rgbw[1];
+        led_config.dirty = true;
+    }
+    if (led_config.value.led_b != rgbw[2]) {
+        led_config.value.led_b = rgbw[2];
+        led_config.dirty = true;
+    }
+    if (led_config.value.led_w != rgbw[3]) {
+        led_config.value.led_w = rgbw[3];
+        led_config.dirty = true;
+    }
+}
 
-    if (config.value.led_r != rgbw[0]) {
-        config.value.led_r = rgbw[0];
-        config.dirty = true;
+void AcController::set_progress_percent(uint8_t percent) {
+    constexpr auto progress_color = leds::ColorRGBW { 0, 150, 255, 0 };
+
+    Lock lock(mutex);
+    if (led_config.value.animation_type != 2) {
+        led_config.value.animation_type = 2; // progress
+        led_config.dirty = true;
     }
-    if (config.value.led_g != rgbw[1]) {
-        config.value.led_g = rgbw[1];
-        config.dirty = true;
+    if (led_config.value.progress_percent != percent) {
+        led_config.value.progress_percent = percent;
+        led_config.dirty = true;
     }
-    if (config.value.led_b != rgbw[2]) {
-        config.value.led_b = rgbw[2];
-        config.dirty = true;
-    }
-    if (config.value.led_w != rgbw[3]) {
-        config.value.led_w = rgbw[3];
-        config.dirty = true;
+    if (led_config.value.led_r != progress_color.r || led_config.value.led_g != progress_color.g || led_config.value.led_b != progress_color.b || led_config.value.led_w != progress_color.w) {
+        // Set to blue for progress
+        led_config.value.led_r = progress_color.r;
+        led_config.value.led_g = progress_color.g;
+        led_config.value.led_b = progress_color.b;
+        led_config.value.led_w = progress_color.w;
+        led_config.dirty = true;
     }
 }
 
@@ -163,21 +197,16 @@ CommunicationStatus AcController::refresh_input(uint32_t max_age) {
     return result;
 }
 
-CommunicationStatus AcController::refresh_holding() {
-    // Already locked by caller
-
-    return bus.write(unit, config);
-}
-
 CommunicationStatus AcController::refresh() {
     Lock lock(mutex);
 
     const auto input = refresh_input(250);
-    const auto holding = refresh_holding();
+    const auto holding_config = bus.write(unit, config);
+    const auto holding_led_config = bus.write(unit, led_config);
 
-    if (input == CommunicationStatus::ERROR || holding == CommunicationStatus::ERROR) {
+    if (input == CommunicationStatus::ERROR || holding_config == CommunicationStatus::ERROR || holding_led_config == CommunicationStatus::ERROR) {
         return CommunicationStatus::ERROR;
-    } else if (input == CommunicationStatus::SKIPPED && holding == CommunicationStatus::SKIPPED) {
+    } else if (input == CommunicationStatus::SKIPPED && holding_config == CommunicationStatus::SKIPPED && holding_led_config == CommunicationStatus::SKIPPED) {
         return CommunicationStatus::SKIPPED;
     } else {
         return CommunicationStatus::OK;

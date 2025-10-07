@@ -15,10 +15,10 @@ prusa3d.common.TargetTemperature.1.0 chamber_target_temp
 prusa3d.unit.Pwm.1.0 chamber_pwm
 
 # Power supply
-prusa3d.common.FanState.1.0 psu_fan_state
+prusa3d.common.FanState.1.0 psu_fan_state # The fan is not linked to psu_temp, keeping legacy name
 prusa3d.unit.Celsius.1.0 psu_temp
 
-prusa3d.common.FanState.1.0 triac_fan_state
+prusa3d.common.FanState.1.0 triac_fan_state # The fan is not linked to triac_temp, keeping legacy name
 prusa3d.unit.Celsius.1.0 triac_temp
 
 # External fans
@@ -31,7 +31,7 @@ prusa3d.unit.Celsius.1.0 mcu_temp
 uavcan.si.unit.voltage.Scalar.1.0 supply_voltage
 
 # Other sensors
-prusa3d.common.RGBWLedConfiguration.1.0 rgb_led_strip
+prusa3d.common.leds.Config.1.0 rgb_led_strip
 
 # AcController specific faults, see prusa3d.common.SharedFault.1.0 for shared faults
 uint32 FAULT_RCD_TRIPPED = 0
@@ -57,6 +57,8 @@ prusa3d.common.SharedFault.1.0 faults # Contains specific FAULT_*XX* above and s
 bool time_sync_precise # Time synchronization is precise
 
 bool powerpanic_pin # State of the powerpanic pin
+
+bool chamber_can_heat # True if we have chamber heater installed
 
 # AC power
 uavcan.si.unit.voltage.Scalar.1.0 ac_voltage

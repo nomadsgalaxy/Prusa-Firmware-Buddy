@@ -1,5 +1,5 @@
 
-# Config written by buddy
+# Config written by master board (Buddy for Honeybee)
 prusa3d.common.TargetTemperature.1.0 bed_target_temp
 prusa3d.common.TargetTemperature.1.0 chamber_target_temp
 
@@ -8,11 +8,9 @@ prusa3d.common.VentPosition.1.0 servo_config # Nan to be controlled by AC Contro
 
 prusa3d.common.VentPosition.1.0 intake_vent # Front ventilation flap position to intake cold air
 
-prusa3d.common.FanConfiguration.1.0 psu_fan_config # Off to be controlled by AC Controller
-prusa3d.common.FanConfiguration.1.0 triac_fan_config # Off to be controlled by AC Controller
+prusa3d.common.FanConfiguration.1.0 psu_fan_config # Off to be controlled by AC Controller; The fan is not linked to psu_temp, keeping legacy name
+prusa3d.common.FanConfiguration.1.0 triac_fan_config # Off to be controlled by AC Controller; The fan is not linked to triac_temp, keeping legacy name
 prusa3d.common.FanConfiguration.1.0 external_fan_config # One PWM otput, but two TACHO inputs
-
-prusa3d.common.RGBWLedConfiguration.1.0 rgb_led_strip
 
 bool splitter_enabled # Set if AC Controller should control the splitter
 
