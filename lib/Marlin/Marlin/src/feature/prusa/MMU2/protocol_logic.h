@@ -72,6 +72,7 @@ enum StepStatus : uint_fast8_t {
     PrinterError, ///< printer's explicit error - MMU is fine, but the printer was unable to complete the requested operation
     CommunicationRecovered,
     ButtonPushed, ///< The MMU reported the user pushed one of its three buttons.
+    PrematureFinish, ///< shortly before the MMU operation has been accomplished, the printer decided to move on with it's own work - used to break from manage_response() before a real Finish occurs
 };
 
 inline constexpr uint32_t linkLayerTimeout = 200; ///< default link layer communication timeout

@@ -220,4 +220,9 @@ void enqueue_gcode(const char *gcode) {
     marlin_server::enqueue_gcode(gcode);
 }
 
+void marlin_resetE() {
+    current_position.e = 0;
+    sync_plan_position_e();
+}
+
 } // namespace MMU2

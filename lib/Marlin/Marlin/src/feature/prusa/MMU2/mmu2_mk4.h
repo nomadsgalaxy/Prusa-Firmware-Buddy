@@ -322,11 +322,12 @@ private:
     /// - typically after MMU's start or after some HW issue on the MMU.
     /// It must ensure, that calls to @ref ReportProgress and/or @ref ReportError are
     /// only executed after @ref BeginReport has been called first.
-    void OnMMUProgressMsg(ProgressCode pc);
+    /// @returns true when manage_response is to be prematurely exited in favour of speeding up the consecutive printer moves
+    bool OnMMUProgressMsg(ProgressCode pc);
     /// Progress code changed - act accordingly
-    void OnMMUProgressMsgChanged(ProgressCode pc);
+    bool OnMMUProgressMsgChanged(ProgressCode pc);
     /// Repeated calls when progress code remains the same
-    void OnMMUProgressMsgSame(ProgressCode pc);
+    bool OnMMUProgressMsgSame(ProgressCode pc);
 
     /// @brief Save hotend temperature and set flag to cooldown hotend after 60 minutes
     /// @param turn_off_nozzle if true, the hotend temperature will be set to 0degC after 60 minutes

@@ -1201,6 +1201,8 @@ bool MMU2::manage_response(const bool move_axes, const bool turn_off_nozzle) {
                 // error screen to appear once more so the user can hit 'Retry' button manually.
                 logic.ResetRetryAttempts(); // Reset the retry counter.
             }
+            [[fallthrough]];
+        case PrematureFinish:
             planner_synchronize();
             return true;
         case Interrupted:
@@ -1252,7 +1254,9 @@ StepStatus MMU2::LogicStep(bool reportErrors) {
         [[fallthrough]]; // let Finished be reported the same way like Processing
 
     case Processing:
-        OnMMUProgressMsg(logic.Progress());
+        if( OnMMUProgressMsg(logic.Progress()) ){
+            return PrematureFinish;
+        }
         break;
 
     case ButtonPushed:
@@ -1429,13 +1433,13 @@ void MMU2::ReportProgress(ProgressCode pc) {
     LogEchoEvent_P(_O(ProgressCodeToText(pc)));
 }
 
-void MMU2::OnMMUProgressMsg(ProgressCode pc) {
+bool MMU2::OnMMUProgressMsg(ProgressCode pc) {
     if (pc == lastProgressCode) {
         if (pc != ProgressCode::ERRWaitingForUser) { // not sure if this condition is necessary
-            OnMMUProgressMsgSame(pc);
+            return OnMMUProgressMsgSame(pc);
         }
 
-        return;
+        return false;
     }
 
     // some change in progress code
@@ -1455,11 +1459,12 @@ void MMU2::OnMMUProgressMsg(ProgressCode pc) {
         }
 
     } else if (pc != ProgressCode::ERRWaitingForUser) { // avoid reporting errors as progress codes
-        OnMMUProgressMsgChanged(pc);
+        return OnMMUProgressMsgChanged(pc);
     }
+    return false;
 }
 
-void MMU2::OnMMUProgressMsgChanged(ProgressCode pc) {
+bool MMU2::OnMMUProgressMsgChanged(ProgressCode pc) {
     ReportProgress(pc);
     switch (pc) {
     case ProgressCode::UnloadingToFinda:
@@ -1478,20 +1483,33 @@ void MMU2::OnMMUProgressMsgChanged(ProgressCode pc) {
         break;
     case ProgressCode::FeedingToFSensor:
         // prepare for the movement of the E-motor
-        planner_synchronize();
+        // make sure we start at the same position every time - better for debugging.
+        // GCode is not affected, it does it's own G92 E0 after the MMU toolchange
+        marlin_resetE();
+        extruder_move(189.9f, logic.PulleySlowFeedRate()); // start the extuder - why wasn't it here?
         loadFilamentStarted = true;
+        break;
+    case ProgressCode::DisengagingIdler: // only happens after the fsensor triggered correctly -> safe to kill the E-moves
+        if (loadFilamentStarted) {
+            loadFilamentStarted = false;
+            // make sure we kill the moves in case we lost some packets on the communication
+            // which should have been processed in OnMMUProgressMsgSame
+            planner_abort_queued_moves();
+            return true; // exit manage_response prematurely
+        }
         break;
     default:
         // do nothing yet
         break;
     }
+    return false;
 }
 
 void __attribute__((noinline)) MMU2::HelpUnloadToFinda() {
     extruder_move(-MMU2_RETRY_UNLOAD_TO_FINDA_LENGTH, MMU2_RETRY_UNLOAD_TO_FINDA_FEED_RATE);
 }
 
-void MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
+bool MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
     switch (pc) {
     case ProgressCode::UnloadingToFinda:
         if (unloadFilamentStarted && !planner_any_moves()) { // Only plan a move if there is no move ongoing
@@ -1525,6 +1543,7 @@ void MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
 #endif
                     extruder_move(logic.ExtraLoadDistance() + 2 - loadingSpeedCompensation, logic.PulleySlowFeedRate());
                 }
+                return true; // let the ExtraLoadDistance move finish and then bail out prematurely
                 break;
             case FilamentState::NOT_PRESENT:
                 // fsensor not triggered, continue moving extruder
@@ -1546,6 +1565,7 @@ void MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
         // do nothing yet
         break;
     }
+    return false;
 }
 
 } // namespace MMU2

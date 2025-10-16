@@ -89,4 +89,6 @@ bool all_axes_homed();
 
 void enqueue_gcode(const char *gcode);
 
+void marlin_resetE();
+
 } // namespace MMU2
