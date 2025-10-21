@@ -439,6 +439,11 @@ private:
     uint8_t failNextLoadToExtr = 0;
 
     bool CheckFailLoadToExtr(bool b);
+
+    /// controls whether it is allowed to exit an MMU operation before its finish
+    /// thus making the toolchange faster. In some cases (like unload after a failed load)
+    /// it is necessary to wait for the Tn command to finish before issuing the U0 command.
+    bool allowPrematureFinish;
 };
 
 /// following Marlin's way of doing stuff - one and only instance of MMU implementation in the code base

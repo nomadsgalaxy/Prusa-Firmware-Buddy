@@ -588,8 +588,10 @@ bool MMU2::ToolChangeCommonOnce(uint8_t slot) {
                 metric_record_float(&metric_unloadDistanceFSOff, unloadEPosOnFSOff);
 #endif
             }
+            allowPrematureFinish = true;
             logic.ToolChange(slot); // let the MMU pull the filament out and push a new one in
             if (manage_response(true, true)) {
+                allowPrematureFinish = false;
                 if (planner_draining()) {
                     // Power panic. Give up fast.
                     return false;
@@ -615,6 +617,13 @@ bool MMU2::ToolChangeCommonOnce(uint8_t slot) {
             return true; // success
         } else { // Prepare a retry attempt
             loadFilamentStarted = false;
+
+            while (!manage_response(true, true)) {
+                // Must wait for the MMU to finish its operation
+                // - the PrematureFinish-exit from manage_response brought a nasty edge case
+                // - but since this is "just" error recovery, it can wait a bit longer
+            }
+
             UnloadInner(PreUnloadPolicy::ExtraRelieveHotFilament);
             if (retries == 2 && cutter_enabled()) {
                 CutFilamentInner(slot); // try cutting filament tip at the last attempt
@@ -1253,7 +1262,7 @@ StepStatus MMU2::LogicStep(bool reportErrors) {
         [[fallthrough]]; // let Finished be reported the same way like Processing
 
     case Processing:
-        if( OnMMUProgressMsg(logic.Progress()) ){
+        if (OnMMUProgressMsg(logic.Progress())) {
             return PrematureFinish;
         }
         break;
@@ -1494,7 +1503,7 @@ bool MMU2::OnMMUProgressMsgChanged(ProgressCode pc) {
             // make sure we kill the moves in case we lost some packets on the communication
             // which should have been processed in OnMMUProgressMsgSame
             planner_abort_queued_moves();
-            return true; // exit manage_response prematurely
+            return allowPrematureFinish; // exit manage_response prematurely
         }
         break;
     default:
@@ -1542,7 +1551,7 @@ bool MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
 #endif
                     extruder_move(logic.ExtraLoadDistance() + 2 - loadingSpeedCompensation, logic.PulleySlowFeedRate());
                 }
-                return true; // let the ExtraLoadDistance move finish and then bail out prematurely
+                return allowPrematureFinish; // let the ExtraLoadDistance move finish and then bail out prematurely
                 break;
             case FilamentState::NOT_PRESENT:
                 // fsensor not triggered, continue moving extruder
