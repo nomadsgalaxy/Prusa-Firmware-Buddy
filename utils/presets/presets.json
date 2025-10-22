@@ -7,6 +7,7 @@
             "cacheVariables": {
                 "PRINTER": "COREONE",
                 "BOARD": "XBUDDY",
+                "XBUDDY_EXTENSION_VARIANT": "STANDARD",
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "build-vscode-xbuddy-extension"
@@ -19,6 +20,7 @@
             "cacheVariables": {
                 "PRINTER": "COREONEL",
                 "BOARD": "XBUDDY",
+                "XBUDDY_EXTENSION_VARIANT": "STANDARD",
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "build-vscode-xbuddy-extension"
@@ -136,6 +138,7 @@
             "cacheVariables": {
                 "PRINTER": "iX",
                 "BOARD": "XBUDDY",
+                "XBUDDY_EXTENSION_VARIANT": "iX",
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "build-vscode-modularbed"

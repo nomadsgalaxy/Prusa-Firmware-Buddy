@@ -4,9 +4,9 @@
 #include <WindowMenuSpin.hpp>
 #include <WindowMenuItems.hpp>
 
-#include <option/xbuddy_extension_variant_standard.h>
+#include <option/xbuddy_extension_variant.h>
 
-static_assert(XBUDDY_EXTENSION_VARIANT_STANDARD());
+static_assert(XBUDDY_EXTENSION_VARIANT_IS_STANDARD());
 
 /// Manual control for chamber fans
 /// Automatically hidden if the extboard is disabled

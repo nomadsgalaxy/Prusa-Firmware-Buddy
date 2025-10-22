@@ -34,8 +34,8 @@
     #include <feature/chamber_filtration/chamber_filtration.hpp>
 #endif
 
-#include <option/xbuddy_extension_variant_standard.h>
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#include <option/xbuddy_extension_variant.h>
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     #include <feature/xbuddy_extension/xbuddy_extension.hpp>
     #include <puppies/xbuddy_extension.hpp> // For FAN_CNT
 #endif
@@ -302,7 +302,7 @@ private:
             break;
     #endif /* XL_ENCLOSURE_SUPPORT() */
 
-    #if XBUDDY_EXTENSION_VARIANT_STANDARD()
+    #if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         case buddy::Chamber::Backend::xbuddy_extension:
             config_store().xbe_fan_test_results.set({});
             break;
@@ -346,7 +346,7 @@ private:
                 config_store().xl_enclosure_fan_selftest_result.set(fan->test_result());
                 break;
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
             case FanType::xbe_chamber: {
                 assert(fan->get_desc_num() < buddy::puppies::XBuddyExtension::FAN_CNT);
                 auto res = config_store().xbe_fan_test_results.get();
@@ -444,7 +444,7 @@ void M1978() {
 #if XL_ENCLOSURE_SUPPORT()
     CommonFanHandler xl_enclosure_fan(FanType::xl_enclosure, 0, benevolent_fan_range, &Fans::enclosure());
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     std::array xbe_fans {
         XBEFanHandler(FanType::xbe_chamber, 0, chamber_fan_range),
         XBEFanHandler(FanType::xbe_chamber, 1, chamber_fan_range),
@@ -463,7 +463,7 @@ void M1978() {
     }
     #endif /* XL_ENCLOSURE_SUPPORT() */
 
-    #if XBUDDY_EXTENSION_VARIANT_STANDARD()
+    #if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         static_assert(HAS_CHAMBER_FILTRATION_API());
     case buddy::Chamber::Backend::xbuddy_extension:
         if (buddy::xbuddy_extension().using_filtration_fan_instead_of_cooling_fans()) {

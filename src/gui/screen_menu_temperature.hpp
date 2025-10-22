@@ -4,7 +4,7 @@
 #pragma once
 
 #include <option/has_chamber_api.h>
-#include <option/xbuddy_extension_variant_standard.h>
+#include <option/xbuddy_extension_variant.h>
 
 #include "screen_menu.hpp"
 #include "WindowMenuItems.hpp"
@@ -15,7 +15,7 @@
 #if HAS_CHAMBER_API()
     #include <gui/menu_item/specific/menu_items_chamber.hpp>
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     #include <gui/menu_item/specific/menu_items_xbuddy_extension.hpp>
 #endif
 
@@ -38,7 +38,7 @@ using ScreenBase = ScreenMenu<
     MI_CHAMBER_TARGET_TEMP,
 #endif
     MI_PRINTFAN,
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     MI_XBUDDY_EXTENSION_COOLING_FANS,
     MI_XBUDDY_EXTENSION_COOLING_FANS_CONTROL_MAX,
     MI_XBE_FILTRATION_FAN,

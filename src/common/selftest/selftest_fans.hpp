@@ -7,7 +7,7 @@
 #include <selftest_fans_config.hpp>
 #include <utils/enum_array.hpp>
 #include <option/xl_enclosure_support.h>
-#include <option/xbuddy_extension_variant_standard.h>
+#include <option/xbuddy_extension_variant.h>
 #include <pwm_utils.hpp>
 #include <option/has_bed_fan.h>
 #include <option/has_psu_fan.h>
@@ -24,7 +24,7 @@ enum class FanType {
 #if XL_ENCLOSURE_SUPPORT()
     xl_enclosure,
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     xbe_chamber,
 #endif
 #if HAS_BED_FAN()
@@ -42,7 +42,7 @@ static constexpr EnumArray<FanType, const char *, FanType::_count> fan_type_name
 #if XL_ENCLOSURE_SUPPORT()
         { FanType::xl_enclosure, N_("XL Enclosure") },
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         { FanType::xbe_chamber, N_("Chamber") },
 #endif
 #if HAS_BED_FAN()
@@ -113,7 +113,7 @@ private:
     CFanCtlCommon *fan;
 };
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
 class XBEFanHandler : public FanHandler {
 public:
     XBEFanHandler(const FanType type, const uint8_t desc_nr, const FanRPMRange fan_range);

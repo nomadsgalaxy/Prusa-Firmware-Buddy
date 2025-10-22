@@ -101,7 +101,7 @@
 #include <option/has_sheet_profiles.h>
 #include <option/has_i2c_expander.h>
 #include <option/has_chamber_api.h>
-#include <option/xbuddy_extension_variant_standard.h>
+#include <option/xbuddy_extension_variant.h>
 #include <option/has_emergency_stop.h>
 #include <option/has_uneven_bed_prompt.h>
 #include <option/has_nextruder.h>
@@ -166,7 +166,7 @@
     #include <feature/chamber_filtration/chamber_filtration.hpp>
 #endif
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     #include <feature/xbuddy_extension/xbuddy_extension.hpp>
 #endif
 #if HAS_EMERGENCY_STOP()
@@ -416,7 +416,7 @@ namespace {
     constinit std::array<ErrorChecker, HOTENDS> hotendFanErrorChecker;
     constinit ErrorChecker printFanErrorChecker;
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     constinit ErrorChecker xbe_cool_fan_checker; // Handles both cooling fans (we cannot differentiate anyway)
     constinit ErrorChecker xbe_filter_fan_checker;
 #endif
@@ -803,7 +803,7 @@ static void cycle() {
     buddy::emergency_stop().step();
 #endif
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     buddy::xbuddy_extension().step();
 #endif
 
@@ -1004,7 +1004,7 @@ void static finalize_print(bool finished) {
     buddy::chamber_filtration().check_filter_expiration();
 #endif
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     buddy::xbuddy_extension().set_chamber_regulator_legacy(true); // For compatibility with old gcodes on coreone
 #endif
 
@@ -2228,7 +2228,7 @@ static void _server_print_loop(void) {
 #if HAS_CHAMBER_FILTRATION_API()
         buddy::chamber_filtration().check_filter_expiration();
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         buddy::xbuddy_extension().set_chamber_regulator_legacy(true); // For compatibility with old gcodes on coreone
 #endif
         break;
@@ -2845,7 +2845,7 @@ static void _server_print_loop(void) {
         const auto fan_state = Fans::print(active_extruder).get_state();
         printFanErrorChecker.checkTrue(fan_state != CFanCtlCommon::FanState::error_running && fan_state != CFanCtlCommon::FanState::error_starting, WarningType::PrintFanError, false, true);
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         // TODO: Fix error checking of chamber fans
         /*
         const bool cool_fan_ok = buddy::xbuddy_extension().is_fan_ok(buddy::XBuddyExtension::Fan::cooling_fan_1) && buddy::xbuddy_extension().is_fan_ok(buddy::XBuddyExtension::Fan::cooling_fan_2);
@@ -2860,7 +2860,7 @@ static void _server_print_loop(void) {
             xbe_filter_fan_checker.reset();
         }
         */
-#endif /* XBUDDY_EXTENSION_VARIANT_STANDARD() */
+#endif /* XBUDDY_EXTENSION_VARIANT_IS_STANDARD() */
 #if XL_ENCLOSURE_SUPPORT()
         const bool enclosure_fan_ok = Fans::enclosure().is_fan_ok();
         if (!enclosure_fan_ok && !enclosure_fan_checker.isFailed()) {

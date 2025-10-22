@@ -21,10 +21,9 @@
 #if HAS_XBUDDY_EXTENSION()
     #include <feature/xbuddy_extension/xbuddy_extension.hpp>
 #endif
-#include <option/xbuddy_extension_variant_standard.h>
-#include <option/xbuddy_extension_variant_ix.h>
+#include <option/xbuddy_extension_variant.h>
 
-#if XBUDDY_EXTENSION_VARIANT_IX()
+#if XBUDDY_EXTENSION_VARIANT_IS_iX()
     #include "leds/afs_design_strip_handler.hpp"
 #endif
 
@@ -109,10 +108,10 @@ void LEDManager::update() {
         status_leds.set(data[i].data, i);
     }
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     // Bed LEDs copy LCD status bar strip
     buddy::xbuddy_extension().set_bed_leds_color(data[1].data);
-#elif XBUDDY_EXTENSION_VARIANT_IX()
+#elif XBUDDY_EXTENSION_VARIANT_IS_iX()
     // Colored leds show the status LEDs color, unanimated
     auto &design_strip_handler = AFSDesignStripHandler::instance();
     design_strip_handler.update();

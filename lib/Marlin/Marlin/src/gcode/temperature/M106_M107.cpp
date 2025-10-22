@@ -34,10 +34,10 @@
     #include "../../module/temperature.h"
     #include "fanctl.hpp"
     #include <device/board.h>
-    #include <option/xbuddy_extension_variant_standard.h>
+    #include <option/xbuddy_extension_variant.h>
     #include <pwm_utils.hpp>
 
-    #if XBUDDY_EXTENSION_VARIANT_STANDARD()
+    #if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         #include <feature/xbuddy_extension/xbuddy_extension.hpp>
     #endif
 
@@ -86,7 +86,7 @@ static bool set_special_fan_speed(uint8_t fan, int8_t tool, uint8_t speed, bool 
         return true;
     #endif
 
-    #if XBUDDY_EXTENSION_VARIANT_STANDARD()
+    #if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         using XBE = buddy::XBuddyExtension;
         static_assert(FAN_COUNT < 3, "Fan 3 is dedicated to extboard");
 
@@ -97,7 +97,7 @@ static bool set_special_fan_speed(uint8_t fan, int8_t tool, uint8_t speed, bool 
     case 4:
         buddy::xbuddy_extension().set_fan_target_pwm(XBE::Fan::filtration_fan, pwm_or_auto);
         return true;
-    #endif // XBUDDY_EXTENSION_VARIANT_STANDARD()
+    #endif // XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
 
     #if HAS_BED_FAN()
     case 5:
@@ -212,7 +212,7 @@ void GcodeSuite::M106() {
 
     switch (p) {
 
-    #if XBUDDY_EXTENSION_VARIANT_STANDARD()
+    #if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     case 3:
     case 4:
         if (parser.seen('N')) {

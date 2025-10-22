@@ -35,7 +35,7 @@ XBuddyExtension::Status XBuddyExtension::status() const {
     return Status::ready;
 }
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
 void XBuddyExtension::step() {
     // Obtain these values before locking the mutex.
     // Chamber API is accessing XBuddyExtension in some methods as well, so we might cause a deadlock otherwise.
@@ -300,7 +300,7 @@ bool XBuddyExtension::usb_power() const {
     return config_store().xbe_usb_power.get();
 }
 
-#elif XBUDDY_EXTENSION_VARIANT_IX()
+#elif XBUDDY_EXTENSION_VARIANT_IS_iX()
 void XBuddyExtension::set_heatbreak_fan_pwm(uint32_t value) {
     // Fan 1 and Fan 2 on xbe share PWM, but the interface is schizophrenic, we need to set both
     buddy::puppies::xbuddy_extension.set_fan_pwm(0, value);

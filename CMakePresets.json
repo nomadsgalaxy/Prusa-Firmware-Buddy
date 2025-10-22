@@ -23,6 +23,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-xbuddy-extension"
@@ -73,6 +77,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -125,6 +133,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-xbuddy-extension"
@@ -175,6 +187,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -227,6 +243,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-xbuddy-extension"
@@ -277,6 +297,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -329,6 +353,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-xbuddy-extension"
@@ -379,6 +407,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -2831,6 +2863,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "iX"
+                },
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
@@ -2881,6 +2917,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "iX"
                 },
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -2933,6 +2973,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "iX"
+                },
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
@@ -2983,6 +3027,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "iX"
                 },
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",

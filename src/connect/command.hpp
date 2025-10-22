@@ -4,7 +4,7 @@
 
 #include <common/shared_buffer.hpp>
 #include <option/has_side_leds.h>
-#include <option/xbuddy_extension_variant_standard.h>
+#include <option/xbuddy_extension_variant.h>
 
 #include <cstdint>
 #include <string_view>
@@ -109,7 +109,7 @@ enum class PropertyName {
     NozzleDiameter,
     NozzleHighFlow,
     NozzleHardened,
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     // Note: for now we only want to support the chamber features on Core One.
     // Therefore option HAS_CHAMBER_API is NOT used yet.
     ChamberTargetTemp,

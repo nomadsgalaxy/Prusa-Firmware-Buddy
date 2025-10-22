@@ -1,7 +1,7 @@
 #pragma once
 
-#include <option/xbuddy_extension_variant_standard.h>
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#include <option/xbuddy_extension_variant.h>
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     #include "cooling.hpp"
 #endif
 
@@ -14,8 +14,6 @@
 #include <pwm_utils.hpp>
 
 #include <xbuddy_extension/shared_enums.hpp>
-#include <option/xbuddy_extension_variant_standard.h>
-#include <option/xbuddy_extension_variant_ix.h>
 
 namespace buddy {
 
@@ -32,7 +30,7 @@ public: // General things, status
 
     using FilamentSensorState = xbuddy_extension::FilamentSensorState;
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     using FanRPM = uint16_t;
     using FanPWM = PWM255;
     using Fan = xbuddy_extension::Fan;
@@ -41,7 +39,7 @@ public: // General things, status
 
     Status status() const;
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     void step();
 
 public: // Fans
@@ -146,7 +144,7 @@ public: // Other
     /// \returns chamber temperature measured through the thermistor connected to the board, in degrees Celsius
     std::optional<Temperature> chamber_temperature();
 
-#elif XBUDDY_EXTENSION_VARIANT_IX()
+#elif XBUDDY_EXTENSION_VARIANT_IS_iX()
     void set_heatbreak_fan_pwm(uint32_t value);
     void set_white_led(uint32_t intensity);
     void set_rgbw_led(leds::ColorRGBW rgbw);
@@ -158,7 +156,7 @@ public: // Other
 private:
     mutable freertos::Mutex mutex_;
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     leds::ColorRGBW bed_leds_color_;
     std::optional<uint16_t> strobe_freq_ = std::nullopt;
 

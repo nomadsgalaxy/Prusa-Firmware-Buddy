@@ -5,7 +5,7 @@
 #include <option/has_manual_chamber_vents.h>
 #include <option/has_remote_bed.h>
 #include <option/has_chamber_filtration_api.h>
-#include <option/xbuddy_extension_variant_standard.h>
+#include <option/xbuddy_extension_variant.h>
 #include <option/has_selftest.h>
 #include <option/has_precise_homing_corexy.h>
 
@@ -78,10 +78,10 @@ enum class WarningType : uint32_t {
     ChamberOverheatingTemperature,
     ChamberCriticalTemperature,
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     ChamberCoolingFanError,
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD() || XL_ENCLOSURE_SUPPORT()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD() || XL_ENCLOSURE_SUPPORT()
     ChamberFiltrationFanError,
 #endif
 #if HAS_CEILING_CLEARANCE()

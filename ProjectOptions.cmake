@@ -393,8 +393,12 @@ set_feature_for_printers_master_board(HAS_LOCAL_BED "COREONE" "MINI" "MK4" "MK3.
 set_feature_for_printers_master_board(HAS_PUPPY_MODULARBED "iX" "XL" "XL_DEV_KIT")
 
 set_feature_for_printers_master_board(HAS_XBUDDY_EXTENSION "COREONE" "COREONEL" "iX")
-set_feature_for_printers_master_board(XBUDDY_EXTENSION_VARIANT_STANDARD "COREONE" "COREONEL")
-set_feature_for_printers_master_board(XBUDDY_EXTENSION_VARIANT_IX "iX")
+if(NOT DEFINED XBUDDY_EXTENSION_VARIANT)
+  set(XBUDDY_EXTENSION_VARIANT "NONE")
+endif()
+define_enum_option(
+  NAME XBUDDY_EXTENSION_VARIANT VALUE "${XBUDDY_EXTENSION_VARIANT}" ALL_VALUES "NONE;STANDARD;iX"
+  )
 
 # MK4 technically doesn't have door sensor but needs to check valid FW-HW
 set_feature_for_printers_master_board(HAS_DOOR_SENSOR "COREONE" "COREONEL" "MK4")
