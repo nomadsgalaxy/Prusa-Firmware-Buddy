@@ -3,6 +3,7 @@
 #include <common/directory.hpp>
 #include <freertos/critical_section.hpp>
 #include <marlin_stubs/skippable_gcode.hpp>
+#include <mapi/parking.hpp>
 #include "marlin_client_queue.hpp"
 #include "marlin_server_request.hpp"
 #include <inttypes.h>
@@ -926,10 +927,7 @@ static bool pre_finalize_print([[maybe_unused]] bool finished) {
 #if HAS_NOZZLE_CLEANER()
     // Here the nozzle cleaner loader should already be ready to execute the gcode.
     nozzle_cleaner::execute();
-
-    xyz_pos_t park = XYZ_NOZZLE_PARK_POINT;
-    park.z = current_position.z;
-    plan_park_move_to_xyz(park, NOZZLE_PARK_XY_FEEDRATE, NOZZLE_PARK_Z_FEEDRATE, Segmented::yes);
+    mapi::park(mapi::ZAction::no_move, mapi::ParkingPosition::from_xyz_pos({ { XYZ_NOZZLE_PARK_POINT } }));
 #endif
 
     return true;
