@@ -38,8 +38,6 @@ CSelftestPart_Loadcell::CSelftestPart_Loadcell(IPartHandler &state_machine, cons
     : rStateMachine(state_machine)
     , rConfig(config)
     , rResult(result)
-    , currentZ(0.F)
-    , targetZ(0.F)
     , begin_target_temp(thermalManager.degTargetHotend(rConfig.tool_nr))
     , time_start(SelftestInstance().GetTime())
     , log(1000)
@@ -55,12 +53,12 @@ CSelftestPart_Loadcell::~CSelftestPart_Loadcell() {
     endstops.enable(false);
 }
 
-LoopResult CSelftestPart_Loadcell::stateMoveUpInit() {
+LoopResult CSelftestPart_Loadcell::stateParkingInit() {
     IPartHandler::SetFsmPhase(PhasesSelftest::Loadcell_move_away);
     return LoopResult::RunNext;
 }
 
-LoopResult CSelftestPart_Loadcell::stateMoveUp() {
+LoopResult CSelftestPart_Loadcell::statePrepareParking() {
     planner.synchronize(); // finish current move (there should be none)
     endstops.validate_homing_move();
 
@@ -71,24 +69,33 @@ LoopResult CSelftestPart_Loadcell::stateMoveUp() {
 #if ENABLED(SENSORLESS_HOMING)
     start_sensorless_homing_per_axis(AxisEnum::Z_AXIS);
 #endif
-
-    currentZ = current_position.z;
-    targetZ = rConfig.z_extra_pos;
-    if (targetZ > currentZ) {
-        log_info(Selftest, "%s move up, target: %f current: %f", rConfig.partname, double(targetZ), double(currentZ));
-        current_position.z = rConfig.z_extra_pos;
-        line_to_current_position(rConfig.z_extra_pos_fr);
-    } else {
-        log_info(Selftest, "%s move up not needed, target: %f > current: %f", rConfig.partname, double(targetZ), double(currentZ));
-    }
     return LoopResult::RunNext;
 }
 
-LoopResult CSelftestPart_Loadcell::stateMoveUpWaitFinish() {
-    if (planner.processing()) {
-        currentZ = current_position.z;
-        return LoopResult::RunCurrent;
+LoopResult CSelftestPart_Loadcell::stateParking() {
+    // Move Z before homing XY
+    if (rConfig.z_extra_pos > current_position.z) {
+        // Z move might hit the end of the axis
+        current_position.z = rConfig.z_extra_pos;
+        line_to_current_position(rConfig.z_extra_pos_fr);
+        log_info(Selftest, "%s, moving away from the bed", rConfig.partname);
+        planner.synchronize();
     }
+
+    if (axes_need_homing(X_AXIS | Y_AXIS)) {
+        // We cannot home Z, because we don't yet know if Loadcell works
+        GcodeSuite::G28_no_parser(true, true, false, { .only_if_needed = true, .precise = false });
+        log_info(Selftest, "%s, have to home XY", rConfig.partname);
+        planner.synchronize();
+    } else {
+        // Park nozzle
+        current_position.x = X_NOZZLE_PARK_POINT;
+        current_position.y = Y_NOZZLE_PARK_POINT;
+        line_to_current_position(HOMING_FEEDRATE_XY);
+        log_info(Selftest, "%s, moving to park position", rConfig.partname);
+        planner.synchronize();
+    }
+
     log_info(Selftest, "%s move up finished", rConfig.partname);
     return LoopResult::RunNext;
 }
