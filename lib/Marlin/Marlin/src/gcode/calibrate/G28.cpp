@@ -338,8 +338,6 @@ void GcodeSuite::G28() {
   BlockEStallDetection block_e_stall_detection;
 #endif
 
-  marlin_server::FSM_Holder fsm_holder(PhaseWait::homing);
-
   bool X = parser.seen('X');
   bool Y = parser.seen('Y');
   bool Z = parser.seen('Z');
@@ -474,6 +472,7 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
 
   PrintStatusMessageGuard statusGuard;
   statusGuard.update<PrintStatusMessage::homing>({});
+  marlin_server::FSM_Holder fsm_holder{PhaseWait::homing};
 
   #if HAS_CEILING_CLEARANCE()
   buddy::CeilingClearanceCheckDisabler ccd;
