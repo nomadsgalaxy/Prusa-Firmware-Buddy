@@ -147,6 +147,7 @@ public: // Other
 #elif XBUDDY_EXTENSION_VARIANT_IS_iX()
     void set_heatbreak_fan_pwm(uint32_t value);
     void set_white_led(uint32_t intensity);
+    void set_strobe(std::optional<uint16_t> freq);
     void set_rgbw_led(leds::ColorRGBW rgbw);
 #endif
 
@@ -177,6 +178,9 @@ private:
     bool can_auto_cool_ = false;
     bool overheating_warning_shown = false;
     bool critical_warning_shown = false;
+
+#elif XBUDDY_EXTENSION_VARIANT_IS_iX()
+    std::optional<uint32_t> white_intensity_override;
 #endif
 };
 

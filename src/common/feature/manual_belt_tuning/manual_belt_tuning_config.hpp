@@ -16,6 +16,7 @@ constexpr uint16_t accel_min = 7000;
 constexpr uint16_t accel_max = 10500;
 
 // 1m length belt waight
+// Note iX has GT1.5 belts, but the weight difference was deemed insignificant
 constexpr float nominal_weight_kg_m = 0.007569f;
 
 #if PRINTER_IS_PRUSA_COREONE()
@@ -57,6 +58,27 @@ constexpr uint16_t belt_hz_per_rev2 = 10;
 
 // optimal belt tension for the printer
 constexpr uint16_t tension_optimal_N = 25;
+
+#elif PRINTER_IS_PRUSA_iX()
+
+// avg belt length (vibrating part)
+constexpr float length_belt = 0.3f;
+// top belt length (vibrating part)
+constexpr float length_top_belt = length_belt - 0.0065f;
+// bottom belt length (vibrating part)
+constexpr float length_bottom_belt = length_belt + 0.0065f;
+
+constexpr int16_t calib_position_x = 257;
+constexpr int16_t calib_position_y = 8;
+
+// constants for calculating how many revolutions to do for any frequency differences
+// this constants represents average frequency change of the belt per one revolution of its own screw
+constexpr uint16_t belt_hz_per_rev = 12;
+// this constants represents average frequency change of the belt per one revolution of second belt screw
+constexpr uint16_t belt_hz_per_rev2 = 10;
+
+// optimal belt tension for the printer
+constexpr uint16_t tension_optimal_N = 18;
 
 #else
     #error

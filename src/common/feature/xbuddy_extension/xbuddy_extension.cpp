@@ -311,7 +311,22 @@ void XBuddyExtension::set_heatbreak_fan_pwm(uint32_t value) {
 }
 
 void XBuddyExtension::set_white_led(uint32_t intensity) {
+    if (white_intensity_override) {
+        intensity = *white_intensity_override;
+    }
     buddy::puppies::xbuddy_extension.set_white_led(intensity);
+}
+
+void XBuddyExtension::set_strobe(std::optional<uint16_t> freq) {
+    assert(freq != 0);
+
+    if (freq) {
+        white_intensity_override = strobe_pwm;
+    } else {
+        white_intensity_override = std::nullopt;
+    }
+    buddy::puppies::xbuddy_extension.set_white_led(*white_intensity_override);
+    buddy::puppies::xbuddy_extension.set_white_strobe_frequency(freq);
 }
 
 void XBuddyExtension::set_rgbw_led(leds::ColorRGBW rgbw) {
