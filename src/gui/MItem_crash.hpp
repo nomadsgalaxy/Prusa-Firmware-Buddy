@@ -38,18 +38,6 @@ public:
     virtual void OnClick() override;
 };
 
-#if PRINTER_IS_PRUSA_XL()
-// XL set Crash Sensitivity in user friendly was (Low/Medium/High), whereas other printers set integer directly and its development menu only
-
-class MI_CRASH_SENSITIVITY_XY : public MenuItemSwitch {
-private:
-    constexpr static const char *const label = N_("Crash Sensitivity XY");
-
-public:
-    MI_CRASH_SENSITIVITY_XY();
-    virtual void OnChange(size_t old_index) override;
-};
-#else
 class MI_CRASH_SENSITIVITY_XY : public WiSpin {
 private:
     constexpr static const char *const label = N_("Crash Sensitivity XY");
@@ -58,7 +46,6 @@ public:
     MI_CRASH_SENSITIVITY_XY();
     virtual void OnClick() override;
 };
-#endif
 
 #if ANY(CRASH_RECOVERY, POWER_PANIC)
 

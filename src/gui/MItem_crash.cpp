@@ -14,11 +14,13 @@
 
 MI_CRASH_DETECTION::MI_CRASH_DETECTION()
     : WI_ICON_SWITCH_OFF_ON_t(crash_s.is_enabled(), _(label), nullptr, is_enabled_t::yes,
-    #if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL())
+    #if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL() || PRINTER_IS_PRUSA_XL())
         is_hidden_t::dev
-    #else
+    #elif (PRINTER_IS_PRUSA_XL_DEV_KIT() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_MINI())
         is_hidden_t::no
-    #endif // (( PRINTER_IS_PRUSA_MK4()) || ( PRINTER_IS_PRUSA_MK3_5()))
+    #else
+        #error "Unknown printer"
+    #endif
     ) {
 }
 
@@ -66,33 +68,12 @@ void MI_CRASH_SENSITIVITY_Y::OnClick() {
     crash_s.set_sensitivity(se);
 }
 
-    #if PRINTER_IS_PRUSA_XL()
-static constexpr const char *crash_sensitivity_items[] = {
-    N_("Low"),
-    N_("Medium"),
-    N_("High"),
-};
-static constexpr std::array<uint8_t, std::size(crash_sensitivity_items)> crash_sensitivity_item_values {
-    3,
-    2,
-    1,
-};
-
-MI_CRASH_SENSITIVITY_XY::MI_CRASH_SENSITIVITY_XY()
-    : MenuItemSwitch(_(label), crash_sensitivity_items, stdext::index_of(crash_sensitivity_item_values, crash_s.get_sensitivity().x)) {}
-
-void MI_CRASH_SENSITIVITY_XY::OnChange([[maybe_unused]] size_t old_index) {
-    const int32_t sensitivity = crash_sensitivity_item_values[this->get_index()];
-    crash_s.set_sensitivity({ .x = sensitivity, .y = sensitivity });
-}
-    #else
 MI_CRASH_SENSITIVITY_XY::MI_CRASH_SENSITIVITY_XY()
     : WiSpin(crash_s.get_sensitivity().x, crash_sensitivity_spin_config, _(label), nullptr, is_enabled_t::yes, is_hidden_t::dev) {
 }
 void MI_CRASH_SENSITIVITY_XY::OnClick() {
     crash_s.set_sensitivity({ static_cast<long>(value()), static_cast<long>(value()) });
 }
-    #endif
 
 MI_CRASH_MAX_PERIOD_X::MI_CRASH_MAX_PERIOD_X()
     : WiSpin(crash_s.get_max_period().x, crash_max_period_spin_config, _(label), nullptr, is_enabled_t::yes, is_hidden_t::dev) {
