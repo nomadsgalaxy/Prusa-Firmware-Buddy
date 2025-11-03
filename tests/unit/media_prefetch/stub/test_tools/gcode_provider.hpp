@@ -25,6 +25,9 @@ public:
 
     virtual GCodeReaderResult stream_getc(char &ch) = 0;
 
+public:
+    bool valid_for_print = true;
+
 private:
     std::string filename_;
 };

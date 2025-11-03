@@ -49,5 +49,5 @@ AnyGcodeFormatReader::~AnyGcodeFormatReader() {
 }
 
 bool AnyGcodeFormatReader::valid_for_print([[maybe_unused]] bool) {
-    return is_open();
+    return is_open() && provider->valid_for_print;
 }

@@ -2,13 +2,16 @@
 
 #include <catch2/catch.hpp>
 #include <sstream>
-#include <numeric>
 
 StubGcodeProviderBase::StubGcodeProviderBase() {
     filename_ = (std::stringstream() << std::hex << std::bit_cast<uintptr_t>(this)).str();
 }
 
 StubGcodeProviderBase *StubGcodeProviderBase::from_filename(const char *filename) {
+    if (std::string_view(filename) == "FAIL") {
+        return nullptr;
+    }
+
     uintptr_t ptr;
     std::stringstream(filename) >> std::hex >> ptr;
     return std::bit_cast<StubGcodeProviderBase *>(ptr);
