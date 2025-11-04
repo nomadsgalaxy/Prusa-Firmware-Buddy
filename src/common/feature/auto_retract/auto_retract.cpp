@@ -11,6 +11,7 @@
 #include <marlin_server.hpp>
 #include <feature/prusa/e-stall_detector.h>
 #include <mapi/motion.hpp>
+#include <mapi/parking.hpp>
 
 #include <option/has_mmu2.h>
 #if HAS_MMU2()
@@ -83,14 +84,19 @@ void AutoRetract::maybe_retract_from_nozzle(const ProgressCallback &progress_cal
         return;
     }
 
+    PrintStatusMessageGuard psm_guard;
+    psm_guard.update<PrintStatusMessage::Type::auto_retracting>({});
+
+#if HAS_NOZZLE_CLEANER()
+    // If we have nozzle cleaner, make sure we are parked over the bin to avoid pooping on the bed
+    mapi::park(mapi::ZAction::absolute_move, mapi::ParkingPosition::from_xyz_pos({ { XYZ_WASTEBIN_POINT } }));
+#endif
+
     // Finish all pending movements so that the progress reporting is nice
     planner.synchronize();
 
     // We might be retracted a bit, deretract to make sure the ramming sequence runs proper
     maybe_deretract_to_nozzle();
-
-    PrintStatusMessageGuard psm_guard;
-    psm_guard.update<PrintStatusMessage::Type::auto_retracting>({});
 
     const auto &sequence = standard_ramming_sequence(StandardRammingSequence::auto_retract, hotend);
     {
