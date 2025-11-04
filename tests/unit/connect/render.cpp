@@ -327,7 +327,7 @@ TEST_CASE("Render") {
                         "\"material\":\"PETG\""
                     "}"
                 "},"
-                "\"addon_power\":true,"
+                "\"addon_power\":false,"
                 "\"slots\":2"
             "},"
             "\"state\":\"IDLE\","

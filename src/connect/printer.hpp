@@ -118,7 +118,7 @@ public:
 #endif
 #if XBUDDY_EXTENSION_VARIANT_STANDARD()
         ChamberInfo chamber_info;
-        bool addon_power;
+        bool addon_power = false;
 #endif
 #if HAS_MMU2()
         MMU2::Version mmu_version = { 0, 0, 0 };
