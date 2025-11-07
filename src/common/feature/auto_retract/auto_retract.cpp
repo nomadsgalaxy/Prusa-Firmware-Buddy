@@ -12,6 +12,7 @@
 #include <feature/prusa/e-stall_detector.h>
 #include <mapi/motion.hpp>
 #include <mapi/parking.hpp>
+#include <gcode/temperature/M104_M109.hpp>
 
 #include <option/has_mmu2.h>
 #if HAS_MMU2()
@@ -166,6 +167,42 @@ void AutoRetract::maybe_deretract_to_nozzle() {
     current_position.e = orig_current_e_position;
 
     set_retracted_distance(hotend, 0.0f);
+}
+
+void ensure_retracted_no_ramming() {
+    // Save target temperature to put back at the end
+    const auto previous_target_temp = static_cast<float>(thermalManager.degTargetHotend(active_extruder));
+    const auto retracted_distance = buddy::auto_retract().retracted_distance().value_or(0.0f);
+    // Ensure safe temperature
+    const M109Flags flags_pre = {
+        // Filament target temperature can be altered through PrusaSlicer
+        // We don't have access to this information here, so we use filament presets
+        // Filament had to be loaded with the preset's temperature anyway, so we should be able to retract with it
+        // TODO: Could be passed to G29 as a parameter
+        .target_temp = static_cast<float>(config_store().get_filament_type(active_extruder).parameters().nozzle_temperature),
+    };
+    M109_no_parser(active_extruder, flags_pre);
+
+    {
+        PrintStatusMessageGuard pmg_retract;
+        pmg_retract.update<PrintStatusMessage::auto_retracting>({});
+
+        // Retract to standard distance
+        const auto hotend = marlin_vars().active_hotend_id();
+        const auto standard_distance = buddy::AutoRetract::minimum_auto_retract_distance;
+        const auto retract_compensation_distance = (-1) * (standard_distance - retracted_distance);
+        assert(retract_compensation_distance < 0);
+        buddy::auto_retract().set_retracted_distance(hotend, std::nullopt);
+        mapi::extruder_move(retract_compensation_distance, FILAMENT_CHANGE_FAST_LOAD_FEEDRATE);
+        planner.synchronize();
+        buddy::auto_retract().set_retracted_distance(hotend, standard_distance);
+    }
+
+    const M109Flags flags_post = {
+        .target_temp = previous_target_temp,
+        .wait_heat_or_cool = true,
+    };
+    M109_no_parser(active_extruder, flags_post);
 }
 
 bool AutoRetract::ready_to_extrude() const {

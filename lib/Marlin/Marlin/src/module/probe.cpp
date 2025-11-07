@@ -787,40 +787,7 @@ void prepare_for_nozzle_cleaning() {
   // Do not auto retract filaments marked do_not_auto_retract, they might get tangled in the extruder (BFW-6953)
   // Skip if retracted distance is known and filament is out of the nozzle
   if (!do_not_autoretract && retracted_distance < 5.0f) {
-
-    // Save target temperature to put back at the end
-    const auto previous_target_temp = static_cast<float>(thermalManager.degTargetHotend(active_extruder));
-
-    // Ensure safe temperature
-    const M109Flags flags_pre = {
-      // Filament target temperature can be altered through PrusaSlicer
-      // We don't have access to this information here, so we use filament presets
-      // Filament had to be loaded with the preset's temperature anyway, so we should be able to retract with it
-      // TODO: Could be passed to G29 as a parameter
-      .target_temp = static_cast<float>(config_store().get_filament_type(active_extruder).parameters().nozzle_temperature),
-    };
-    M109_no_parser(active_extruder, flags_pre);
-
-    {
-      PrintStatusMessageGuard pmg_retract;
-      pmg_retract.update<PrintStatusMessage::auto_retracting>({});
-
-      // Retract to standard distance 
-      const auto hotend = marlin_vars().active_hotend_id();
-      const auto standard_distance = buddy::AutoRetract::minimum_auto_retract_distance;
-      const auto retract_compensation_distance = (-1) * (standard_distance - retracted_distance);
-      assert(retract_compensation_distance < 0);
-      buddy::auto_retract().set_retracted_distance(hotend, std::nullopt);
-      mapi::extruder_move(retract_compensation_distance, FILAMENT_CHANGE_FAST_LOAD_FEEDRATE);
-      planner.synchronize();
-      buddy::auto_retract().set_retracted_distance(hotend, standard_distance);
-    }
-
-    const M109Flags flags_post = {
-      .target_temp = previous_target_temp,
-      .wait_heat_or_cool = true,
-    };
-    M109_no_parser(active_extruder, flags_post);
+    buddy::auto_retract().ensure_retracted_no_ramming();
   }
 }
 #endif

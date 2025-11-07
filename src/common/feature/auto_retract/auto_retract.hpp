@@ -34,6 +34,9 @@ public:
     /// If will_deretract(), executes the deretraction process and set retracted distance to unknown value (because it can be changed by printing moves without notice)
     void maybe_deretract_to_nozzle();
 
+    /// Retracts the filament quickly to minimal distance, with no ramming
+    void ensure_retracted_no_ramming();
+
     /// Save values to persistent storage
     void set_retracted_distance(uint8_t hotend, std::optional<float> distance);
 
