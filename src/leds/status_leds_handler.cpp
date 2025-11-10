@@ -184,11 +184,12 @@ namespace {
         { 0, 0, 0 } });
 #endif
     constexpr EnumArray<StateAnimation, typename FrameAnimation<3>::Params, static_cast<int>(StateAnimation::_last) + 1> animations {
-        { StateAnimation::Idle, { { 0, 0, 0 }, 1000, 0, 400, solid } },
 #if PRINTER_IS_PRUSA_iX()
+        { StateAnimation::Idle, { { 0, 0, 255 }, 1000, 0, 400, solid } },
             { StateAnimation::Printing, { { 0, 255, 0 }, 1000, 0, 400, solid } },
             { StateAnimation::Finishing, { { 0, 0, 255 }, 500, 0, 250, pulsing } },
 #else
+        { StateAnimation::Idle, { { 0, 0, 0 }, 1000, 0, 400, solid } },
             { StateAnimation::Printing, { { 0, 150, 255 }, 1000, 0, 400, solid } },
             { StateAnimation::Finishing, { { 0, 255, 0 }, 1000, 0, 400, solid } },
 #endif
@@ -290,10 +291,10 @@ void StatusLedsHandler::update() {
         state = marlin_to_anim_state();
     }
 
+    const auto &animation = animations[state];
+    color = animation.color;
     if (state != old_state) {
         old_state = state;
-        const auto &animation = animations[state];
-        color = animation.color;
         controller_instance().set(animation);
     }
 
