@@ -2134,6 +2134,9 @@ void Temperature::init() {
       while (analog_to_celsius_board(maxtemp_raw_BOARD) > BOARD_MAXTEMP) maxtemp_raw_BOARD -= TEMPDIRBOARD * (OVERSAMPLENR);
     #endif
   #endif
+
+  // At the end of init, load the temperatures
+  updateTemperaturesFromRawValues();
 }
 
 #if WATCH_HOTENDS
