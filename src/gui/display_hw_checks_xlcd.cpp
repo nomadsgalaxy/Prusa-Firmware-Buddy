@@ -6,13 +6,17 @@
 #include <device/peripherals.h>
 #include <logging/log.hpp>
 #include <utils/timing/rate_limiter.hpp>
-#include <utils/timing/combo_counter.hpp>
 #include <marlin_client.hpp>
+#include <option/has_human_interactions.h>
 
 LOG_COMPONENT_REF(GUI);
 
 #if HAS_TOUCH()
     #include <hw/touchscreen/touchscreen.hpp>
+#endif
+
+#if HAS_HUMAN_INTERACTIONS()
+    #include <utils/timing/combo_counter.hpp>
 #endif
 
 void lcd::communication_check() {
@@ -24,9 +28,11 @@ void lcd::communication_check() {
 
     bool do_reset = display::is_reset_required();
 
+#if HAS_HUMAN_INTERACTIONS()
     // Track consecutive display errors
     static ComboCounter<uint32_t, uint8_t> error_combo_counter { 10'000 };
     error_combo_counter.step(now, do_reset);
+#endif
 
 #if HAS_TOUCH()
     if (touchscreen.is_enabled()) {
@@ -39,6 +45,7 @@ void lcd::communication_check() {
         return;
     }
 
+#if HAS_HUMAN_INTERACTIONS()
     // If there's too many consecutive display errors, switch to lower refresh rate
     if (error_combo_counter.current_combo() >= 3 && !config_store().reduce_display_baudrate.get()) {
         // WarningType::DisplayProblemDetected is asking whether we should lower the refresh rate or not,
@@ -49,6 +56,7 @@ void lcd::communication_check() {
         marlin_client::set_warning(WarningType::DisplayProblemDetected);
         error_combo_counter.reset();
     }
+#endif
 
     display::complete_reinit();
     display::init();

@@ -1,6 +1,7 @@
 #include "warning_type.hpp"
 
 #include <bitset>
+#include <option/has_human_interactions.h>
 
 constexpr PhasesWarning warning_type_phase_constexpr(WarningType warning) {
     switch (warning) {
@@ -71,7 +72,7 @@ constexpr PhasesWarning warning_type_phase_constexpr(WarningType warning) {
         return PhasesWarning::HomingCalibrationFromMenuNeeded;
 #endif
 
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
     case WarningType::DisplayProblemDetected:
         return PhasesWarning::DisplayProblemDetected;
 #endif
@@ -133,7 +134,7 @@ static_assert([] {
     return true;
 }());
 
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
 // This one should be very low on the list (= priority).
 // When it's popped up, it doesn't propagate to connect, so it might hide some important warnings
 static_assert(std::to_underlying(WarningType::DisplayProblemDetected) == std::to_underlying(WarningType::_cnt) - 1);

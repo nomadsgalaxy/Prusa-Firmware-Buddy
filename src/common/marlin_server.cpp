@@ -104,6 +104,7 @@
 #include <option/has_emergency_stop.h>
 #include <option/has_uneven_bed_prompt.h>
 #include <option/has_chamber_vents.h>
+#include <option/has_human_interactions.h>
 
 #if HAS_DWARF()
     #include <puppies/Dwarf.hpp>
@@ -513,7 +514,7 @@ static void handle_warnings() {
         break;
 #endif
 
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
     case PhasesWarning::DisplayProblemDetected:
         config_store().reduce_display_baudrate.set(response == Response::Yes);
         break;

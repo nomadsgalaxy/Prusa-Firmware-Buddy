@@ -6,6 +6,7 @@
 #include <fsm/safety_timer_phases.hpp>
 #include <option/has_chamber_vents.h>
 #include <option/has_gearbox_alignment.h>
+#include <option/has_human_interactions.h>
 #include <option/has_mmu2.h>
 #include <option/has_dwarf.h>
 #include <option/has_input_shaper_calibration.h>
@@ -104,7 +105,7 @@ bool is_warning_attention(const fsm::BaseData &data) {
 #if HAS_SELFTEST()
     case ErrCode::ERR_SYSTEM_ACTION_SELFTEST_REQUIRED:
 #endif
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
         // Local issue, do not report to connect
     case ErrCode::ERR_ELECTRO_DISPLAY_PROBLEM_DETECTED:
 #endif
@@ -572,7 +573,7 @@ ErrCode warning_type_to_error_code(WarningType wtype) {
         return ErrCode::CONNECT_NOT_DOWNLOADED;
     case WarningType::BuddyMCUMaxTemp:
         return ErrCode::CONNECT_BUDDY_MCU_MAX_TEMP;
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
     case WarningType::DisplayProblemDetected:
         return ErrCode::ERR_ELECTRO_DISPLAY_PROBLEM_DETECTED;
 #endif

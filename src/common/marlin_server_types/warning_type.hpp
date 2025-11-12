@@ -3,6 +3,7 @@
 #include "client_response.hpp"
 #include <guiconfig/guiconfig.h>
 #include <option/has_chamber_vents.h>
+#include <option/has_human_interactions.h>
 #include <option/has_remote_bed.h>
 #include <option/has_chamber_filtration_api.h>
 #include <option/xbuddy_extension_variant_standard.h>
@@ -93,7 +94,7 @@ enum class WarningType : uint32_t {
     HomingCalibrationFromMenuNeeded,
 #endif
     AccelerometerCommunicationFailed,
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
     DisplayProblemDetected,
 #endif
     _cnt,
