@@ -217,7 +217,9 @@ void save_message(MsgType type, uint16_t error_code, const char *error, const ch
 void force_save_message_without_dump(MsgType type, uint16_t error_code, const char *error, const char *title) {
     static_assert(std::to_underlying(ErrCode::ERR_UNDEF) == 0, "This uses 0 as undefined error");
 
-    assert(error != nullptr);
+    if (error == nullptr) {
+        error = "";
+    }
 
     if (title == nullptr) {
         title = "";
