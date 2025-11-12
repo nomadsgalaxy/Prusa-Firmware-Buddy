@@ -7,7 +7,6 @@
 #include <option/has_esp.h>
 #include <option/has_toolchanger.h>
 #include <option/has_side_leds.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_manual_belt_tuning.h>
 #include <option/has_i2c_expander.h>
 #include <option/has_chamber_api.h>
@@ -125,9 +124,6 @@ void M870(); ///< Open or close ventilation intake
 void M591(); //< configure Filament stuck monitoring
 #if PRINTER_IS_PRUSA_iX()
 void M853(); //< Align z motors over bed pins/end of axis
-#endif
-#if HAS_BELT_TUNING()
-void M960(); //< Belt tuning
 #endif
 #if HAS_MANUAL_BELT_TUNING()
 void M961(); //< Manual Belt tuning

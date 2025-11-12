@@ -530,8 +530,6 @@ set_feature_for_printers(HAS_SHEET_SUPPORT "MINI" "MK3.5")
 set_feature_for_printers(HAS_NFC "MK3.5" "MK4" "COREONE" "COREONEL")
 
 set_feature_for_printers(HAS_NOZZLE_CLEANER "iX")
-# BELT_TUNING requires SELFTEST
-set_feature_for_printers(HAS_BELT_TUNING "iX")
 set_feature_for_printers(HAS_MANUAL_BELT_TUNING "COREONE" "COREONEL" "iX")
 set_feature_for_printers_master_board(HAS_I2C_EXPANDER "MK3.5" "MK4" "COREONE" "COREONEL")
 set_feature_for_printers(HAS_WASTEBIN "iX")

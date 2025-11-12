@@ -21,7 +21,6 @@
 #include <guiconfig/guiconfig.h>
 #include <option/filament_sensor.h>
 #include <option/has_attachable_accelerometer.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_coldpull.h>
 #include <option/has_emergency_stop.h>
 #include <option/has_esp.h>
@@ -560,44 +559,6 @@ enum class PhasesSerialPrinting : PhaseUnderlyingType {
 };
 constexpr inline ClientFSM client_fsm_from_phase(PhasesSerialPrinting) { return ClientFSM::Serial_printing; }
 
-#if HAS_BELT_TUNING()
-enum class PhaseBeltTuning : PhaseUnderlyingType {
-    init,
-
-    /// The user is prompted to loose the belts so that the gantry is aligned
-    ask_for_gantry_align,
-
-    /// Homing, selecting a proper tool and moving it to the measuring position
-    preparing,
-
-    /// Asking the user to install the dampeners
-    ask_for_dampeners_installation,
-
-    /// Calibrating accelerometer
-    calibrating_accelerometer,
-
-    /// Measuring the vibrations and such
-    measuring,
-
-    /// We vibrate on the highest measured peak frequency and let the user evaluate whether the belts are resonating.
-    /// This is basically a measurement validity check
-    vibration_check,
-
-    /// Presenting the results to the user
-    results,
-
-    /// Asking the user to remove the dampeners
-    ask_for_dampeners_uninstallation,
-
-    /// Some error occured
-    error,
-
-    finish,
-    _last = finish,
-};
-constexpr inline ClientFSM client_fsm_from_phase(PhaseBeltTuning) { return ClientFSM::BeltTuning; }
-#endif
-
 #if HAS_GEARBOX_ALIGNMENT()
 enum class PhaseGearboxAlignment : PhaseUnderlyingType {
     intro,
@@ -1030,22 +991,6 @@ inline constexpr EnumArray<PhasesInputShaperCalibration, PhaseResponses, CountPh
         { PhasesInputShaperCalibration::bad_results, { Response::Ok } },
         { PhasesInputShaperCalibration::results, { Response::Yes, Response::No } },
         { PhasesInputShaperCalibration::finish, {} },
-};
-#endif
-
-#if HAS_BELT_TUNING()
-inline constexpr EnumArray<PhaseBeltTuning, PhaseResponses, CountPhases<PhaseBeltTuning>()> belt_tuning_responses {
-    { PhaseBeltTuning::init, {} },
-    { PhaseBeltTuning::ask_for_gantry_align, { Response::Done, Response::Abort } },
-    { PhaseBeltTuning::preparing, { Response::Abort } },
-    { PhaseBeltTuning::ask_for_dampeners_installation, { Response::Done, Response::Abort } },
-    { PhaseBeltTuning::calibrating_accelerometer, { Response::Abort } },
-    { PhaseBeltTuning::measuring, { Response::Abort } },
-    { PhaseBeltTuning::vibration_check, { Response::Yes, Response::No } },
-    { PhaseBeltTuning::results, { Response::Retry, Response::Finish } },
-    { PhaseBeltTuning::ask_for_dampeners_uninstallation, { Response::Done } },
-    { PhaseBeltTuning::error, { Response::Abort, Response::Retry } },
-    { PhaseBeltTuning::finish, {} },
 };
 #endif
 

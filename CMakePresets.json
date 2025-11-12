@@ -3555,10 +3555,6 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_BELT_TUNING": {
-                    "type": "BOOL",
-                    "value": "NO"
-                },
                 "HAS_CANCEL_OBJECT": {
                     "type": "BOOL",
                     "value": "NO"
@@ -3643,10 +3639,6 @@
                     "value": "NO"
                 },
                 "MDNS": {
-                    "type": "BOOL",
-                    "value": "NO"
-                },
-                "HAS_BELT_TUNING": {
                     "type": "BOOL",
                     "value": "NO"
                 },
@@ -3737,10 +3729,6 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_BELT_TUNING": {
-                    "type": "BOOL",
-                    "value": "NO"
-                },
                 "HAS_CANCEL_OBJECT": {
                     "type": "BOOL",
                     "value": "NO"
@@ -3825,10 +3813,6 @@
                     "value": "NO"
                 },
                 "MDNS": {
-                    "type": "BOOL",
-                    "value": "NO"
-                },
-                "HAS_BELT_TUNING": {
                     "type": "BOOL",
                     "value": "NO"
                 },

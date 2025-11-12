@@ -54,10 +54,6 @@
     #include "screen_input_shaper_calibration.hpp"
 #endif
 
-#if HAS_BELT_TUNING()
-    #include <gui/wizard/screen_belt_tuning_wizard.hpp>
-#endif
-
 #if HAS_GEARBOX_ALIGNMENT()
     #include "feature/gearbox_alignment/screen_gearbox_alignment.hpp"
 #endif
@@ -282,9 +278,6 @@ using FSMDisplayConfig = FSMDisplayConfigDef<
 #endif
 #if HAS_INPUT_SHAPER_CALIBRATION()
     FSMScreenDef<ClientFSM::InputShaperCalibration, ScreenInputShaperCalibration>,
-#endif
-#if HAS_BELT_TUNING()
-    FSMScreenDef<ClientFSM::BeltTuning, ScreenBeltTuningWizard>,
 #endif
 #if HAS_GEARBOX_ALIGNMENT()
     FSMScreenDef<ClientFSM::GearboxAlignment, ScreenGearboxAlignment>,

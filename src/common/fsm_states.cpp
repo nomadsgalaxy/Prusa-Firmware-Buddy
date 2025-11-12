@@ -56,9 +56,6 @@ static constexpr uint32_t score(ClientFSM fsm_type) {
 #if HAS_INPUT_SHAPER_CALIBRATION()
     case ClientFSM::InputShaperCalibration:
 #endif
-#if HAS_BELT_TUNING()
-    case ClientFSM::BeltTuning:
-#endif
 #if HAS_LOADCELL()
     case ClientFSM::NozzleCleaningFailed:
 #endif

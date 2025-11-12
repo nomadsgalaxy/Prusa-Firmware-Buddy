@@ -15,7 +15,6 @@
 #include <option/has_toolchanger.h>
 #include <option/has_side_leds.h>
 #include <option/has_leds.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_manual_belt_tuning.h>
 #include <option/has_door_sensor_calibration.h>
 #include <option/has_automatic_chamber_vents.h>
@@ -239,11 +238,6 @@ bool GcodeSuite::process_parsed_command_custom(bool no_ok) {
             break;
         case 920:
             PrusaGcodeSuite::M920();
-            break;
-#endif
-#if HAS_BELT_TUNING()
-        case 960:
-            PrusaGcodeSuite::M960();
             break;
 #endif
 #if HAS_MANUAL_BELT_TUNING()

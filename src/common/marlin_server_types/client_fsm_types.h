@@ -9,7 +9,6 @@
 #include <option/has_phase_stepping_calibration.h>
 #include <option/has_coldpull.h>
 #include <option/has_input_shaper_calibration.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_side_fsensor.h>
 #include <option/has_emergency_stop.h>
 #include <option/xl_enclosure_support.h>
@@ -58,9 +57,6 @@ enum class ClientFSM : uint8_t {
     #endif
     #if HAS_INPUT_SHAPER_CALIBRATION()
     InputShaperCalibration,
-    #endif
-    #if HAS_BELT_TUNING()
-    BeltTuning,
     #endif
     #if HAS_GEARBOX_ALIGNMENT()
     GearboxAlignment,

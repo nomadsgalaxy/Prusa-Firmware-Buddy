@@ -4,10 +4,6 @@ if(HAS_CANCEL_OBJECT)
   add_subdirectory(cancel_object)
 endif()
 
-if(HAS_BELT_TUNING)
-  add_subdirectory(belt_tuning)
-endif()
-
 if(HAS_MANUAL_BELT_TUNING)
   add_subdirectory(manual_belt_tuning)
 endif()

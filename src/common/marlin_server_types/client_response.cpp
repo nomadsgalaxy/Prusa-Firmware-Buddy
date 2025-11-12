@@ -46,9 +46,6 @@ constinit const EnumArray<ClientFSM, std::span<const PhaseResponses>, ClientFSM:
 #if HAS_INPUT_SHAPER_CALIBRATION()
         { ClientFSM::InputShaperCalibration, input_shaper_calibration_responses },
 #endif
-#if HAS_BELT_TUNING()
-        { ClientFSM::BeltTuning, belt_tuning_responses },
-#endif
 #if HAS_GEARBOX_ALIGNMENT()
         { ClientFSM::GearboxAlignment, gearbox_alignment_responses },
 #endif

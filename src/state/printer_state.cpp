@@ -21,7 +21,6 @@
 #include <option/has_door_sensor_calibration.h>
 #include <option/xbuddy_extension_variant.h>
 #include <option/has_side_fsensor.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_human_interactions.h>
 
 #if HAS_LOADCELL()
@@ -263,9 +262,6 @@ DeviceState get_state(bool ready) {
 #if HAS_INPUT_SHAPER_CALIBRATION()
     case ClientFSM::InputShaperCalibration:
 #endif
-#if HAS_BELT_TUNING()
-    case ClientFSM::BeltTuning:
-#endif
 #if HAS_GEARBOX_ALIGNMENT()
     case ClientFSM::GearboxAlignment:
 #endif
@@ -481,9 +477,6 @@ StateWithDialog get_state_with_dialog(bool ready) {
 #endif
 #if HAS_INPUT_SHAPER_CALIBRATION()
     case ClientFSM::InputShaperCalibration:
-#endif
-#if HAS_BELT_TUNING()
-    case ClientFSM::BeltTuning:
 #endif
 #if HAS_GEARBOX_ALIGNMENT()
     case ClientFSM::GearboxAlignment:
