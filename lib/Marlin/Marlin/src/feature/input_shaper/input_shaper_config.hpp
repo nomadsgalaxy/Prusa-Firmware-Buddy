@@ -113,6 +113,9 @@ inline constexpr AxisConfig axis_x_default {
 #elif PRINTER_IS_PRUSA_COREONEL()
     .type = Type::ei,
     .frequency = 65.0,
+#elif PRINTER_IS_PRUSA_iX()
+    .type = Type::mzv,
+    .frequency = 53.0,
 #else
     .type = Type::mzv,
     .frequency = 50.7f,
@@ -135,6 +138,9 @@ inline constexpr AxisConfig axis_y_default {
 #elif PRINTER_IS_PRUSA_COREONEL()
     .type = Type::ei,
     .frequency = 50.0,
+#elif PRINTER_IS_PRUSA_iX()
+    .type = Type::mzv,
+    .frequency = 42.0,
 #else
     .type = Type::mzv,
     .frequency = 40.6f,
