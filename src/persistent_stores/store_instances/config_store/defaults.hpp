@@ -196,8 +196,16 @@ namespace defaults {
 #endif
     };
 
+    inline constexpr uint8_t nozzle_is_hardened {
+#if PRINTER_IS_PRUSA_iX()
+        1 << 0, // Bitset -> first and only nozzle
+#else
+        0,
+#endif
+    };
+
     inline constexpr uint8_t nozzle_is_high_flow {
-#if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
+#if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL() || PRINTER_IS_PRUSA_iX()
         1 << 0, // Bitset -> first and only nozzle
 #else
         0,

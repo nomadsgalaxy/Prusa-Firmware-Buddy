@@ -426,7 +426,7 @@ struct CurrentStore
     static_assert(HOTENDS <= 8);
 
     /// Stores whether a nozzle is hardened (resistant to abrasive filament) or not. One bit per each hotend
-    StoreItem<std::bitset<8>, 0, ItemFlag::hw_config, journal::hash("Nozzle is Hardened")> nozzle_is_hardened;
+    StoreItem<std::bitset<8>, defaults::nozzle_is_hardened, ItemFlag::hw_config, journal::hash("Nozzle is Hardened")> nozzle_is_hardened;
 
     /// Stores whether a nozzle is high-flow (supports high-flow print profile) or not. One bit per each hotend
     StoreItem<std::bitset<8>, defaults::nozzle_is_high_flow, ItemFlag::hw_config, journal::hash("Nozzle is High-Flow")> nozzle_is_high_flow;
