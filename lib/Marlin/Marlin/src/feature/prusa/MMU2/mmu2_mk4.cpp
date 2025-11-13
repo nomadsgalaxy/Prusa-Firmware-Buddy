@@ -581,7 +581,7 @@ bool MMU2::ToolChangeCommonOnce(uint8_t slot) {
             // get the filament (including a potential string) completely out
             // after we've blocked the runout.
             if (extruder != MMU2_NO_TOOL) {
-                extruder_move(MMU2_RETRY_UNLOAD_FINISH_LENGTH, MMU2_RETRY_UNLOAD_FINISH_FEED_RATE);
+                extruder_move(MMU2_RETRY_UNLOAD_FINISH_LENGTH, logic.PulleySlowFeedRate());
 
                 // Monitor the fsensor - detect the current E-motor stepper position when fsensor turns off.
                 // That switch has some ideal (or expected) distance,
