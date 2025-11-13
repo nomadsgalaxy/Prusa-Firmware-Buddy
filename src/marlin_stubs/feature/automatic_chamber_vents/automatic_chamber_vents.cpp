@@ -8,6 +8,8 @@
 #include <Marlin/src/module/planner.h>
 #include <printers.h>
 
+#include <feature/chamber/chamber.hpp>
+
 namespace automatic_chamber_vents {
 namespace {
 
@@ -97,6 +99,7 @@ bool open() {
         return false;
     }
     switch_lever(VentState::open);
+    buddy::chamber().set_vent_state(buddy::Chamber::VentState::open);
     after();
     planner.synchronize(); // Wait for all planned moves to complete
     return true;
@@ -111,6 +114,7 @@ bool close() {
     }
 
     switch_lever(VentState::close);
+    buddy::chamber().set_vent_state(buddy::Chamber::VentState::closed);
     after();
     planner.synchronize(); // Wait for all planned moves to complete
     return true;
