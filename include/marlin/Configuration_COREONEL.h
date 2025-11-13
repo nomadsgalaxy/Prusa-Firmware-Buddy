@@ -552,13 +552,13 @@
  *                                      X, Y, Z, E0 [, E1[, E2[, E3[, E4[, E5]]]]]
  */
 #define DEFAULT_MAX_FEEDRATE \
-    { 500, 500, 15, 100 }
+    { 500, 500, 15, 50 }
 
 /// HW limits of feed rate
 #define HWLIMIT_NORMAL_MAX_FEEDRATE \
-    { 500, 500, 15, 100 }
+    { 500, 500, 15, 50 }
 #define HWLIMIT_STEALTH_MAX_FEEDRATE \
-    { 160, 160, 8, 100 }
+    { 160, 160, 8, 50 }
 
 /**
  * Default Max Acceleration (change/s) change = mm/s
