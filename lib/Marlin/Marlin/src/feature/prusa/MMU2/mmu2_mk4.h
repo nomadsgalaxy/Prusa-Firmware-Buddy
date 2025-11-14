@@ -336,6 +336,9 @@ private:
     /// Save print and park the print head
     void SaveAndPark(bool move_axes);
 
+    /// Prepare parking position at the beginning of every command which may park due to an error
+    void SaveResumePos();
+
     /// Resume hotend temperature, if it was cooled. Safe to call if we aren't saved.
     void ResumeHotendTemp();
 
