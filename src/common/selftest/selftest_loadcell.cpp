@@ -10,6 +10,7 @@
 #include "selftest_log.hpp"
 #include "loadcell.hpp"
 #include <sound.hpp>
+#include <mapi/parking.hpp>
 #include <module/temperature.h>
 #include <module/endstops.h>
 #include <feature/motordriver_util.h>
@@ -74,30 +75,21 @@ LoopResult CSelftestPart_Loadcell::statePrepareParking() {
 }
 
 LoopResult CSelftestPart_Loadcell::stateParking() {
-    // Move Z before homing XY
+    log_info(Selftest, "%s, parking", rConfig.partname);
+
     if (rConfig.z_extra_pos > current_position.z) {
         // Z move might hit the end of the axis
         current_position.z = rConfig.z_extra_pos;
         line_to_current_position(rConfig.z_extra_pos_fr);
-        log_info(Selftest, "%s, moving away from the bed", rConfig.partname);
         planner.synchronize();
     }
 
-    if (axes_need_homing(X_AXIS | Y_AXIS)) {
-        // We cannot home Z, because we don't yet know if Loadcell works
-        GcodeSuite::G28_no_parser(true, true, false, { .only_if_needed = true, .precise = false });
-        log_info(Selftest, "%s, have to home XY", rConfig.partname);
-        planner.synchronize();
-    } else {
-        // Park nozzle
-        current_position.x = X_NOZZLE_PARK_POINT;
-        current_position.y = Y_NOZZLE_PARK_POINT;
-        line_to_current_position(HOMING_FEEDRATE_XY);
-        log_info(Selftest, "%s, moving to park position", rConfig.partname);
-        planner.synchronize();
-    }
+#if PRINTER_IS_PRUSA_iX()
+    mapi::home_if_needed_and_park(mapi::ZAction::no_move, mapi::park_positions[mapi::ParkPosition::load]);
+#else
+    mapi::home_if_needed_and_park(mapi::ZAction::no_move, mapi::park_positions[mapi::ParkPosition::park]);
+#endif
 
-    log_info(Selftest, "%s move up finished", rConfig.partname);
     return LoopResult::RunNext;
 }
 
