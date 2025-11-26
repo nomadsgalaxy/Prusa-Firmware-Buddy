@@ -8,6 +8,7 @@ def replace_characters(file_path):
         '’': "'",  # RIGHT SINGLE QUOTATION MARK
         '“': "'",  # quotation mark
         '”': "'",  # quotation mark
+        '„': "'",  # quotation mark
         '…': '...',  # HORIZONTAL ELLIPSIS
         '\u00A0': ' ',  # NO BREAK SPACE
         'µ': 'u',  # MICRO SIGN
