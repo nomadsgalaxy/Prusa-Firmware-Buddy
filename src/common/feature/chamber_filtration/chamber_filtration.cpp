@@ -94,38 +94,36 @@ void ChamberFiltration::step() {
 
     if (!is_enabled()) {
         output_pwm_ = {};
-        is_printing_prev_ = false;
-        needs_filtration_ = false;
+        needs_filtration_ = std::nullopt;
         return;
     }
 
     // Only start filtering after we've extruded first filament
     // We don't want the filtering fans to slow down the chamber heatup
     const bool is_printing = marlin_server::is_printing_state(marlin_vars().print_state.get()) && (planner.max_printed_z > 0);
-    const bool was_printing = is_printing_prev_;
-    is_printing_prev_ = is_printing;
 
-    if (is_printing && !was_printing) {
+    if (is_printing && !needs_filtration_.has_value()) {
         // Checking is a bit expensive, do it only at the beginning of the print
         update_needs_filtration();
+
+    } else if (!is_printing) {
+        // Reset the flag after the print is done so that it doesn't affect the next print
+        needs_filtration_ = std::nullopt;
     }
 
     const auto now_s = ticks_s();
 
     // Determine output PWM of the fans
-    if (!needs_filtration_.value_or(false)) {
-        output_pwm_ = {};
-
-    } else if (is_printing) {
+    if (is_printing && needs_filtration_.value_or(false)) {
         output_pwm_ = config_store().chamber_print_filtration_enable.get() ? config_store().chamber_mid_print_filtration_pwm.get() : PWM255(0);
-        last_print_s_ = now_s;
+        last_needed_filtration_s_ = now_s;
 
-    } else if (config_store().chamber_post_print_filtration_enable.get() && ticks_diff(now_s, last_print_s_) <= config_store().chamber_post_print_filtration_duration_min.get() * 60) {
+    } else if (last_needed_filtration_s_ > 0 && config_store().chamber_post_print_filtration_enable.get() && ticks_diff(now_s, last_needed_filtration_s_) <= config_store().chamber_post_print_filtration_duration_min.get() * 60) {
         output_pwm_ = config_store().chamber_post_print_filtration_pwm.get();
 
     } else {
         output_pwm_ = {};
-        needs_filtration_ = std::nullopt; // Reset the flag after the print is done so that it doesn't affect the next print
+        last_needed_filtration_s_ = 0;
     }
 
     const auto commit_unaccounted_filter_usage = [&](int min_s = 1) {
