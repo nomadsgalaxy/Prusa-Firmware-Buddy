@@ -111,7 +111,7 @@ bool is_warning_attention(const fsm::BaseData &data) {
 #if HAS_SELFTEST()
     case ErrCode::ERR_SYSTEM_ACTION_SELFTEST_REQUIRED:
 #endif
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
         // Local issue, do not report to connect
     case ErrCode::ERR_ELECTRO_DISPLAY_PROBLEM_DETECTED:
 #endif
