@@ -1,6 +1,7 @@
 target_sources(
   firmware
   PRIVATE bootstrap_state.cpp
+          cxa_guard.cpp
           digest.cpp
           fatfs.cpp
           filesystem.cpp
