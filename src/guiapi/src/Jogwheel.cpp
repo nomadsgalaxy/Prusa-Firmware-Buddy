@@ -164,8 +164,6 @@ void Jogwheel::Update1msFromISR() {
 
     uint8_t signals = ReadHwInputsFromISR();
 
-    // initialization of static variable to inverted signals, so first value si filtered out
-    static uint8_t signals_filter = ~signals;
     if (signals_filter != signals) {
         signals_filter = signals; // noise detection
         return;
