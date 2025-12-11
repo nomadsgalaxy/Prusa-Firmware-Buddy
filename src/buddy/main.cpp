@@ -15,6 +15,7 @@
 #include "buffered_serial.hpp"
 #include "bsod_gui.hpp"
 #include <config_store/store_instance.hpp>
+#include <Marlin/src/feature/prusa/e-stall_detector.h>
 #include <wdt.hpp>
 #include <crash_dump/dump.hpp>
 #include "error_codes.hpp"
@@ -197,6 +198,7 @@ static void resources_update() {
 
 // Initializes static variables of singletons which are accessed from ISRs (requires locking a mutex)
 static void init_isr_statics() {
+    EMotorStallDetector::Instance();
     Fans::print(0);
     Fans::heat_break(0);
     sensor_data();
