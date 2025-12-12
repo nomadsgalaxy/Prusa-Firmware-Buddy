@@ -983,7 +983,15 @@ void Pause::unload_start_process([[maybe_unused]] Response response) {
 
 #if HAS_MMU2()
     if (FSensors_instance().HasMMU()) {
-        set(LoadState::mmu_unload_start);
+        // filament_stuck needs special handling in MMU-mode - it must be reported on the screen just like in normal mode
+        // and the user must resolve it by hand. Currently, there is no way the MMU can safely help in resolving the error (too many potential edge-cases)
+        if (load_type == LoadType::filament_stuck) {
+    #if HAS_LOADCELL()
+            set(LoadState::filament_stuck_ask);
+    #endif
+        } else {
+            set(LoadState::mmu_unload_start);
+        }
         return;
     }
 #endif
@@ -1094,7 +1102,12 @@ void Pause::unloaded_ask_process(Response response) {
     setPhase(PhasesLoadUnload::IsFilamentUnloaded);
 
     if (response == Response::Yes) {
-        set(LoadState::filament_not_in_fs);
+        // skip fsensor check for E-stall on MMU, FINDA remains pressed, because it makes no sense pulling filament out of the MMU as well.
+        if (load_type == LoadType::filament_stuck && FSensors_instance().HasMMU()) {
+            set(LoadState::filament_push_ask);
+        } else {
+            set(LoadState::filament_not_in_fs);
+        }
         return;
     }
     if (response == Response::No) {
