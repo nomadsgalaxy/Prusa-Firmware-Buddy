@@ -201,6 +201,9 @@ static void init_isr_statics() {
     EMotorStallDetector::Instance();
     Fans::print(0);
     Fans::heat_break(0);
+#if XL_ENCLOSURE_SUPPORT()
+    Fans::enclosure();
+#endif
     sensor_data();
     GetExtruderFSensor(0);
     GetSideFSensor(0);
