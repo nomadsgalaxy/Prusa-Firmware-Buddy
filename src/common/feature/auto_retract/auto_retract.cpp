@@ -90,7 +90,7 @@ void AutoRetract::maybe_retract_from_nozzle(const ProgressCallback &progress_cal
 
 #if HAS_NOZZLE_CLEANER()
     // If we have nozzle cleaner, make sure we are parked over the bin to avoid pooping on the bed
-    mapi::park(mapi::ZAction::absolute_move, mapi::ParkingPosition::from_xyz_pos({ { XYZ_WASTEBIN_POINT } }));
+    mapi::park(mapi::ZAction::no_move, mapi::ParkingPosition::from_xyz_pos({ { XYZ_WASTEBIN_POINT } }));
 #endif
 
     // Finish all pending movements so that the progress reporting is nice
