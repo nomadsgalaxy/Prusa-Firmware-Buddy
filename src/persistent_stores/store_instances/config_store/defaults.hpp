@@ -90,6 +90,13 @@ namespace defaults {
     inline constexpr uint16_t language { 0xffff };
 
     inline constexpr uint32_t footer_draw_type { footer::ItemDrawCnf::get_default() };
+    inline constexpr bool prusalink_enabled {
+#if PRINTER_IS_PRUSA_iX()
+        false
+#else
+        true
+#endif
+    };
     inline constexpr std::array<char, pl_password_size> prusalink_password { "" };
 
     inline constexpr std::array<char, connect_host_size + 1> connect_host {

@@ -25,7 +25,9 @@ using ScreenMenuNetwork__ = ScreenMenu<EFooter::Off,
 #if BUDDY_ENABLE_CONNECT()
     MI_PRUSA_CONNECT,
 #endif
+#if !PRINTER_IS_PRUSA_iX()
     MI_PRUSALINK,
+#endif
     MI_METRICS_SETTINGS>;
 
 class ScreenMenuNetwork : public ScreenMenuNetwork__ {
