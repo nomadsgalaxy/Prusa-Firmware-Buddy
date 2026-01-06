@@ -1780,8 +1780,7 @@ static bool has_impact(const CalibrationResult &r) {
     return r.params.mag >= threshold;
 }
 
-std::expected<std::array<MotorPhaseCorrection, 2>, CalibrateAxisError>
-phase_stepping::calibrate_axis(AxisEnum axis, CalibrateAxisHooks &hooks) {
+void phase_stepping::calibrate_axis(AxisEnum axis, CalibrateAxisHooks &hooks, CalibrateAxisResult &result) {
     mapi::ensure_tool_with_accelerometer_picked();
     reset_compensation(axis);
     phase_stepping::EnsureEnabled _;
@@ -1799,14 +1798,15 @@ phase_stepping::calibrate_axis(AxisEnum axis, CalibrateAxisHooks &hooks) {
     });
     if (!speed_analysis) {
         log_error(PhaseStepping, "Speed analysis failed: %s", to_string(speed_analysis.error()));
-        return std::unexpected(speed_analysis.error());
+        result = std::unexpected(speed_analysis.error());
+        return;
     }
 
     int phases_count = std::count_if(speed_analysis->begin(), speed_analysis->end(),
         [](const auto &harmonic_speed) { return harmonic_speed.harmonic != 0; });
     hooks.on_motor_characterization_result(phases_count);
 
-    std::array<MotorPhaseCorrection, 2> result;
+    auto &ok_result = result.emplace();
     int current_phase = 0;
     // We first calibrate even harmonics, then odd harmonics
     for (int parity = 0; parity < 2; parity++) {
@@ -1822,10 +1822,11 @@ phase_stepping::calibrate_axis(AxisEnum axis, CalibrateAxisHooks &hooks) {
             });
             if (!calib_res) {
                 log_error(PhaseStepping, "Calibration failed: %s", to_string(calib_res.error()));
-                return std::unexpected(calib_res.error());
+                result = std::unexpected(calib_res.error());
+                return;
             }
 
-            auto [f_result, b_result] = *calib_res;
+            auto &[f_result, b_result] = *calib_res;
 
             // Motor might not have a defect on the current harmonics or the
             // driver resolution might not be enough to fix it. In that case,
@@ -1836,8 +1837,8 @@ phase_stepping::calibrate_axis(AxisEnum axis, CalibrateAxisHooks &hooks) {
                 }
             }
 
-            result[0][harmonic_speed.harmonic] = f_result.params;
-            result[1][harmonic_speed.harmonic] = b_result.params;
+            ok_result[0][harmonic_speed.harmonic] = f_result.params;
+            ok_result[1][harmonic_speed.harmonic] = b_result.params;
             hooks.on_calibration_phase_result(f_result.score, b_result.score);
 
             // Apply the correction to the motor
@@ -1851,8 +1852,6 @@ phase_stepping::calibrate_axis(AxisEnum axis, CalibrateAxisHooks &hooks) {
     }
 
     hooks.on_termination();
-
-    return result;
 }
 
 const char *phase_stepping::to_string(CalibrateAxisError err) {

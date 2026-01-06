@@ -89,7 +89,8 @@ public:
 };
 
 void calibration_helper(AxisEnum axis, CalibrateAxisHooks &hooks) {
-    auto result = phase_stepping::calibrate_axis(axis, hooks);
+    phase_stepping::CalibrateAxisResult result;
+    phase_stepping::calibrate_axis(axis, hooks, result);
     if (result.has_value()) {
         phase_stepping::save_to_persistent_storage_without_enabling(axis);
     } else {

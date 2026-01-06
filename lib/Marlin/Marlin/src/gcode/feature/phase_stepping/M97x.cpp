@@ -370,7 +370,8 @@ void GcodeSuite::M972() {
     Planner::synchronize();
 
     CalibrateAxisHooks hooks;
-    auto result = phase_stepping::calibrate_axis(axis, hooks);
+    phase_stepping::CalibrateAxisResult result;
+    phase_stepping::calibrate_axis(axis, hooks, result);
 
     if (!result.has_value()) {
         SERIAL_ECHO(to_string(result.error()));
