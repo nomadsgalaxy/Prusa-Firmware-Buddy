@@ -109,19 +109,19 @@ typedef struct input_shaper_state_t {
 
 } input_shaper_state_t;
 
-input_shaper_pulses_t create_null_input_shaper_pulses();
+void create_null_input_shaper_pulses(input_shaper_pulses_t &is_pulses);
 
-input_shaper_pulses_t create_zv_input_shaper_pulses(float shaper_freq, float damping_ratio);
+void create_zv_input_shaper_pulses(input_shaper_pulses_t &is_pulses, float shaper_freq, float damping_ratio);
 
-input_shaper_pulses_t create_zvd_input_shaper_pulses(float shaper_freq, float damping_ratio);
+void create_zvd_input_shaper_pulses(input_shaper_pulses_t &is_pulses, float shaper_freq, float damping_ratio);
 
-input_shaper_pulses_t create_mzv_input_shaper_pulses(float shaper_freq, float damping_ratio);
+void create_mzv_input_shaper_pulses(input_shaper_pulses_t &is_pulses, float shaper_freq, float damping_ratio);
 
-input_shaper_pulses_t create_ei_input_shaper_pulses(float shaper_freq, float damping_ratio, float vibration_reduction = 20.f);
+void create_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, float shaper_freq, float damping_ratio, float vibration_reduction = 20.f);
 
-input_shaper_pulses_t create_2hump_ei_input_shaper_pulses(float shaper_freq, float damping_ratio, float vibration_reduction = 20.f);
+void create_2hump_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, float shaper_freq, float damping_ratio, float vibration_reduction = 20.f);
 
-input_shaper_pulses_t create_3hump_ei_input_shaper_pulses(float shaper_freq, float damping_ratio, float vibration_reduction = 20.f);
+void create_3hump_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, float shaper_freq, float damping_ratio, float vibration_reduction = 20.f);
 
 class InputShaper {
 

@@ -214,53 +214,39 @@ input_shaper::Shaper input_shaper::get(const float damping_ratio, const float sh
     bsod("input_shaper::Type out of range");
 }
 
-input_shaper_pulses_t create_zv_input_shaper_pulses(const float shaper_freq, const float damping_ratio) {
+void create_zv_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, 0.f, input_shaper::Type::zv);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_zvd_input_shaper_pulses(const float shaper_freq, const float damping_ratio) {
+void create_zvd_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, 0.f, input_shaper::Type::zvd);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_mzv_input_shaper_pulses(const float shaper_freq, const float damping_ratio) {
+void create_mzv_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, 0.f, input_shaper::Type::mzv);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_ei_input_shaper_pulses(const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
+void create_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, vibration_reduction, input_shaper::Type::ei);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_2hump_ei_input_shaper_pulses(const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
+void create_2hump_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, vibration_reduction, input_shaper::Type::ei_2hump);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_3hump_ei_input_shaper_pulses(const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
+void create_3hump_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, vibration_reduction, input_shaper::Type::ei_3hump);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_null_input_shaper_pulses() {
+void create_null_input_shaper_pulses(input_shaper_pulses_t &is_pulses) {
     input_shaper::Shaper shaper = input_shaper::get(NAN, NAN, NAN, input_shaper::Type::null);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
 void input_shaper_step_generator_init(const move_t &move, input_shaper_step_generator_t &step_generator, step_generator_state_t &step_generator_state) {

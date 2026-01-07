@@ -45,45 +45,46 @@ Config get_config_for_m74() {
     return result;
 }
 
-static input_shaper_pulses_t get_input_shaper(const input_shaper::Type input_shaper_type, const float input_shaper_frequency, const float damping_ratio, const float vibration_reduction) {
+static void get_input_shaper(input_shaper_pulses_t &result, const input_shaper::Type input_shaper_type, const float input_shaper_frequency, const float damping_ratio, const float vibration_reduction) {
     switch (input_shaper_type) {
     case input_shaper::Type::zv:
-        return create_zv_input_shaper_pulses(input_shaper_frequency, damping_ratio);
+        return create_zv_input_shaper_pulses(result, input_shaper_frequency, damping_ratio);
     case input_shaper::Type::zvd:
-        return create_zvd_input_shaper_pulses(input_shaper_frequency, damping_ratio);
+        return create_zvd_input_shaper_pulses(result, input_shaper_frequency, damping_ratio);
     case input_shaper::Type::mzv:
-        return create_mzv_input_shaper_pulses(input_shaper_frequency, damping_ratio);
+        return create_mzv_input_shaper_pulses(result, input_shaper_frequency, damping_ratio);
     case input_shaper::Type::ei:
-        return create_ei_input_shaper_pulses(input_shaper_frequency, damping_ratio, vibration_reduction);
+        return create_ei_input_shaper_pulses(result, input_shaper_frequency, damping_ratio, vibration_reduction);
     case input_shaper::Type::ei_2hump:
-        return create_2hump_ei_input_shaper_pulses(input_shaper_frequency, damping_ratio, vibration_reduction);
+        return create_2hump_ei_input_shaper_pulses(result, input_shaper_frequency, damping_ratio, vibration_reduction);
     case input_shaper::Type::ei_3hump:
-        return create_3hump_ei_input_shaper_pulses(input_shaper_frequency, damping_ratio, vibration_reduction);
+        return create_3hump_ei_input_shaper_pulses(result, input_shaper_frequency, damping_ratio, vibration_reduction);
     case input_shaper::Type::null:
-        return create_null_input_shaper_pulses();
+        return create_null_input_shaper_pulses(result);
     default:
-        return create_zv_input_shaper_pulses(input_shaper_frequency, damping_ratio);
+        return create_zv_input_shaper_pulses(result, input_shaper_frequency, damping_ratio);
     }
 }
 
-static input_shaper_pulses_t get_input_shaper(const AxisConfig &c) {
-    return get_input_shaper(c.type, c.frequency, c.damping_ratio, c.vibration_reduction);
+static void get_input_shaper(input_shaper_pulses_t &result, const AxisConfig &c) {
+    get_input_shaper(result, c.type, c.frequency, c.damping_ratio, c.vibration_reduction);
 }
 
 #ifdef COREXY
-// Create two new input_shaper_pulses_t that both have the same number of pulses and also,
+// Returns in the referrenced parameters two new input_shaper_pulses_t that both have the same number of pulses and also,
 // they both have pulses at the same time (some of them could have zero amplitude).
 // When there is some pulse in a specific time that is present in just one input input_shaper_pulses_t,
 // then we use zero as amplitude for the second in that specific time.
 // This preprocessing doesn't affect the produced micro move segment by the input shaper implementation
 // but simplifies the implementation by a lot for CoreXY. Because we can assume that both logical axes
 // are always updated at the same time.
-static std::pair<input_shaper_pulses_t, input_shaper_pulses_t> adjust_input_shaper_pulses_to_match_time_pulses(const input_shaper_pulses_t &first_pulses, const input_shaper_pulses_t &second_pulses) {
+static void adjust_input_shaper_pulses_to_match_time_pulses(input_shaper_pulses_t &first_pulses, input_shaper_pulses_t &second_pulses) {
     input_shaper_pulses_t first_pulses_adjust;
     input_shaper_pulses_t second_pulses_adjust;
 
     if (first_pulses.num_pulses + second_pulses.num_pulses > INPUT_SHAPER_MAX_PULSES) {
-        bsod("Number of input shaper pulses exceeds the capacity of pulses buffer.");
+        // Number of input shaper pulses exceeds the capacity of pulses buffer
+        bsod("pulses buffer too small");
     }
 
     first_pulses_adjust.num_pulses = 0;
@@ -115,13 +116,18 @@ static std::pair<input_shaper_pulses_t, input_shaper_pulses_t> adjust_input_shap
         }
     }
 
-    return { first_pulses_adjust, second_pulses_adjust };
+    first_pulses = first_pulses_adjust;
+    second_pulses = second_pulses_adjust;
 }
 
-static std::pair<input_shaper_pulses_t, input_shaper_pulses_t> get_input_shaper(const AxisConfig &first_axis_config, const std::optional<AxisConfig> &second_axis_config) {
-    const input_shaper_pulses_t first_axis_pulses = get_input_shaper(first_axis_config);
-    const input_shaper_pulses_t second_axis_pulses = second_axis_config ? get_input_shaper(*second_axis_config) : create_null_input_shaper_pulses();
-    return adjust_input_shaper_pulses_to_match_time_pulses(first_axis_pulses, second_axis_pulses);
+void get_input_shaper(input_shaper_pulses_t &first_axis_pulses, const AxisConfig &first_axis_config, input_shaper_pulses_t &second_axis_pulses, const std::optional<AxisConfig> &second_axis_config) {
+    get_input_shaper(first_axis_pulses, first_axis_config);
+    if (second_axis_config) {
+        get_input_shaper(second_axis_pulses, *second_axis_config);
+    } else {
+        create_null_input_shaper_pulses(second_axis_pulses);
+    }
+    adjust_input_shaper_pulses_to_match_time_pulses(first_axis_pulses, second_axis_pulses);
 }
 #endif
 
@@ -133,11 +139,11 @@ static void set_logical_axis_config_internal(const AxisEnum axis, std::optional<
     if (axis_config) {
         if (axis == X_AXIS || axis == Y_AXIS) {
             std::optional<AxisConfig> second_axis_config = current_config().axis[(axis == X_AXIS) ? Y_AXIS : X_AXIS];
-            std::tie(InputShaper::logical_axis_pulses[X_AXIS], InputShaper::logical_axis_pulses[Y_AXIS]) = get_input_shaper(*axis_config, second_axis_config);
+            get_input_shaper(InputShaper::logical_axis_pulses[X_AXIS], *axis_config, InputShaper::logical_axis_pulses[Y_AXIS], second_axis_config);
             PreciseStepping::physical_axis_step_generator_types |= INPUT_SHAPER_STEP_GENERATOR_X;
             PreciseStepping::physical_axis_step_generator_types |= INPUT_SHAPER_STEP_GENERATOR_Y;
         } else {
-            InputShaper::logical_axis_pulses[axis] = get_input_shaper(*axis_config);
+            get_input_shaper(InputShaper::logical_axis_pulses[axis], *axis_config);
             PreciseStepping::physical_axis_step_generator_types |= (INPUT_SHAPER_STEP_GENERATOR_X << axis);
         }
     } else {
@@ -152,7 +158,7 @@ static void set_logical_axis_config_internal(const AxisEnum axis, std::optional<
     }
 #else
     if (axis_config) {
-        InputShaper::logical_axis_pulses[axis] = get_input_shaper(*axis_config);
+        get_input_shaper(InputShaper::logical_axis_pulses[axis], *axis_config);
         PreciseStepping::physical_axis_step_generator_types |= (INPUT_SHAPER_STEP_GENERATOR_X << axis);
     } else {
         PreciseStepping::physical_axis_step_generator_types &= ~(INPUT_SHAPER_STEP_GENERATOR_X << axis);
