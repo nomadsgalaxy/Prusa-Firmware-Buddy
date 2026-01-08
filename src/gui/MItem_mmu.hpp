@@ -153,7 +153,7 @@ class MI_MMU_LOAD_TEST_FILAMENT_I : public MI_MMU_ISSUE_GCODE_SLOT_FMT {
 
 public:
     MI_MMU_LOAD_TEST_FILAMENT_I()
-        : MI_MMU_ISSUE_GCODE_SLOT_FMT(slot_i, "Test Filament", "M1704 P%i") {}
+        : MI_MMU_ISSUE_GCODE_SLOT_FMT(slot_i, "Test Filament", "M1704 P%i M0") {}
 };
 
 class MI_MMU_UNLOAD_FILAMENT : public MI_MMU_ISSUE_GCODE {
