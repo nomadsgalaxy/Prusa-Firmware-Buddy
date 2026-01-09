@@ -15,6 +15,7 @@
 #include "screen_menu_mmu_eject_filament.hpp"
 #include "screen_menu_mmu_cut_filament.hpp"
 #include "screen_menu_mmu_load_to_nozzle.hpp"
+#include "screen/screen_menu_mmu_preload_all.hpp"
 #include "screen_menu_filament_changeall.hpp"
 
 #include <config_store/store_instance.hpp>
@@ -140,15 +141,11 @@ void MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT::click(IWindowMenu &) {
 /**********************************************************************************************/
 // MI_MMU_PRELOAD_ALL
 MI_MMU_PRELOAD_ALL::MI_MMU_PRELOAD_ALL()
-    : IWindowMenuItem(_(label), nullptr, is_enabled_t::yes, is_hidden_t::no) {
+    : IWindowMenuItem(_(label), nullptr, is_enabled_t::yes, is_hidden_t::no, expands_t::yes) {
 }
 
 void MI_MMU_PRELOAD_ALL::click(IWindowMenu & /*window_menu*/) {
-    for (uint8_t i = 0; i < 5; ++i) {
-        char gcode[] = "M704 Px";
-        gcode[sizeof(gcode) - 2] = i + '0';
-        marlin_client::gcode(gcode);
-    }
+    Screens::Access()->Open(ScreenFactory::Screen<ScreenMenuMMUPreloadAll>);
 }
 
 /**********************************************************************************************/
