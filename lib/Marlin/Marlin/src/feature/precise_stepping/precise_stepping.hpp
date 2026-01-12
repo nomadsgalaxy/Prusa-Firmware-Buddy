@@ -314,6 +314,13 @@ public:
         return nullptr;
     }
 
+    // Is the current step event marked for resync?
+    //
+    // Call only if there _is_ a current step, that is, get_current_step_event() returns non-null.
+    FORCE_INLINE static bool current_step_shall_resync() {
+        return step_event_queue.tail == 0;
+    }
+
     // Returns the first head step event, nullptr if the queue is full.
     // Also, it returns the next step event queue head index (passed by reference).
     FORCE_INLINE static step_event_u16_t *get_next_free_step_event(uint16_t &next_step_event_queue_head) {
@@ -324,6 +331,12 @@ public:
         // Return the first available step event.
         next_step_event_queue_head = step_event_queue_next_index(step_event_queue.head);
         return &step_event_queue.data[step_event_queue.head];
+    }
+
+    // Is the next free step event (as returned by get_next_free_step_event) marked for resync?
+    FORCE_INLINE static bool next_free_step_shall_resync() {
+        const uint16_t next = step_event_queue_next_index(step_event_queue.head);
+        return next == 0;
     }
 
     // Discard the current step event.

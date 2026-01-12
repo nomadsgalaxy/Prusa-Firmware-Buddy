@@ -56,6 +56,31 @@ volatile uint8_t PreciseStepping::step_dl_miss = 0;
 volatile uint8_t PreciseStepping::step_ev_miss = 0;
 volatile uint32_t PreciseStepping::time_last_block_us;
 
+// There's a risk of precise stepping and phase stepping drifting away from
+// each other in their time tracking, since each does so independently and in a
+// different way.
+//
+// Therefore, we resynchronize them from time to time. We mark certain events
+// as "special" (currently, we mark the ones that end up on the index of 0 in
+// the queue, which is a cheap way, ensures there never are two such events at
+// once, doesn't make any of the events bigger, and makes sure we don't do it
+// too often). And we attach the absolute timestamp to that event, which we
+// then use to compensate the precise stepping (phase stepping runs on absolute
+// time already).
+//
+// This introduces a little bit of compensation "jitter" (we also compensate
+// the time by which the interrupt firing gets delayed), but it's small and
+// most importantly, averages over time, while the original error could
+// accumulate over time.
+//
+// 0 => we didn't assign the absolute time to the current special event, skip
+// this resync (can happen if phase stepping is not running, or if the 0-index
+// slot is used by some "unusual" event, like split-empty one, or beginning
+// empty one - we ignore these, as there are rare and we don't want to make the
+// code more complex because of them). If non-0, the special event shall happen
+// at this time (absolute), for resync.
+static std::atomic<uint32_t> special_event_time_us = 0;
+
 #if !BOARD_IS_DWARF()
 std::atomic<uint32_t> PreciseStepping::stall_count = 0;
 #endif
@@ -469,6 +494,13 @@ static bool generate_next_step_event(step_event_i32_t &step_event, step_generato
         const double step_time_absolute = step_state.step_events[old_nearest_step_event_idx].time;
         const int64_t step_time_absolute_ticks = int64_t(step_time_absolute * STEPPER_TICKS_PER_SEC);
 
+        // We abuse the fact the tick is exactly one microsecond, so we can use
+        // the same number and save one double multiplication. If this
+        // assumption is no longer true, we need to adjust the conversion
+        // (either here or use ticks for synchronization instead of us).
+        static_assert(STEPPER_TICKS_PER_SEC == 1000000.0);
+        step_event.time_absolute_us = step_time_absolute_ticks;
+
         // calculate time ticks and clamp to reasonable values
         step_event.time_ticks = std::clamp(step_time_absolute_ticks - (int64_t)step_state.previous_step_time_ticks, (int64_t)0, (int64_t)std::numeric_limits<int32_t>::max());
 
@@ -643,8 +675,30 @@ void update_step_generator_state_current_flags() {
 uint16_t PreciseStepping::process_one_step_event_from_queue() {
     // If no queued step event, just wait some time for the next move.
     uint16_t ticks_to_next_isr = STEPPER_ISR_PERIOD_IN_TICKS;
+    // positive -> delay by this us
+    // negative -> speed up by this us
+    //
+    // In stepper ticks.
+    int16_t compensate = 0;
 
     if (const step_event_u16_t *step_event = get_current_step_event(); step_event != nullptr) {
+        if (current_step_shall_resync()) {
+            // "take" the absolute time, so it doesn't get accidentally reused
+            const uint32_t absolute_time_expected = special_event_time_us.exchange(0, std::memory_order_relaxed);
+            // 0 = "no absolute time stored", ignore this sync
+            if (absolute_time_expected != 0) {
+                // The initial_time is not atomic. But it is ever written only
+                // on beginning empty move submit and at that point, we are not
+                // running / getting events. We can assume that starting the
+                // movement / the event queue is a good enough synchronization
+                // primitive for that.
+                const uint32_t absolute_time_now = ticks_us() - step_generator_state.initial_time;
+                // now is higher -> we are late -> we need to speed up
+                compensate = absolute_time_expected - absolute_time_now;
+                // We want have us, want ticks.
+                compensate *= STEPPER_TIMER_TICKS_PER_US;
+            }
+        }
         const StepEventFlag_t step_flags = step_event->flags;
         const StepEventFlag_t step_dir = (step_flags & STEP_EVENT_FLAG_DIR_MASK);
         const StepEventFlag_t step_dir_inv = (step_dir ^ PreciseStepping::inverted_dirs);
@@ -730,6 +784,18 @@ uint16_t PreciseStepping::process_one_step_event_from_queue() {
 
         if (step_event_u16_t *next_step_event = get_current_step_event(); next_step_event != nullptr) {
             ticks_to_next_isr = next_step_event->time_ticks;
+            if (compensate != 0) {
+                // When we have eg. 150 ticks to next time, we want to limit
+                // the speed up the event only up to that 150 ticks -> we want
+                // -150.
+                const int16_t low = -1 * std::min(ticks_to_next_isr, STEPPER_ISR_PERIOD_IN_TICKS);
+                // Damn C++ and overload resolving, doesn't want to find clamp with our types :-(. And damn C++ "type promotion".
+                //
+                // Well, don't go below 0 with the ticks_to_next_isr. If we need to
+                // speed up by more, something will be left for next time.
+                compensate = std::clamp(compensate, low, static_cast<int16_t>(STEPPER_ISR_PERIOD_IN_TICKS));
+                ticks_to_next_isr += compensate;
+            }
         } else if ((step_flags & STEP_EVENT_FLAG_END_OF_MOTION) == false) {
             ++step_ev_miss;
         }
@@ -1160,6 +1226,8 @@ struct split_step_event_t {
     StepEventFlag_t empty_step_event_flags = 0;
     uint16_t last_step_event_time_ticks = 0;
     StepEventFlag_t last_step_event_flags = 0;
+    // Absolute time of the event, for resync purposes.
+    uint32_t last_step_absolute_us = 0;
 };
 
 STEPPING_INLINE split_step_event_t split_buffered_step(const step_generator_state_t &step_generator_state) {
@@ -1177,6 +1245,8 @@ STEPPING_INLINE split_step_event_t split_buffered_step(const step_generator_stat
             split_step_event.last_step_event_flags = step_generator_state.buffered_step.flags;
         }
     }
+
+    split_step_event.last_step_absolute_us = step_generator_state.buffered_step.time_absolute_us;
 
     return split_step_event;
 }
@@ -1225,6 +1295,13 @@ STEPPING_INLINE void append_split_step_event(const split_step_event_t &split_ste
 
     next_step_event->time_ticks = split_step_event.last_step_event_time_ticks;
     next_step_event->flags = split_step_event.last_step_event_flags;
+
+    // From time to time, perform synchronization between timeline of the
+    // stepping interrupt and phase stepping. Only if phase stepping is
+    // actually enabled, otherwise no point.
+    if (PreciseStepping::next_free_step_shall_resync() && phase_stepping::any_axis_enabled()) {
+        special_event_time_us.store(split_step_event.last_step_absolute_us, std::memory_order_relaxed);
+    }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
     // next_step_event_queue_head is guaranteed to be set when next_step_event is

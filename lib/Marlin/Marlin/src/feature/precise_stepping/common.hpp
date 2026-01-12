@@ -137,6 +137,7 @@ static_assert(StepEventFlag::STEP_EVENT_FLAG_X_ACTIVE == (1u << STEP_EVENT_FLAG_
 struct step_event_i32_t {
     int32_t time_ticks;
     StepEventFlag_t flags;
+    uint32_t time_absolute_us;
 };
 
 // Used by step event queue. So, the maximum time difference between step events is 2^16 / STEPPER_TIMER_RATE,
