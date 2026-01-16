@@ -716,7 +716,19 @@ bool PrusaToolChanger::align_locks() {
         move(X_MAX_POS, 0, travel_feedrate);
     } else {
         // A bit back in case the carriage is near tool
-        do_homing_move(Y_AXIS, SAFE_Y_WITHOUT_TOOL - DOCK_DEFAULT_Y_MM);
+        if (do_homing_move(Y_AXIS, SAFE_Y_WITHOUT_TOOL - DOCK_DEFAULT_Y_MM)) {
+            // If we hit something, it means we're at the front of the printer (Y_MIN)
+            // Back of a bit, otherwise we'll be sliding on the front edge, falsely triggering Y endstops during the X move
+            const bool backoff_move_hit = do_homing_move(Y_AXIS, 10);
+
+            if (backoff_move_hit) {
+                // If we've hit something in both directions, something's wrong
+                toolchanger_error("Y axis stuck");
+            }
+
+            // Check for the correct backoff direction
+            static_assert(SAFE_Y_WITHOUT_TOOL - DOCK_DEFAULT_Y_MM < -10);
+        }
         axes_home_level[Y_AXIS] = AxisHomeLevel::not_homed; // Needs homing after
     }
     planner.synchronize();
