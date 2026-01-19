@@ -438,6 +438,18 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
     requirements[Y_AXIS].expand(req);
   }
 
+#if HAS_TOOLCHANGER()
+  // For Z homing, we need a tool pick. That means that we need precise homing for the toolchange.
+  // !! This one is a MUST - without this, the toolchange would trigger a nested G28 internally, which would break things
+  if(should_home_at_all(Z_AXIS) && !prusa_toolchanger.is_any_tool_active()) {
+    static constexpr AxisHomingRequirement req {
+      .required_level = AxisHomeLevel::full,
+    };
+    requirements[X_AXIS].expand(req);
+    requirements[Y_AXIS].expand(req);
+  }
+#endif
+
   // On CODEPENDENT_XY_HOMING, we need to home both axes
   if constexpr(ENABLED(CODEPENDENT_XY_HOMING)) {
     requirements[X_AXIS].expand(requirements[Y_AXIS]);
@@ -778,6 +790,12 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
 
       #if ENABLED(PRUSA_TOOLCHANGER)
       if (active_extruder == PrusaToolChanger::MARLIN_NO_TOOL_PICKED) {
+        if(!prusa_toolchanger.can_move_safely()) {
+          // If !can_move_safely, the toolchange would trigger a nested G28
+          // That breaks things, because calling align_locks with a homing_move inside would actually screw up the current homing
+          bsod("Cannot toolchange");
+        }
+
         // When no tool is picked, make sure to pick one
         failed = !prusa_toolchanger.tool_change(0, tool_return_t::no_return, current_position, tool_change_lift_t::no_lift, false);
       }
