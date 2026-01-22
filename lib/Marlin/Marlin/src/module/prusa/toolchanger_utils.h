@@ -23,7 +23,12 @@ public:
     static constexpr auto FORCE_MOVE_MM_S = 30; ///< Not used here, feedrate for locking and unlocking the toolchange clamps
     static constexpr auto SLOW_MOVE_MM_S = 50; ///< Feedrate for tool picking and parking
     static constexpr auto Z_HOP_FEEDRATE_MM_S = 10.0f; ///< Feedrate for z hop
-    static constexpr auto TRAVEL_MOVE_MM_S = 400.f; ///< Feedrate for moves around dock
+    static constexpr auto TRAVEL_MOVE_MM_S =
+    #if defined(_DEBUG)
+        300.f; // stepping computations are too slow for full speed in debug (BFW-8259)
+    #else
+        400.f;
+    #endif ///< Feedrate for moves around dock
     static constexpr uint32_t WAIT_TIME_TOOL_SELECT = 3000; ///< Max wait for puppytask tool switch [ms], needs a lot of time if there is a hiccup in puppy communication
     static constexpr uint32_t WAIT_TIME_TOOL_PARKED_PICKED = 200; ///< Max wait for cheese to detect magnet [ms]
     static constexpr auto SAFE_Y_WITH_TOOL = 360.0f;
