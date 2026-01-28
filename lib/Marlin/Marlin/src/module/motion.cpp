@@ -1316,7 +1316,7 @@ float homeaxis_single_run(const AxisEnum axis, const int axis_home_dir, const fe
 #endif
       } else {
         // moving away from the bed
-        bump_feedrate = MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z);
+        bump_feedrate = HOMING_FEEDRATE_INVERTED_Z;
       }
     } else
     #endif //HOMING_Z_WITH_PROBE

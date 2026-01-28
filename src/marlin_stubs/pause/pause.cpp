@@ -158,7 +158,7 @@ void do_pause_e_move(const float &length, const feedRate_t &fr_mm_s) {
 void unhomed_z_lift(float amount_mm) {
     if (amount_mm > current_position.z) {
         TemporaryGlobalEndstopsState park_move_endstops(true);
-        do_homing_move((AxisEnum)(Z_AXIS), amount_mm - current_position.z, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z), false); // warning: the speed must probably be exactly this, otherwise endstops don't work
+        do_homing_move((AxisEnum)(Z_AXIS), amount_mm - current_position.z, HOMING_FEEDRATE_INVERTED_Z, false); // warning: the speed must probably be exactly this, otherwise endstops don't work
         // note: do_homing_move() resets the Marlin's internal position (Planner::position) to 0 (in Z axis) at the beginning
         current_position.z = amount_mm;
         sync_plan_position();
@@ -1297,7 +1297,7 @@ void Pause::park_nozzle_and_notify() {
 
     const float target_Z = settings.park_pos.z;
     const float Z_len = current_position.z - target_Z; // sign does not matter
-    const float Z_feedrate = MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z);
+    const float Z_feedrate = HOMING_FEEDRATE_INVERTED_Z;
 
     float XY_len = 0;
     float begin_pos = 0;

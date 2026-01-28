@@ -1137,7 +1137,7 @@
 // Homing speeds (mm/m)
 #define HOMING_FEEDRATE_XY (62 * 60)
 #define HOMING_FEEDRATE_Z 1150
-#define HOMING_FEEDRATE_INVERTED_Z (buddy::hw::Configuration::Instance().has_trinamic_oscillators() ? (60 * 60) : (30 * 60))
+#define HOMING_FEEDRATE_INVERTED_Z (buddy::hw::Configuration::Instance().has_trinamic_oscillators() ? 60 : 30) // mm/s
 
 // Validate that endstops are triggered on homing moves
 //#define VALIDATE_HOMING_ENDSTOPS

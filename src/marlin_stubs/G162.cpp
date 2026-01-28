@@ -44,7 +44,7 @@ void selftest::calib_Z([[maybe_unused]] bool move_down_after) {
     }
 
     // Move the nozzle up and away from the bed
-    do_homing_move(Z_AXIS, Z_CALIB_EXTRA_HIGHT, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z), false, false);
+    do_homing_move(Z_AXIS, Z_CALIB_EXTRA_HIGHT, HOMING_FEEDRATE_INVERTED_Z, false, false);
     current_position.z = 0;
     sync_plan_position();
     current_position.x = X_MIN_POS + 2;
@@ -61,7 +61,7 @@ void selftest::calib_Z([[maybe_unused]] bool move_down_after) {
 
     // Home the axis
     endstops.enable(true); // Stall endstops need to be enabled manually as in G28
-    if (!homeaxis(Z_AXIS, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z), false, nullptr, true, z_probe)) {
+    if (!homeaxis(Z_AXIS, HOMING_FEEDRATE_INVERTED_Z, false, nullptr, true, z_probe)) {
         fatal_error(ErrCode::ERR_ELECTRO_HOMING_ERROR_Z);
     }
     endstops.not_homing();
@@ -103,7 +103,7 @@ static void safe_move_down() {
             marlin_server::fsm_change(FSMAndPhase(ClientFSM::Selftest, GetPhaseIndex(PhasesSelftest::CalibZ)), { progress });
         } };
 
-    if (do_homing_move(AxisEnum::Z_AXIS, target_Z - current_position.z, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z))) {
+    if (do_homing_move(AxisEnum::Z_AXIS, target_Z - current_position.z, HOMING_FEEDRATE_INVERTED_Z)) {
         // endstop triggered, raise the nozzle
         current_position.z = Z_MIN_POS;
         sync_plan_position();
@@ -128,7 +128,7 @@ void selftest::calib_Z(bool move_down_after) {
     // Z axis lift
     marlin_server::fsm_change(PhasesSelftest::CalibZ);
     endstops.enable(true); // Stall endstops need to be enabled manually as in G28
-    if (!homeaxis(Z_AXIS, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z), true)) {
+    if (!homeaxis(Z_AXIS, HOMING_FEEDRATE_INVERTED_Z, true)) {
         fatal_error(ErrCode::ERR_ELECTRO_HOMING_ERROR_Z);
     }
     endstops.not_homing();

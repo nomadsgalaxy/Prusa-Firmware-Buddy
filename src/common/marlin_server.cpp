@@ -3008,7 +3008,7 @@ void lift_head() {
         // Do prepare_move_to, as it segments the move and thus allows better emergency_stop
         destination = current_position;
         destination.z += distance;
-        prepare_move_to(destination, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z), {});
+        prepare_move_to(destination, HOMING_FEEDRATE_INVERTED_Z, {});
         planner.synchronize();
 
     } else {
@@ -3019,7 +3019,7 @@ void lift_head() {
 
         // do_homing_move does not update current position, we have to do it manually
         // have to use HOMING_FEEDRATE, otherwise the stallguards might not trigger
-        if (do_homing_move(Z_AXIS, distance, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z))) {
+        if (do_homing_move(Z_AXIS, distance, HOMING_FEEDRATE_INVERTED_Z)) {
             current_position.z = Z_MAX_POS;
         } else {
             // BFW-7734 but sometimes it zeroes Z - this is to prevent ceiling hit tests from triggering in such a case
