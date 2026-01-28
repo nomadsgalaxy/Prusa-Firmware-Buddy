@@ -1297,7 +1297,7 @@ void Pause::park_nozzle_and_notify() {
 
     const float target_Z = settings.park_pos.z;
     const float Z_len = current_position.z - target_Z; // sign does not matter
-    const float Z_feedrate = settings.park_z_feedrate; // customizable Z feedrate
+    const float Z_feedrate = MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z);
 
     float XY_len = 0;
     float begin_pos = 0;
