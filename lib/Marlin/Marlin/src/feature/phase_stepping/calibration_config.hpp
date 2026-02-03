@@ -34,8 +34,11 @@ static inline constexpr const AxisCalibrationConfig xy_axis_calibration_config {
 };
 #elif PRINTER_IS_PRUSA_XL()
 static inline constexpr const AxisCalibrationConfig xy_axis_calibration_config {
-    .speed_range = { 0.1f, 3.f },
+    .speed_range = { 1.f, 5.f },
     .enabled_harmonics = 0b1010,
+    .max_movement_revs = 4.f,
+    .min_magnitude = 0.016f,
+    .magnitude_quotient = 1.4f,
 };
 #elif PRINTER_IS_PRUSA_iX()
 static inline constexpr const AxisCalibrationConfig xy_axis_calibration_config {
