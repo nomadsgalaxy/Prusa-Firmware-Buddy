@@ -209,12 +209,6 @@ private:
 
     void evaluate() {
         for (auto *fan : fans) {
-#if PRINTER_IS_PRUSA_iX()
-            // On iX we do not evaluate HB fan to make it always pass
-            if (fan->get_type() == FanType::heatbreak) {
-                continue;
-            }
-#endif
             fan->evaluate();
         }
     }

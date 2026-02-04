@@ -52,12 +52,7 @@ static constexpr size_t row_8 = row_7 + WizardDefaults::row_h + 20;
 
 static constexpr const char *en_text_header = N_("SELFTEST");
 static constexpr const char *en_text_fan_test = N_("Fan RPM tests");
-#if PRINTER_IS_PRUSA_iX()
-// for iX with turbine, heatbreak fan eval always succeeds
-static constexpr const char *en_text_hotend_fan = N_("Hotend fan (test disabled)");
-#else
 static constexpr const char *en_text_hotend_fan = N_("Hotend fan");
-#endif
 static constexpr const char *en_text_print_fan = N_("Print fan");
 #if HAS_SWITCHED_FAN_TEST()
 static constexpr const char *en_text_fans_switched = N_("Switched fans");

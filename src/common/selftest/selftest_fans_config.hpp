@@ -41,6 +41,10 @@ constexpr FanRPMRange print_low_fan_range = benevolent_fan_range;
 constexpr FanRPMRange heatbreak_fan_range = { .rpm_min = 6800, .rpm_max = 8700 };
 constexpr FanRPMRange chamber_fan_range = FanRPMRange::nominal_with_percentual_tolerance(8500, 15);
 constexpr FanRPMRange filtration_fan_range = FanRPMRange::nominal_with_percentual_tolerance(3400, 15);
+#elif PRINTER_IS_PRUSA_iX()
+constexpr FanRPMRange print_fan_range = benevolent_fan_range;
+constexpr FanRPMRange print_low_fan_range = benevolent_fan_range;
+constexpr FanRPMRange heatbreak_fan_range = { .rpm_min = 1000, .rpm_max = 25000 };
 #else
 constexpr FanRPMRange print_fan_range = benevolent_fan_range;
 constexpr FanRPMRange print_low_fan_range = benevolent_fan_range;
