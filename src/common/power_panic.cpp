@@ -91,6 +91,7 @@
 #include <usb_host/usbh_async_diskio.hpp>
 #include <gcode/gcode_reader_restore_info.hpp>
 #include <feature/safety_timer/safety_timer.hpp>
+#include <option/xbuddy_extension_variant.h>
 
 namespace {
 
@@ -990,7 +991,7 @@ void ac_fault_isr() {
     // heaters are *already* disabled via HW, but stop temperature and fan regulation too
     thermalManager.disable_local_heaters();
     thermalManager.zero_fan_speeds();
-#if !HAS_DWARF() && HAS_TEMP_HEATBREAK && HAS_TEMP_HEATBREAK_CONTROL
+#if !HAS_DWARF() && !XBUDDY_EXTENSION_VARIANT_IS_iX() && HAS_TEMP_HEATBREAK && HAS_TEMP_HEATBREAK_CONTROL
     thermalManager.suspend_heatbreak_fan(2000);
 #endif
     // will continue in the main loop
