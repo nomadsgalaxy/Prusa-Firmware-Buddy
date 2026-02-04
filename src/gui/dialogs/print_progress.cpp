@@ -212,7 +212,6 @@ void PrintProgress::Resume() {
         resumeDialog();
     } else {
         disableDialog();
-        log_warning(GUI, "GCode has no thumbnail or was unable to read it - Disabling Print Progress Screen.");
     }
 }
 
