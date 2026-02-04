@@ -212,8 +212,13 @@ class SensitivityCalibration {
         float probe_offset_avg { 0.0 };
         uint8_t n { 0 };
 
-        bool is_bad() {
-            return (probe_offset_avg * n) > 0.6;
+        bool is_bad() const {
+            // Note: NAN happens if a homing fails
+            return isnan(probe_offset_avg) || ((probe_offset_avg * n) > 0.6);
+        }
+
+        bool is_valid() const {
+            return n > 0 && !is_bad();
         }
     };
 
@@ -304,11 +309,11 @@ public:
                 SERIAL_ECHO_START();
                 SERIAL_ECHOLNPAIR("Homing sensitivity: calibrating at sensitivity ", current_sensitivity);
             } else {
-                auto it_last = std::find_if(avgs.begin(), avgs.end(), [](const AvgData &d) { return d.n > 0; });
+                auto it_last = std::ranges::find_if(avgs, [](const AvgData &d) { return d.is_valid(); });
 
                 // make it_last point to the last smallest average in the array
                 for (auto it = avgs.begin(); it < avgs.end(); ++it) {
-                    if (it->n > 0 && it->probe_offset_avg <= it_last->probe_offset_avg) {
+                    if (it->is_valid() && it->probe_offset_avg <= it_last->probe_offset_avg) {
                         it_last = it;
                     }
                 }
@@ -317,7 +322,7 @@ public:
                 // array (in a continuous range from it_last)
                 auto it_first = it_last;
                 while (it_first > avgs.begin()) {
-                    if ((it_first - 1)->n > 0 && (it_first - 1)->probe_offset_avg == it_last->probe_offset_avg) {
+                    if ((it_first - 1)->is_valid() && (it_first - 1)->probe_offset_avg == it_last->probe_offset_avg) {
                         --it_first;
                     } else {
                         break;
