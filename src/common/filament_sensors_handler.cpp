@@ -206,7 +206,12 @@ void FilamentSensors::process_events() {
     }
 
     const auto check_runout = [&](LogicalFilamentSensor s) {
-        const auto event = sensor(s)->last_event();
+        auto sen = sensor(s);
+        if (sen == nullptr) {
+            return false;
+        }
+
+        const auto event = sen->last_event();
         if (m600_sent || event != IFSensor::Event::filament_removed) {
             return false;
         }
@@ -271,7 +276,7 @@ void FilamentSensors::process_events() {
     } else {
         // During MMU standard operation, there is no filament loaded to the nozzle when not printing.
         // So it's not a good idea to reset what filament types we have stored.
-        if (!has_mmu && sensor(LogicalFilamentSensor::extruder)->get_state() == FilamentSensorState::NoFilament) {
+        if (!has_mmu && no_filament_surely(LogicalFilamentSensor::extruder)) {
             config_store().set_filament_type(tool_index, FilamentType::none);
         }
 
