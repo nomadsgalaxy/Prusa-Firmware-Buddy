@@ -181,9 +181,12 @@ struct DftSweepResult {
     }
 };
 
+// Maximum number of peaks to keep per harmonic in find_peaks. Keeping fewer
+// peaks reduces memory use and the O(N*M) anchor search in find_harmonic_peaks.
+static constexpr size_t max_peaks_per_harmonic = 4;
+
 struct SignalPeak {
-    int idx;
-    float value;
+    size_t idx;
     float prominence;
 };
 
@@ -398,25 +401,8 @@ public:
         return sqrt(sin_sum * sin_sum + cos_sum * cos_sum) * 2 / buffer.size();
     }
 
-    float get_windowed_magnitude() {
-        if (hann_window.empty()) {
-            std::size_t size = buffer.size();
-            hann_window.reserve(size);
-            for (std::size_t i = 0; i < size; i++) {
-                float x = 2 * std::numbers::pi_v<float> * i / (size - 1);
-                hann_window.push_back(0.5f * (1 - std::cos(x)));
-            }
-        }
-
-        float sin_sum = 0;
-        float cos_sum = 0;
-
-        for (std::size_t i = 0; i < buffer.size(); i++) {
-            auto [sin_val, cos_val] = buffer[(i + current_pos) % buffer.size()];
-            sin_sum += sin_val * hann_window[i];
-            cos_sum += cos_val * hann_window[i];
-        }
-        return std::sqrt(sin_sum * sin_sum + cos_sum * cos_sum) * 2 / buffer.size();
+    float get_power() const {
+        return sin_sum * sin_sum + cos_sum * cos_sum;
     }
 };
 
@@ -576,7 +562,8 @@ static std::array<DftSweepResult, 2> motor_speed_dft_sweep(SignalView signal,
             window.push_sample(sample_correlation(next_sample_idx));
             next_sample_idx += direction;
             if (i % step_size_idx == 0) {
-                res.samples.push_back(window.get_windowed_magnitude());
+                float speed = start_speed + (top_speed - start_speed) * static_cast<float>(i) / ramp_samples;
+                res.samples.push_back(window.get_power() / speed);
             }
         }
     }
@@ -584,55 +571,81 @@ static std::array<DftSweepResult, 2> motor_speed_dft_sweep(SignalView signal,
 }
 
 // Given a pair of random-access iterators to a container containing float, find
-// local peaks.
+// local peaks. Returns at most max_peaks_per_harmonic peaks sorted by
+// prominence (descending). Uses a two-pass approach to avoid O(N) auxiliary
+// arrays for left_min/right_min.
 template <typename It>
-std::vector<SignalPeak> find_peaks(It begin, It end, float min_prominence) {
+stdext::inplace_vector<SignalPeak, max_peaks_per_harmonic> find_peaks(It begin, It end, float min_prominence) {
     static_assert(std::is_same_v<typename std::iterator_traits<It>::value_type, float>);
     static_assert(std::is_same_v<typename std::iterator_traits<It>::iterator_category, std::random_access_iterator_tag>);
 
-    auto signal_size = std::distance(begin, end);
-    auto signal_val = [begin](int i) { return *(begin + i); };
+    const size_t signal_size = std::distance(begin, end);
+    auto signal_val = [begin](size_t i) { return *(begin + i); };
 
     if (signal_size < 3) {
         return {};
     }
 
-    std::vector<int> peak_idx;
-    // Locate local maxima
-    for (int i = 1; i < signal_size - 1; i++) {
-        if (signal_val(i) > signal_val(i - 1) && signal_val(i) > signal_val(i + 1)) {
-            peak_idx.push_back(i);
+    // Forward pass: find local maxima, record their left_min values, and track
+    // signal_max. Theoretical max ~signal_size/2 candidates; with
+    // speed_sweep_bins=400 that's at most 200 — less than the Python's 400 per
+    // left_min/right_min array.
+    struct PeakCandidate {
+        size_t idx;
+        float left_min;
+    };
+    sfl::segmented_vector<PeakCandidate, 64> candidates;
+    float signal_max = signal_val(0);
+    float running_left_min = signal_val(0);
+
+    for (size_t i = 1; i < signal_size; i++) {
+        float val = signal_val(i);
+        signal_max = std::max(signal_max, val);
+        running_left_min = std::min(running_left_min, val);
+        if (i < signal_size - 1 && val > signal_val(i - 1) && val > signal_val(i + 1)) {
+            candidates.push_back({ i, running_left_min });
         }
     }
 
-    std::vector<float> left_min(signal_size);
-    std::vector<float> right_min(signal_size);
-    left_min[0] = signal_val(0);
-    for (int i = 1; i < signal_size; i++) {
-        left_min[i] = std::min(left_min[i - 1], signal_val(i));
-    }
+    // Backward pass: walk the signal backward to compute running right_min.
+    // When we reach a candidate's index, compute its prominence and insert
+    // into the bounded result sorted by prominence (descending).
+    stdext::inplace_vector<SignalPeak, max_peaks_per_harmonic> peaks;
+    float running_right_min = signal_val(signal_size - 1);
+    size_t cand_cursor = candidates.size();
 
-    right_min[signal_size - 1] = signal_val(signal_size - 1);
-    for (int i = signal_size - 2; i >= 0; i--) {
-        right_min[i] = std::min(right_min[i + 1], signal_val(i));
-    }
-
-    auto [min_it, max_it] = std::minmax_element(begin, end);
-    float signal_range = *max_it - *min_it;
-
-    std::vector<SignalPeak> peaks;
-    for (int idx : peak_idx) {
-        float abs_prominence = signal_val(idx) - std::max(left_min[idx], right_min[idx]);
-        float prominence = abs_prominence / signal_range;
-        if (prominence >= min_prominence) {
-            peaks.push_back(SignalPeak { idx, signal_val(idx), prominence });
+    for (size_t i = signal_size - 2; i >= 1 && cand_cursor > 0; i--) {
+        running_right_min = std::min(running_right_min, signal_val(i));
+        if (candidates[cand_cursor - 1].idx != i) {
+            // Not a peak position, just updating running_right_min
+            continue;
         }
+
+        cand_cursor--;
+        float abs_prominence = signal_val(i) - std::min(candidates[cand_cursor].left_min, running_right_min);
+        float prominence = abs_prominence / signal_max;
+
+        if (prominence < min_prominence) {
+            continue;
+        }
+
+        // Insert into bounded container, maintaining descending prominence order
+        auto ins_pos = std::upper_bound(peaks.begin(), peaks.end(), prominence,
+            [](float p, const SignalPeak &peak) { return p > peak.prominence; });
+        if (peaks.size() < max_peaks_per_harmonic) {
+            peaks.insert(ins_pos, SignalPeak { i, prominence });
+        } else if (ins_pos != peaks.begin()) {
+            // Better than the worst peak; drop the worst and insert
+            peaks.pop_back();
+            peaks.insert(ins_pos, SignalPeak { i, prominence });
+        }
+        // else: worse than all kept peaks, skip
     }
 
     if (peaks.empty()) {
-        // Return index of the highest value if there is no peak
-        auto max_it = std::max_element(begin, end);
-        return { SignalPeak { std::distance(begin, max_it), *max_it, 1 } };
+        // No prominent peak found; return the highest value as fallback
+        size_t max_idx = std::distance(begin, std::max_element(begin, end));
+        return { SignalPeak { max_idx, 1.f } };
     }
 
     return peaks;
@@ -649,58 +662,91 @@ stdext::inplace_vector<HarmonicPeak, opts::CORRECTION_HARMONICS> find_harmonic_p
         assert(!sweep.value.empty());
     }
 
-    // The algorithm works as follows: each signal "votes" for the position of
-    // the fundamental frequency. The voting is done by normalizing the
-    // magnitude to a range 0-1 based on max value and converting the index to a
-    // corresponding fundamental speed. The votes are then summed up and the
-    // highest peak is selected as the fundamental speed.
-    stdext::inplace_vector<HarmonicT<float>, opts::CORRECTION_HARMONICS> signal_max_value;
-    std::transform(sweeps.begin(), sweeps.end(), std::back_inserter(signal_max_value),
-        [](const auto &sweep) {
-            return HarmonicT<float> {
-                sweep.harmonic,
-                *std::max_element(sweep.value.begin(), sweep.value.end())
-            };
-        });
+    // Find peaks in each signal and convert indices to speed positions.
+    // This follows the Python detect_harmonic_peaks approach: work entirely
+    // in speed space to correctly handle non-zero start_speed.
+    struct PosPeak {
+        float position;
+    };
 
-    // We need to step along corresponding indices of all sweeps:
-    int step_factor = std::accumulate(signal_max_value.begin(), signal_max_value.end(), 1,
-        [](int acc, const auto &h_val) { return std::gcd(acc, h_val.harmonic); });
+    using PosPeaks = stdext::inplace_vector<PosPeak, max_peaks_per_harmonic>;
+    stdext::inplace_vector<
+        HarmonicT<PosPeaks>,
+        opts::CORRECTION_HARMONICS>
+        peaks_by_harmonic;
 
-    float max_vote = 0.f;
-    int max_idx = 0;
-    for (std::size_t i = 0; true; i++) {
-        float vote = 0.f;
-        bool valid = true;
-        for (std::size_t j = 0; j < sweeps.size(); j++) {
-            const auto &sweep = sweeps[j];
-            float signal_max = signal_max_value[j].value != 0 ? signal_max_value[j].value : 1.f;
+    for (const auto &sweep : sweeps) {
+        auto raw_peaks = find_peaks(sweep.value.begin(), sweep.value.end(), 0.2f);
+        PosPeaks positioned;
+        for (const auto &peak : raw_peaks) {
+            positioned.push_back({ idx_to_pos(peak.idx) });
+        }
+        peaks_by_harmonic.push_back({ sweep.harmonic, std::move(positioned) });
+    }
 
-            std::size_t signal_idx = i * step_factor / sweep.harmonic;
-            if (signal_idx >= sweep.value.size()) {
-                valid = false;
-                break;
+    // Try every detected peak as an anchor for harmonic matching.
+    // For anchor at speed anchor_pos in harmonic h_anchor, the candidate
+    // fundamental speed is anchor_pos * h_anchor. For each other harmonic h,
+    // select the peak closest to fundamental / h (matching pos * h ≈ nominal).
+    float best_badness = std::numeric_limits<float>::infinity();
+    stdext::inplace_vector<HarmonicPeak, opts::CORRECTION_HARMONICS> best_selected;
+
+    // Tip for reader: Yes, there are 4 nested for loops, which is quite a lot.
+    //
+    // However, the general idea is to have:
+    //
+    // for anchor in all_peaks():
+    // 	 for peak in all_peaks():
+    // 	    compare how good the match of peak against anchor is.
+    //
+    // But to iterate through all the peaks through all the harmonics, we need
+    // 2 for loops to unpack them. Which gives us 2 outer and 2 inner for loops.
+    for (std::size_t ai = 0; ai < peaks_by_harmonic.size(); ai++) {
+        const int h_anchor = peaks_by_harmonic[ai].harmonic;
+        const auto &anchor_peaks = peaks_by_harmonic[ai].value;
+
+        for (const auto &anchor : anchor_peaks) {
+            const float nominal_fundamental = anchor.position * h_anchor;
+
+            // Select the closest peak for each harmonic
+            float c_sum = 0.f;
+            stdext::inplace_vector<HarmonicPeak, opts::CORRECTION_HARMONICS> selected;
+
+            for (std::size_t hi = 0; hi < peaks_by_harmonic.size(); hi++) {
+                const int h = peaks_by_harmonic[hi].harmonic;
+                const auto &h_peaks = peaks_by_harmonic[hi].value;
+
+                float closest_dist = std::numeric_limits<float>::infinity();
+                float closest_pos = 0.f;
+                for (const auto &peak : h_peaks) {
+                    float dist = std::abs(peak.position * h - nominal_fundamental);
+                    if (dist < closest_dist) {
+                        closest_dist = dist;
+                        closest_pos = peak.position;
+                    }
+                }
+                selected.push_back({ h, closest_pos });
+                c_sum += h * closest_pos;
             }
 
-            float normalized_val = sweep.value[signal_idx] / signal_max;
-            vote += normalized_val;
-        }
+            // Fit: C_est = mean(h * pos), estimated position = C_est / h
+            const float c_est = c_sum / static_cast<float>(peaks_by_harmonic.size());
 
-        if (!valid) {
-            break;
-        }
-        if (vote > max_vote) {
-            max_vote = vote;
-            max_idx = i;
+            // Badness: sum of squared position errors
+            float badness = 0.f;
+            for (const auto &peak : selected) {
+                float diff = peak.position - c_est / peak.harmonic;
+                badness += diff * diff;
+            }
+
+            if (badness < best_badness) {
+                best_badness = badness;
+                best_selected = selected;
+            }
         }
     }
 
-    stdext::inplace_vector<HarmonicPeak, opts::CORRECTION_HARMONICS> result;
-    for (const auto &sweep : sweeps) {
-        float pos = idx_to_pos(max_idx / step_factor / sweep.harmonic);
-        result.push_back({ sweep.harmonic, pos });
-    }
-    return result;
+    return best_selected;
 }
 
 // Find best peaks in the signal that are evenly spaced with the target_spacing.
