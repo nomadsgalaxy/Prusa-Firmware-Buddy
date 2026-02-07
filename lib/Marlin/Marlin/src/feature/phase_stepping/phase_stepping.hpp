@@ -194,9 +194,16 @@ struct AxisState {
 void init();
 
 /**
- * Set the axis phase origin for a single axis
+ * @brief Directly jump to the given position without any ramping motion.
+ * @param axis_enum Axis to move
+ * @param pos Physical position to move to
+ * @param set_origin Alter the origin so that the given position doesn't move
+ *
+ * Command the motor to move at the given physical position. The rotor must already be close to the
+ * intended position in order not to skip. When set_origin is true alter the origin instead for the
+ * motor not to move at the given position.
  */
-void set_phase_origin(AxisEnum axis_num, float pos);
+void jump_to_position(AxisEnum axis_num, float pos, bool set_origin);
 
 /**
  * Generic function for enabling/disabling axis. Unless needed otherwise, this

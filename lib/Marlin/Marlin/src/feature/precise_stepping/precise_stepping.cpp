@@ -648,11 +648,11 @@ void PreciseStepping::reset_from_halt(bool preserve_step_fraction) {
 
 #if HAS_PHASE_STEPPING()
     #ifdef COREXY
-    phase_stepping::set_phase_origin(X_AXIS, total_start_pos[X_AXIS] + total_start_pos[Y_AXIS]);
-    phase_stepping::set_phase_origin(Y_AXIS, total_start_pos[X_AXIS] - total_start_pos[Y_AXIS]);
+    phase_stepping::jump_to_position(X_AXIS, static_cast<float>(total_start_pos[X_AXIS] + total_start_pos[Y_AXIS]), !preserve_step_fraction);
+    phase_stepping::jump_to_position(Y_AXIS, static_cast<float>(total_start_pos[X_AXIS] - total_start_pos[Y_AXIS]), !preserve_step_fraction);
     #else
-    phase_stepping::set_phase_origin(X_AXIS, total_start_pos[X_AXIS]);
-    phase_stepping::set_phase_origin(Y_AXIS, total_start_pos[Y_AXIS]);
+    phase_stepping::jump_to_position(X_AXIS, static_cast<float>(total_start_pos[X_AXIS]), !preserve_step_fraction);
+    phase_stepping::jump_to_position(Y_AXIS, static_cast<float>(total_start_pos[Y_AXIS]), !preserve_step_fraction);
     #endif
 #endif
 

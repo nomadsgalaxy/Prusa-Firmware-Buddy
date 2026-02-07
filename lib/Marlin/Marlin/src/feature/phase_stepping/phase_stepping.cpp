@@ -362,7 +362,7 @@ bool phase_stepping::processing() {
     return false;
 }
 
-void phase_stepping::set_phase_origin(AxisEnum axis, float pos) {
+void phase_stepping::jump_to_position(AxisEnum axis, float pos, bool set_origin) {
     assert(axis < SUPPORTED_AXIS_COUNT);
     assert_initialized();
 
@@ -372,10 +372,12 @@ void phase_stepping::set_phase_origin(AxisEnum axis, float pos) {
     bool was_active = axis_state.active;
     axis_state.active = false;
 
-    float inverted_position = resolve_axis_inversion(axis_state.inverted, pos);
-    axis_state.zero_rotor_phase = normalize_motor_phase(-pos_to_phase(axis, inverted_position) + axis_state.last_phase);
-    axis_state.last_position = pos;
+    if (set_origin) {
+        float inverted_position = resolve_axis_inversion(axis_state.inverted, pos);
+        axis_state.zero_rotor_phase = normalize_motor_phase(-pos_to_phase(axis, inverted_position) + axis_state.last_phase);
+    }
 
+    axis_state.last_position = pos;
     axis_state.active = was_active;
 }
 
