@@ -41,6 +41,7 @@ double PreciseStepping::max_lookback_time = 0.;
 
 std::atomic<MoveFlag_t> PreciseStepping::current_move_flags = 0;
 uint16_t PreciseStepping::inverted_dirs = 0;
+bool PreciseStepping::inverted_dirs_set = false;
 double PreciseStepping::total_print_time = 0.;
 xyze_double_t PreciseStepping::total_start_pos = { 0., 0., 0., 0. };
 xyze_long_t PreciseStepping::total_start_pos_msteps = { 0, 0, 0, 0 };
@@ -556,6 +557,11 @@ void PreciseStepping::init() {
         | (!INVERT_Y_DIR ? STEP_EVENT_FLAG_Y_DIR : 0)
         | (!INVERT_Z_DIR ? STEP_EVENT_FLAG_Z_DIR : 0)
         | (!INVERT_E0_DIR ? STEP_EVENT_FLAG_E_DIR : 0);
+
+#if HAS_PHASE_STEPPING()
+    // Initialize phase stepping after setting inverted_dirs so we can use Stepper::is_axis_inverted()
+    phase_stepping::init();
+#endif
 
     // Reset initial direction state
     const StepEventFlag_t step_dir = ((Stepper::last_direction_bits << STEP_EVENT_FLAG_DIR_SHIFT) & STEP_EVENT_FLAG_DIR_MASK);

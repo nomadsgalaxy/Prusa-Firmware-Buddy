@@ -132,8 +132,8 @@ public:
     static std::atomic<MoveFlag_t> current_move_flags;
     static_assert(decltype(current_move_flags)::is_always_lock_free);
 
-    // Indicate which direction bits are inverted.
-    static uint16_t inverted_dirs;
+    static uint16_t inverted_dirs; ///< Indicate which direction bits are inverted.
+    static bool inverted_dirs_set; ///< Set to true once inverted_dirs has been set
 
     // It represents the maximum value of how far in the time can some step event generators point.
     // Used for computing flush time that ensures that none of the step event generators will produce step

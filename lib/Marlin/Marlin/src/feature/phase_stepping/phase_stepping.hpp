@@ -54,7 +54,7 @@ struct AxisState {
     CorrectedCurrentLut forward_current, backward_current;
 
     bool inverted = false; // Inverted axis direction flag
-    int zero_rotor_phase = 0; // Rotor phase for position 0
+    float offset = 0; // Physical offset to apply to targets
     int last_phase = 0; // Last known physical rotor phase
     #if HAS_BURST_STEPPING()
     int driver_phase = 0; // Last known phase the driver uses

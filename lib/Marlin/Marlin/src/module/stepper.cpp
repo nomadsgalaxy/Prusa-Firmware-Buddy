@@ -171,6 +171,7 @@ float Stepper::segment_progress() {
 }
 
 bool Stepper::is_axis_inverted(AxisEnum axis) {
+    assert(PreciseStepping::inverted_dirs_set);
     return !(PreciseStepping::inverted_dirs & (STEP_EVENT_FLAG_X_DIR << axis));
 }
 
