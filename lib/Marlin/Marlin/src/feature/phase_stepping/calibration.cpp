@@ -437,7 +437,7 @@ public:
         return sqrt(sin_sum * sin_sum + cos_sum * cos_sum) * 2 / buffer.size();
     }
 
-    float get_windowed_magnitude() {
+    float get_windowed_power() {
         if (hann_window.empty()) {
             std::size_t size = buffer.size();
             hann_window.reserve(size);
@@ -455,10 +455,6 @@ public:
             sin_sum += sin_val * hann_window[i];
             cos_sum += cos_val * hann_window[i];
         }
-        return std::sqrt(sin_sum * sin_sum + cos_sum * cos_sum) * 2 / buffer.size();
-    }
-
-    float get_power() const {
         return sin_sum * sin_sum + cos_sum * cos_sum;
     }
 };
@@ -620,7 +616,7 @@ static std::array<DftSweepResult, 2> motor_speed_dft_sweep(SignalView signal,
             next_sample_idx += direction;
             if (i % step_size_idx == 0) {
                 float speed = start_speed + (top_speed - start_speed) * static_cast<float>(i) / ramp_samples;
-                res.samples.push_back(window.get_power() / speed);
+                res.samples.push_back(window.get_windowed_power() / speed);
             }
         }
     }
