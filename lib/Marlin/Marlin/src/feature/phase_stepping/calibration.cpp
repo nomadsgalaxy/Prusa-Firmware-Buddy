@@ -895,7 +895,7 @@ static MotionCharacteristics characterize_param_sweep(float speed, float duratio
 }
 
 static void move_to_measurement_start(AxisEnum axis, float revs) {
-    if (axis_states[axis].inverted) {
+    if (!axis_states[axis].inverted) {
         revs = -revs;
     }
 
@@ -1161,7 +1161,7 @@ SamplesAnnotation phase_stepping::capture_param_sweep_samples(AxisEnum axis, flo
     phase_stepping::AxisState &axis_state = phase_stepping::axis_states[axis];
 
     int direction = revs > 0 ? 1 : -1;
-    if (axis_state.inverted) {
+    if (!axis_state.inverted) {
         direction = -direction;
     }
     revs = std::fabs(revs);
@@ -1221,7 +1221,7 @@ SamplesAnnotation phase_stepping::capture_speed_sweep_samples(AxisEnum axis,
     Planner::synchronize();
 
     int direction = revs > 0 ? 1 : -1;
-    if (axis_states[axis].inverted) {
+    if (!axis_states[axis].inverted) {
         direction = -direction;
     }
     revs = std::fabs(revs);
