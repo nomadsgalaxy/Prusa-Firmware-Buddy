@@ -272,7 +272,7 @@ bool CFanCtl3Wire::setPhaseShiftMode(CFanCtlPWM::PhaseShiftMode psm) {
     return true;
 }
 
-void CFanCtl3Wire::safeState() {
+void CFanCtl3Wire::safe_state() {
     set_pwm(m_pwm.get_max_PWM());
     m_pwm.safeState();
     selftest_mode = false;

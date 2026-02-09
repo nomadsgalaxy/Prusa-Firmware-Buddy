@@ -46,6 +46,8 @@ public:
 
     virtual void tick() = 0;
 
+    virtual void safe_state() = 0;
+
 protected:
     const uint16_t min_rpm; // minimum rpm value (set in constructor)
     const uint16_t max_rpm; // maximum rpm value (set in constructor)
