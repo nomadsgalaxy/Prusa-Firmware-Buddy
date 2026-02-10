@@ -1231,8 +1231,8 @@
 //#define SENSORLESS_PROBING
 
     #if EITHER(SENSORLESS_HOMING, SENSORLESS_PROBING)
-        #define X_STALL_SENSITIVITY  0
-        #define Y_STALL_SENSITIVITY  0
+        #define X_STALL_SENSITIVITY  1
+        #define Y_STALL_SENSITIVITY  1
         #define Z_STALL_SENSITIVITY  4
 
         // TODO: this is just a ballpark value
