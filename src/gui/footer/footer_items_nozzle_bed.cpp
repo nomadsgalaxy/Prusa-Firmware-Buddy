@@ -68,16 +68,16 @@ void FooterItemBed::unconditionalDraw() {
             if (enabled) {
                 display::fill_rect(
                     Rect16(icon.Left() + x * 4, icon.Top() + icon.Height() - 4 - (y * 4), 3, 3),
-                    COLOR_ORANGE);
+                    COLOR_BRAND);
             } else if (warm) {
                 uint px = icon.Left() + x * 4;
                 uint py = icon.Top() + icon.Height() - 4 - (y * 4);
 
-                display::set_pixel(point_ui16_t(px + 1, py), COLOR_ORANGE);
-                display::set_pixel(point_ui16_t(px + 1, py + 1), COLOR_ORANGE);
-                display::set_pixel(point_ui16_t(px + 1, py + 2), COLOR_ORANGE);
-                display::set_pixel(point_ui16_t(px, py + 1), COLOR_ORANGE);
-                display::set_pixel(point_ui16_t(px + 2, py + 1), COLOR_ORANGE);
+                display::set_pixel(point_ui16_t(px + 1, py), COLOR_BRAND);
+                display::set_pixel(point_ui16_t(px + 1, py + 1), COLOR_BRAND);
+                display::set_pixel(point_ui16_t(px + 1, py + 2), COLOR_BRAND);
+                display::set_pixel(point_ui16_t(px, py + 1), COLOR_BRAND);
+                display::set_pixel(point_ui16_t(px + 2, py + 1), COLOR_BRAND);
             } else {
                 display::fill_rect(
                     Rect16(icon.Left() + x * 4, icon.Top() + icon.Height() - 4 - (y * 4), 3, 3),
@@ -154,7 +154,7 @@ void FooterItemAllNozzles::unconditionalDraw() {
         if (column_height > gray_column_max) {
             display::fill_rect(
                 Rect16(icon.Left() + nozzle * column_size + 1, icon.Top() + icon.Height() - column_height, column_size - 1, column_height - gray_column_max),
-                COLOR_ORANGE);
+                COLOR_BRAND);
         }
     }
 #endif /*HAS_TOOLCHANGER()*/

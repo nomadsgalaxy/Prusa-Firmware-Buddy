@@ -30,7 +30,7 @@ protected:
     virtual void unconditionalDraw() override;
 
 public:
-    window_vertical_progress_t(window_t *parent, Rect16 rect, Color cl_progress = COLOR_ORANGE, Color cl_back = COLOR_DARK_GRAY);
+    window_vertical_progress_t(window_t *parent, Rect16 rect, Color cl_progress = COLOR_BRAND, Color cl_back = COLOR_DARK_GRAY);
     void SetValue(float val);
     void SetProgressColor(Color clr);
     void SetProgressWidth(uint16_t width);

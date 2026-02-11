@@ -233,9 +233,9 @@ MsgBoxIconnedError::MsgBoxIconnedError(Rect16 rect, const PhaseResponses &resp, 
     text.SetAlignment(Align_t::LeftCenter());
     icon.SetRect(getIconRect());
     AdjustLayout(text, icon);
-    SetBackColor(COLOR_ORANGE);
-    text.SetBackColor(COLOR_ORANGE);
-    icon.SetBackColor(COLOR_ORANGE);
+    SetBackColor(COLOR_BRAND);
+    text.SetBackColor(COLOR_BRAND);
+    icon.SetBackColor(COLOR_BRAND);
 
     if (!pButtons) { // pButtons can never be null
         assert("unassigned msgbox");

@@ -74,7 +74,7 @@ void WindowScale::unconditionalDraw() {
     horizLineWhite(2, Height() / 4 * 3);
     horizLineWhite(0, Height());
     /// scale mark line
-    horizLine(0, mark_new_y, COLOR_ORANGE);
+    horizLine(0, mark_new_y, COLOR_BRAND);
 }
 /*****************************************************************************/
 // WindowLiveAdjustZ

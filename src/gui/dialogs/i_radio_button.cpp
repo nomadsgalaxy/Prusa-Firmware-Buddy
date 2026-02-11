@@ -40,7 +40,7 @@ size_t IRadioButton::cnt_buttons(const PhaseTexts *labels, Responses_t resp) {
 
 IRadioButton::IRadioButton(window_t *parent, Rect16 rect, size_t count)
     : window_t(parent, rect) {
-    SetBackColor(COLOR_ORANGE);
+    SetBackColor(COLOR_BRAND);
     SetBtnCount(count);
     SetBtnIndex(0);
     Enable();
@@ -214,7 +214,7 @@ void IRadioButton::draw_n_btns(size_t btn_count) {
                 GetBtnIndex() == i && IsEnabled(i) && !disabled_drawing_selected);
         }
     }
-    Color spaces_clr = (GetBackColor() == COLOR_ORANGE) ? COLOR_BLACK : COLOR_ORANGE;
+    Color spaces_clr = (GetBackColor() == COLOR_BRAND) ? COLOR_BLACK : COLOR_BRAND;
     for (size_t i = 0; i < btn_count - 1; ++i) {
         display::fill_rect(layout.spaces[i], spaces_clr);
     }

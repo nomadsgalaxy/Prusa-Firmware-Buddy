@@ -136,7 +136,7 @@ void DialogTextInput::setup_ui() {
             auto &wnd = ui.txt_result;
             wnd.SetRect(Rect16::fromLTRB(buttons_rect.Left() + button_padding, y, r, b));
             wnd.set_font(Font::big);
-            wnd.SetTextColor(COLOR_ORANGE);
+            wnd.SetTextColor(COLOR_BRAND);
             wnd.SetAlignment(Align_t::RightCenter());
             wnd.set_enabled(false);
 

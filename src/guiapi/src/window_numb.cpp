@@ -23,7 +23,7 @@ void window_numb_t::unconditionalDraw() {
     }
 
     if (IsCaptured()) { // capture color could be part of color scheme, but currently it is used only here
-        clr_text = COLOR_ORANGE;
+        clr_text = COLOR_BRAND;
     }
 
     char text[WINDOW_NUMB_MAX_TEXT];

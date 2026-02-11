@@ -238,10 +238,10 @@ public:
         , minus(this, rect_minus, is_multiline::no, is_closed_on_click_t::no, string_view_utf8::MakeRAM("-")) {
         plus.SetAlignment(Align_t::Center());
         plus.set_font(Font::big);
-        plus.SetTextColor(COLOR_ORANGE);
+        plus.SetTextColor(COLOR_BRAND);
         minus.SetAlignment(Align_t::Center());
         minus.set_font(Font::big);
-        minus.SetTextColor(COLOR_ORANGE);
+        minus.SetTextColor(COLOR_BRAND);
         numb.SetAlignment(Align_t::Center());
     }
 

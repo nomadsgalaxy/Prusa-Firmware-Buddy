@@ -70,6 +70,7 @@ add_executable(
   )
 target_include_directories(
   color_tests PUBLIC ${CMAKE_SOURCE_DIR}/src/common ${CMAKE_SOURCE_DIR}/src/lang
+                     ${CMAKE_SOURCE_DIR}/include
   )
 add_catch_test(color_tests)
 

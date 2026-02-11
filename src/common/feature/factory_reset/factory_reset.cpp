@@ -108,7 +108,7 @@ extern osThreadId displayTaskHandle;
     }
 
     const auto indicate_progress = [&](int progress_pct) {
-        render_rect(Rect16::fromLTWH(progress_rect.Left(), progress_rect.Top(), progress_rect.Width() * progress_pct / 100, progress_rect.Height()), COLOR_ORANGE);
+        render_rect(Rect16::fromLTWH(progress_rect.Left(), progress_rect.Top(), progress_rect.Width() * progress_pct / 100, progress_rect.Height()), COLOR_BRAND);
     };
 
     // Stop any sound plays. We will be entering a critical section and don't want to hear a long beep during all that wiping

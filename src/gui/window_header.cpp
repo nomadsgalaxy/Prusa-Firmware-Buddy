@@ -162,7 +162,7 @@ void window_header_t::updateTransfer() {
     if (transfer_progress && transfer_val_on && (transfer_progress != last_transfer_progress || transfer_has_issue != last_transfer_has_issue)) {
         snprintf(transfer_str, sizeof(transfer_str), "%d%%", transfer_progress.value());
         transfer_val.SetText(string_view_utf8::MakeRAM(transfer_str));
-        transfer_val.SetTextColor(transfer_has_issue ? COLOR_ORANGE : COLOR_WHITE);
+        transfer_val.SetTextColor(transfer_has_issue ? COLOR_BRAND : COLOR_WHITE);
         transfer_val.Invalidate();
     }
     last_transfer_progress = transfer_progress;
@@ -204,8 +204,8 @@ void window_header_t::update_bed_info() {
     static constexpr uint32_t blink_period_ms { 500 };
     uint32_t now = ticks_ms();
     if (now - bed_last_change_ms > blink_period_ms) {
-        if (bed_text.GetTextColor() != COLOR_ORANGE) {
-            bed_text.SetTextColor(COLOR_ORANGE);
+        if (bed_text.GetTextColor() != COLOR_BRAND) {
+            bed_text.SetTextColor(COLOR_BRAND);
         } else {
             bed_text.SetTextColor(COLOR_WHITE);
         }

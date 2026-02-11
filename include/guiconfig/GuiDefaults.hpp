@@ -93,7 +93,7 @@ struct GuiDefaults {
     static constexpr Color ColorBack = COLOR_BLACK;
     static constexpr Color ColorText = COLOR_WHITE;
     static constexpr Color ColorDisabled = COLOR_SILVER;
-    static constexpr Color ColorSelected = COLOR_ORANGE;
+    static constexpr Color ColorSelected = COLOR_BRAND;
     static constexpr Color COLOR_VALUE_VALID = COLOR_WHITE;
     static constexpr Color COLOR_VALUE_INVALID = COLOR_DARK_GRAY;
     static constexpr color_scheme ClickableIconColorScheme = { .normal = ScreenWidth > 240 ? COLOR_DARK_GRAY : COLOR_BLACK, .focused = COLOR_WHITE, .shadowed = ColorBack, .focused_and_shadowed = ColorDisabled };

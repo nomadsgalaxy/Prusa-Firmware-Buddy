@@ -112,7 +112,7 @@ namespace frame {
     public:
         ProgressFrame(window_t *parent, const string_view_utf8 &txt_title, const string_view_utf8 &txt_info)
             : TextFrame(parent, txt_title, txt_info)
-            , progress_bar(parent, get_progress_bar_rect(parent->GetRect()), COLOR_ORANGE, COLOR_DARK_GRAY, PROGRESS_BAR_CORNER_RADIUS)
+            , progress_bar(parent, get_progress_bar_rect(parent->GetRect()), COLOR_BRAND, COLOR_DARK_GRAY, PROGRESS_BAR_CORNER_RADIUS)
             , progress_number(parent, get_progress_number_rect(parent->GetRect()), 0, "%.0f%%", Font::big) {
             progress_number.SetAlignment(Align_t::Center());
         }

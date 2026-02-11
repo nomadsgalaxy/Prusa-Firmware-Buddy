@@ -119,7 +119,7 @@ void set_idle(window_text_t &item, window_colored_rect *color) {
 
 void set_selected(window_text_t &item, window_colored_rect *color) {
     item.SetTextColor(COLOR_WHITE);
-    item.SetBackColor(COLOR_ORANGE);
+    item.SetBackColor(COLOR_BRAND);
     if (color) {
         color->set_parent_color(COLOR_BLACK);
     }
@@ -322,8 +322,8 @@ ToolsMappingBody::ToolsMappingBody(window_t *parent, GCodeInfo &gcode_info)
           _("MMU filament")
 #endif
               )
-    , left_line(parent, left_line_rect, COLOR_ORANGE, COLOR_GRAY)
-    , right_line(parent, right_line_rect, COLOR_ORANGE, COLOR_GRAY)
+    , left_line(parent, left_line_rect, COLOR_BRAND, COLOR_GRAY)
+    , right_line(parent, right_line_rect, COLOR_BRAND, COLOR_GRAY)
     , middle_connector(parent, middle_connectors_rect)
     , left_gcode_texts(make_left_gcode_text(std::make_index_sequence<max_item_rows>(), parent, left_gcode_label_buffers, gcode_info, drawing_nozzles))
     , right_phys_texts(make_right_phys_text(std::make_index_sequence<max_item_rows>(), parent, right_phys_label_buffers, drawing_nozzles))

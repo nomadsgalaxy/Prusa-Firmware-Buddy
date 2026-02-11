@@ -342,10 +342,10 @@ void DialogNumericInput::update() {
     // Check if we're within input bounds
     {
         const bool value_valid = ((accum_val >= config_.min_value) && (accum_val <= config_.max_value)) || is_special_value_;
-        ui.txt_limits.SetTextColor(value_valid ? COLOR_GRAY : COLOR_ORANGE);
+        ui.txt_limits.SetTextColor(value_valid ? COLOR_GRAY : COLOR_BRAND);
         ui.btn_ok.set_shadow(!value_valid);
 
-        ui.txt_result.SetTextColor(is_initial_value_ ? COLOR_GRAY : COLOR_ORANGE);
+        ui.txt_result.SetTextColor(is_initial_value_ ? COLOR_GRAY : COLOR_BRAND);
 
         ui.txt_unit.set_visible(!is_special_value_);
     }

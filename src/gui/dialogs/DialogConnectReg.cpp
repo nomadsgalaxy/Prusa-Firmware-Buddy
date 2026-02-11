@@ -35,7 +35,7 @@ DialogConnectRegister::DialogConnectRegister()
     text_state.SetAlignment(Align_t::Center());
     text_attempt.SetAlignment(Align_t::Center());
     text_detail.SetAlignment(Align_t::Center());
-    line.SetBackColor(COLOR_ORANGE);
+    line.SetBackColor(COLOR_BRAND);
 
     title.SetText(_("Prusa Connect - printer setup"));
 

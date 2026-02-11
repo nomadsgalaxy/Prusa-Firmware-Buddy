@@ -99,7 +99,7 @@ namespace frame {
         CalibratingMotor(window_t *parent, const string_view_utf8 &txt)
             : text { parent, text_rect, is_multiline::yes, is_closed_on_click_t::no, _(txt_calibrating) }
             , title { parent, title_rect, is_multiline::no, is_closed_on_click_t::no, txt }
-            , progress_bar { parent, progress_bar_rect, COLOR_ORANGE, COLOR_DARK_GRAY }
+            , progress_bar { parent, progress_bar_rect, COLOR_BRAND, COLOR_DARK_GRAY }
             , phase_x_of_y { parent, phase_x_of_y_rect, is_multiline::no, is_closed_on_click_t::no } {
             title.SetAlignment(Align_t::Center());
             phase_x_of_y.SetAlignment(Align_t::Center());
