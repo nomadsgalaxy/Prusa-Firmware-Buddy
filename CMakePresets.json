@@ -23,6 +23,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-xbuddy-extension"
@@ -73,6 +77,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -125,6 +133,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-xbuddy-extension"
@@ -175,6 +187,230 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak_debug_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONE"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak_debug_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONE"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak_release_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONE"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak_release_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONE"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "ON"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -227,6 +463,10 @@
                     "type": "STRING",
                     "value": "BUDDY"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -273,6 +513,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -321,6 +565,10 @@
                     "type": "STRING",
                     "value": "BUDDY"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -367,6 +615,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -419,6 +671,10 @@
                     "type": "STRING",
                     "value": "cs"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -469,6 +725,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "cs"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -521,6 +781,10 @@
                     "type": "STRING",
                     "value": "cs"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -571,6 +835,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "cs"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -623,6 +891,10 @@
                     "type": "STRING",
                     "value": "de"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -673,6 +945,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "de"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -725,6 +1001,10 @@
                     "type": "STRING",
                     "value": "de"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -775,6 +1055,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "de"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -827,6 +1111,10 @@
                     "type": "STRING",
                     "value": "es"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -877,6 +1165,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "es"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -929,6 +1221,10 @@
                     "type": "STRING",
                     "value": "es"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -979,6 +1275,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "es"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1031,6 +1331,10 @@
                     "type": "STRING",
                     "value": "fr"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1081,6 +1385,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "fr"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1133,6 +1441,10 @@
                     "type": "STRING",
                     "value": "fr"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1183,6 +1495,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "fr"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1235,6 +1551,10 @@
                     "type": "STRING",
                     "value": "it"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1285,6 +1605,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "it"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1337,6 +1661,10 @@
                     "type": "STRING",
                     "value": "it"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1387,6 +1715,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "it"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1439,6 +1771,10 @@
                     "type": "STRING",
                     "value": "pl"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1489,6 +1825,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "pl"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1541,6 +1881,10 @@
                     "type": "STRING",
                     "value": "pl"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1591,6 +1935,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "pl"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1643,6 +1991,10 @@
                     "type": "STRING",
                     "value": "ja"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1693,6 +2045,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "ja"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1745,6 +2101,10 @@
                     "type": "STRING",
                     "value": "ja"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1795,6 +2155,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "ja"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1847,6 +2211,10 @@
                     "type": "STRING",
                     "value": "uk"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -1897,6 +2265,10 @@
                 "TRANSLATIONS_LIST": {
                     "type": "STRING",
                     "value": "uk"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -1949,6 +2321,10 @@
                     "type": "STRING",
                     "value": "uk"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -2000,6 +2376,10 @@
                     "type": "STRING",
                     "value": "uk"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -2046,6 +2426,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -2094,6 +2478,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -2141,6 +2529,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -2187,6 +2579,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -2239,6 +2635,10 @@
                     "type": "BOOL",
                     "value": "YES"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -2289,6 +2689,10 @@
                 "ENABLE_BURST": {
                     "type": "BOOL",
                     "value": "YES"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -2341,6 +2745,10 @@
                     "type": "BOOL",
                     "value": "YES"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -2392,6 +2800,10 @@
                     "type": "BOOL",
                     "value": "YES"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -2438,6 +2850,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -2486,6 +2902,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -2533,6 +2953,10 @@
                     "type": "STRING",
                     "value": "XBUDDY"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -2579,6 +3003,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -2631,6 +3059,10 @@
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -2681,6 +3113,10 @@
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -2733,6 +3169,10 @@
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -2783,6 +3223,10 @@
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -2839,6 +3283,10 @@
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -2893,6 +3341,10 @@
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -2949,6 +3401,10 @@
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -3003,6 +3459,10 @@
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "${sourceDir}/build-vscode-modularbed"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -3063,6 +3523,10 @@
                     "type": "BOOL",
                     "value": "YES"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -3121,6 +3585,10 @@
                 "ENABLE_BURST": {
                     "type": "BOOL",
                     "value": "YES"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -3181,6 +3649,10 @@
                     "type": "BOOL",
                     "value": "YES"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -3239,6 +3711,10 @@
                 "ENABLE_BURST": {
                     "type": "BOOL",
                     "value": "YES"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -3327,6 +3803,10 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -3413,6 +3893,10 @@
                 "HAS_SELFTEST": {
                     "type": "BOOL",
                     "value": "NO"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -3501,6 +3985,10 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -3588,6 +4076,10 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -3634,6 +4126,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XL_DEV_KIT_XLB"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -3682,6 +4178,10 @@
                     "type": "STRING",
                     "value": "XL_DEV_KIT_XLB"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -3728,6 +4228,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XL_DEV_KIT_XLB"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -3776,6 +4280,10 @@
                     "type": "STRING",
                     "value": "XL_DEV_KIT_XLB"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -3822,6 +4330,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "DWARF"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -3870,6 +4382,10 @@
                     "type": "STRING",
                     "value": "DWARF"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -3916,6 +4432,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "DWARF"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -3964,6 +4484,10 @@
                     "type": "STRING",
                     "value": "DWARF"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -4010,6 +4534,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -4058,6 +4586,10 @@
                     "type": "STRING",
                     "value": "MODULARBED"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -4104,6 +4636,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -4152,6 +4688,10 @@
                     "type": "STRING",
                     "value": "MODULARBED"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -4198,6 +4738,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -4246,6 +4790,10 @@
                     "type": "STRING",
                     "value": "MODULARBED"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -4292,6 +4840,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -4340,6 +4892,10 @@
                     "type": "STRING",
                     "value": "MODULARBED"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -4386,6 +4942,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY_EXTENSION"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -4434,6 +4994,10 @@
                     "type": "STRING",
                     "value": "XBUDDY_EXTENSION"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "NO"
@@ -4481,6 +5045,10 @@
                     "type": "STRING",
                     "value": "XBUDDY_EXTENSION"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOOTLOADER": {
                     "type": "STRING",
                     "value": "YES"
@@ -4527,6 +5095,10 @@
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY_EXTENSION"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",

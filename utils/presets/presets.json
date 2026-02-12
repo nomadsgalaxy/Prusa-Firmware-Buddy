@@ -7,6 +7,20 @@
             "cacheVariables": {
                 "PRINTER": "COREONE",
                 "BOARD": "XBUDDY",
+                "SIGNATURE_OAK": "OFF",
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "build-vscode-xbuddy-extension"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak",
+            "description": "Original Prusa CORE One Signature Oak Edition",
+            "cacheVariables": {
+                "PRINTER": "COREONE",
+                "BOARD": "XBUDDY",
+                "SIGNATURE_OAK": "ON",
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "build-vscode-xbuddy-extension"
@@ -18,7 +32,8 @@
             "description": "Original Prusa MINI",
             "cacheVariables": {
                 "PRINTER": "MINI",
-                "BOARD": "BUDDY"
+                "BOARD": "BUDDY",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -27,7 +42,8 @@
             "cacheVariables": {
                 "PRINTER": "MINI",
                 "BOARD": "BUDDY",
-                "TRANSLATIONS_LIST": "cs"
+                "TRANSLATIONS_LIST": "cs",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -36,7 +52,8 @@
             "cacheVariables": {
                 "PRINTER": "MINI",
                 "BOARD": "BUDDY",
-                "TRANSLATIONS_LIST": "de"
+                "TRANSLATIONS_LIST": "de",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -45,7 +62,8 @@
             "cacheVariables": {
                 "PRINTER": "MINI",
                 "BOARD": "BUDDY",
-                "TRANSLATIONS_LIST": "es"
+                "TRANSLATIONS_LIST": "es",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -54,7 +72,8 @@
             "cacheVariables": {
                 "PRINTER": "MINI",
                 "BOARD": "BUDDY",
-                "TRANSLATIONS_LIST": "fr"
+                "TRANSLATIONS_LIST": "fr",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -63,7 +82,8 @@
             "cacheVariables": {
                 "PRINTER": "MINI",
                 "BOARD": "BUDDY",
-                "TRANSLATIONS_LIST": "it"
+                "TRANSLATIONS_LIST": "it",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -72,7 +92,8 @@
             "cacheVariables": {
                 "PRINTER": "MINI",
                 "BOARD": "BUDDY",
-                "TRANSLATIONS_LIST": "pl"
+                "TRANSLATIONS_LIST": "pl",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -81,7 +102,8 @@
             "cacheVariables": {
                 "PRINTER": "MINI",
                 "BOARD": "BUDDY",
-                "TRANSLATIONS_LIST": "ja"
+                "TRANSLATIONS_LIST": "ja",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -90,7 +112,8 @@
             "cacheVariables": {
                 "PRINTER": "MINI",
                 "BOARD": "BUDDY",
-                "TRANSLATIONS_LIST": "uk"
+                "TRANSLATIONS_LIST": "uk",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -98,7 +121,8 @@
             "description": "Original Prusa MK4 with xBuddy 0.2.7c or newer fw compatible, 400-step motors and planetary gearbox",
             "cacheVariables": {
                 "PRINTER": "MK4",
-                "BOARD": "XBUDDY"
+                "BOARD": "XBUDDY",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -107,7 +131,8 @@
             "cacheVariables": {
                 "PRINTER": "MK4",
                 "BOARD": "XBUDDY",
-                "ENABLE_BURST":true
+                "ENABLE_BURST": true,
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -115,7 +140,8 @@
             "description": "Original Prusa MK3.5 with xBuddy 0.2.7c or newer fw compatible, 200-step motors and MK3 extruder",
             "cacheVariables": {
                 "PRINTER": "MK3.5",
-                "BOARD": "XBUDDY"
+                "BOARD": "XBUDDY",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -127,7 +153,8 @@
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "build-vscode-modularbed"
-                }
+                },
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -143,7 +170,8 @@
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
                     "value": "build-vscode-modularbed"
-                }
+                },
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -160,7 +188,8 @@
                     "type": "FILEPATH",
                     "value": "build-vscode-modularbed"
                 },
-                "ENABLE_BURST":true
+                "ENABLE_BURST": true,
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -177,14 +206,15 @@
                     "type": "FILEPATH",
                     "value": "build-vscode-modularbed"
                 },
-                "CONNECT":false,
-                "MDNS":false,
-                "HAS_BELT_TUNING":false,
-                "HAS_CANCEL_OBJECT":false,
-                "HAS_GEARBOX_ALIGNMENT":false,
-                "HAS_INPUT_SHAPER_CALIBRATION":false,
-                "HAS_PHASE_STEPPING_CALIBRATION":false,
-                "HAS_SELFTEST":false
+                "CONNECT": false,
+                "MDNS": false,
+                "HAS_BELT_TUNING": false,
+                "HAS_CANCEL_OBJECT": false,
+                "HAS_GEARBOX_ALIGNMENT": false,
+                "HAS_INPUT_SHAPER_CALIBRATION": false,
+                "HAS_PHASE_STEPPING_CALIBRATION": false,
+                "HAS_SELFTEST": false,
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -192,7 +222,8 @@
             "description": "Original Prusa xl_dev_kit",
             "cacheVariables": {
                 "PRINTER": "XL_DEV_KIT",
-                "BOARD": "XL_DEV_KIT_XLB"
+                "BOARD": "XL_DEV_KIT_XLB",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -200,7 +231,8 @@
             "description": "Original Prusa XL's Dwarf (the extruder puppy)",
             "cacheVariables": {
                 "PRINTER": "XL",
-                "BOARD": "DWARF"
+                "BOARD": "DWARF",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -208,7 +240,8 @@
             "description": "Original Prusa XL's Modular Bed",
             "cacheVariables": {
                 "PRINTER": "XL",
-                "BOARD": "MODULARBED"
+                "BOARD": "MODULARBED",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -216,7 +249,8 @@
             "description": "Original Prusa iX's Modular Bed",
             "cacheVariables": {
                 "PRINTER": "iX",
-                "BOARD": "MODULARBED"
+                "BOARD": "MODULARBED",
+                "SIGNATURE_OAK": "OFF"
             }
         },
         {
@@ -224,7 +258,8 @@
             "description": "Original Prusa CORE One Extension Board",
             "cacheVariables": {
                 "PRINTER": "COREONE",
-                "BOARD": "XBUDDY_EXTENSION"
+                "BOARD": "XBUDDY_EXTENSION",
+                "SIGNATURE_OAK": "OFF"
             }
         }
     ]

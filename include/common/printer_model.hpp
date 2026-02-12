@@ -23,6 +23,7 @@ enum class PrinterModel : uint8_t {
     xl_dev_kit,
     ix,
     coreone,
+    coreone_oak,
 
     _cnt
 };

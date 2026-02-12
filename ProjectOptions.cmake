@@ -84,6 +84,14 @@ set(CUSTOM_COMPILE_OPTIONS
     ""
     CACHE STRING "Allows adding custom C/C++ flags"
     )
+set(SIGNATURE_OAK
+    "OFF"
+    CACHE BOOL "Build Signature Oak variant (luxury limited edition with brass UI theme)"
+    )
+if(SIGNATURE_OAK AND NOT PRINTER STREQUAL "COREONE")
+  message(FATAL_ERROR "SIGNATURE_OAK is only supported for COREONE builds")
+endif()
+define_boolean_option(SIGNATURE_OAK ${SIGNATURE_OAK})
 
 if(${BOARD} STREQUAL "XL_DEV_KIT_XLB")
   set(WUI
