@@ -4,6 +4,7 @@
 #include "file_raii.hpp"
 
 #include "config.h"
+#include <option/signature_oak.h>
 
 #include "marlin_client.hpp"
 #include "screen_filebrowser.hpp"
@@ -224,9 +225,13 @@ screen_home_data_t::screen_home_data_t()
 
     {
         StringBuilder sb(header_text);
+#if SIGNATURE_OAK()
+        sb.append_string("SIGNATURE OAK ");
+#else
         sb.append_string("PRUSA ");
         sb.append_string(PrinterModelInfo::current().id_str);
         sb.append_string(" ");
+#endif
         sb.append_string(version::project_version);
         sb.append_string(version::project_version_suffix_short);
 #if DEVELOPER_MODE()
