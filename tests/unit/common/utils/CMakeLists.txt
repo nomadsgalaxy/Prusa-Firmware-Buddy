@@ -29,3 +29,6 @@ add_executable(progress_mapper_tests progress_mapper_tests.cpp)
 target_compile_definitions(progress_mapper_tests PUBLIC NDEBUG) # Disable assert failures
 target_link_libraries(progress_mapper_tests buddy_utils)
 add_catch_test(progress_mapper_tests)
+
+# signature_oak tests
+add_subdirectory(signature_oak)

@@ -9,6 +9,8 @@ add_definitions(-DUNITTESTS)
 
 # Prepend our stubbed libintl header to override the host's gettext
 include_directories(${CMAKE_SOURCE_DIR}/tests/stubs/host)
+# Global stubs applied to all unit tests (unlike tests/stubs/ which are per-test)
+include_directories(${CMAKE_SOURCE_DIR}/tests/stubs/global)
 
 # include catch_discover_tests function from Catch2
 include(${Catch2_SOURCE_DIR}/contrib/Catch.cmake)
