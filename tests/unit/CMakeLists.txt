@@ -19,6 +19,9 @@ link_libraries(bsod_catch)
 
 # Prepend our stubbed libintl header to override the host's gettext
 include_directories(${CMAKE_SOURCE_DIR}/tests/stubs/host)
+# Global stubs for generated headers (e.g. option/signature_oak.h needed by color.hpp). color.hpp is
+# transitively included by many unit tests and the codebase is too tightly coupled to stub per-test.
+include_directories(${CMAKE_SOURCE_DIR}/tests/stubs/global)
 
 # include catch_discover_tests function from Catch2
 include(${Catch2_SOURCE_DIR}/contrib/Catch.cmake)
