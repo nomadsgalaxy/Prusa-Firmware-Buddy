@@ -140,6 +140,7 @@ pipeline {
                         // pr_type==pr: build on pull requests only
                         // pr_type==main: build in branches
                         values 'all,coreone,release,yesboot',
+                            'all,coreone_oak,release,yesboot',
                             'all,mini-en-cs,release,yesboot', // Always build for testing
                             'main,mini-en-de,release,yesboot',
                             'main,mini-en-es,release,yesboot',
