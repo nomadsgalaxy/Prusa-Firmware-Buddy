@@ -5,7 +5,15 @@
 
 namespace nozzle_cleaner {
 
-ConstexprString clean_sequence = "G1 X254 Y285 F5000\n"
+ConstexprString clean_sequence = "M106 S80\n" // fan on
+                                 "G4 S2\n" // Wait for 2 seconds
+                                 "G1 X267.4 Y284.75 F3000\n"
+                                 "G1 X253.4 Y284.75 F3000\n"
+                                 "G1 X267.4 Y284.75 F3000\n"
+                                 "G1 X253.4 Y284.75 F3000\n"
+                                 "G1 X253.4 Y305.0 F3000\n"
+                                 "M106 S0\n" // fan off
+                                 "G1 X254 Y285 F5000\n"
                                  "G1 X248 Y299 F5000\n"
                                  "G1 X235 Y285 F5000\n"
                                  "G1 X243 Y304 F5000\n"
@@ -15,7 +23,6 @@ ConstexprString clean_sequence = "G1 X254 Y285 F5000\n"
                                  "G1 X226 Y306 F3000\n"
                                  "G1 X248 Y288 F3000\n"
                                  "G1 X247 Y284 F3000\n"
-                                 "G1 X229 Y306 F3000\n"
                                  "G1 X229 Y306 F3000\n"
                                  "G1 X254 Y285 F5000\n"
                                  "G1 X248 Y299 F5000\n"
@@ -29,13 +36,17 @@ ConstexprString clean_sequence = "G1 X254 Y285 F5000\n"
                                  "G1 X247 Y284 F3000\n"
                                  "G1 X229 Y306 F3000";
 
-ConstexprString vblade_cut_sequence = "G1 X267.4 Y284.75 F3000\n"
+ConstexprString vblade_cut_sequence = "M106 S200\n" // fan on
+                                      "G4 S4\n" // Wait for 4 seconds
+                                      "G1 X267.4 Y284.75 F3000\n"
                                       "G1 X253.4 Y284.75 F3000\n"
                                       "G1 X267.4 Y284.75 F3000\n"
                                       "G1 X253.4 Y284.75 F3000\n"
-                                      "G1 X253.4 Y305.0 F3000";
+                                      "G1 X253.4 Y305.0 F3000\n"
+                                      "M106 S0\n"; // fan off
 
-ConstexprString clean_filename = "nozzle_cleaner_clean";
+ConstexprString clean_filename
+    = "nozzle_cleaner_clean";
 ConstexprString vblade_cut_filename = "nozzle_cleaner_vblade_cut";
 
 static GCodeLoader &nozzle_cleaner_gcode_loader_instance() {
