@@ -480,10 +480,6 @@ void CSelftest::phaseSelftestStart() {
     if (m_Mask & stmZcalib) {
         m_result.zalign = TestResult_Unknown;
     }
-    if (m_Mask & stmHeaters) {
-        m_result.tools[0].nozzle = TestResult_Unknown;
-        m_result.bed = TestResult_Unknown;
-    }
     config_store().selftest_result.set(m_result); // reset status for all selftest parts in eeprom
 }
 

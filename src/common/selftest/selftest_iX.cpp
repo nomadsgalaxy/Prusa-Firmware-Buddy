@@ -406,13 +406,6 @@ void CSelftest::phaseSelftestStart() {
         thermalManager.setTargetHotend(0, 0);
         marlin_server::set_temp_to_display(0, 0);
     }
-
-    m_result = config_store().selftest_result.get(); // read previous result
-    if (m_Mask & stmHeaters) {
-        m_result.tools[0].nozzle = TestResult_Unknown;
-        m_result.bed = TestResult_Unknown;
-    }
-    config_store().selftest_result.set(m_result); // reset status for all selftest parts in eeprom
 }
 
 void CSelftest::restoreAfterSelftest() {
