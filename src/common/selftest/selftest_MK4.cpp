@@ -180,7 +180,6 @@ public:
     virtual bool Abort() override;
 
 protected:
-    void phaseSelftestStart();
     void restoreAfterSelftest();
     virtual void next() override;
     void phaseDidSelftestPass();
@@ -256,7 +255,14 @@ void CSelftest::Loop() {
         phaseStart();
         break;
     case stsSelftestStart:
-        phaseSelftestStart();
+        if (m_Mask & stmHeaters) {
+            // set bed to 35°C
+            // heater test will start after temperature pass tru 40°C (we dont want to entire bed and sheet to be tempered at it)
+            // so don't set 40°C, it could also trigger cooldown in case temperature is or similar 40.1°C
+            thermalManager.setTargetBed(35);
+            // no need to preheat nozzle, it heats up much faster than bed
+            thermalManager.setTargetHotend(0, 0);
+        }
         break;
     case stsLoadcell:
         if (selftest::phaseLoadcell(ToolMask::AllTools, m_pLoadcell, Config_Loadcell)) {
@@ -430,18 +436,6 @@ bool CSelftest::Abort() {
 
     phaseFinish();
     return true;
-}
-
-void CSelftest::phaseSelftestStart() {
-    if (m_Mask & stmHeaters) {
-        // set bed to 35°C
-        // heater test will start after temperature pass tru 40°C (we dont want to entire bed and sheet to be tempered at it)
-        // so don't set 40°C, it could also trigger cooldown in case temperature is or similar 40.1°C
-        thermalManager.setTargetBed(35);
-        // no need to preheat nozzle, it heats up much faster than bed
-        thermalManager.setTargetHotend(0, 0);
-        marlin_server::set_temp_to_display(0, 0);
-    }
 }
 
 void CSelftest::restoreAfterSelftest() {

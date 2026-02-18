@@ -218,7 +218,6 @@ public:
     virtual bool Abort() override;
 
 protected:
-    void phaseSelftestStart();
     void restoreAfterSelftest();
     virtual void next() override;
     void phaseDidSelftestPass();
@@ -302,7 +301,16 @@ void CSelftest::Loop() {
         phaseStart();
         break;
     case stsSelftestStart:
-        phaseSelftestStart();
+        if (m_Mask & to_one_hot(stsHeaters_bed_ena)) {
+            // set bed to 35°C
+            // heater test will start after temperature pass tru 40°C (we dont want to entire bed and sheet to be tempered at it)
+            // so don't set 40°C, it could also trigger cooldown in case temperature is or similar 40.1°C
+            thermalManager.setTargetBed(35);
+        }
+        if (m_Mask & to_one_hot(stsHeaters_noz_ena)) {
+            // no need to preheat nozzle, it heats up much faster than bed
+            thermalManager.disable_hotend();
+        }
         break;
     case stsDocks:
         if (prusa_toolchanger.is_toolchanger_enabled() && (ret = selftest::phaseDocks(tool_mask, pDocks, Config_Docks))) {
@@ -447,23 +455,6 @@ bool CSelftest::Abort() {
 
     phaseFinish();
     return true;
-}
-
-void CSelftest::phaseSelftestStart() {
-    if (m_Mask & to_one_hot(stsHeaters_bed_ena)) {
-        // set bed to 35°C
-        // heater test will start after temperature pass tru 40°C (we dont want to entire bed and sheet to be tempered at it)
-        // so don't set 40°C, it could also trigger cooldown in case temperature is or similar 40.1°C
-        thermalManager.setTargetBed(35);
-    }
-
-    if (m_Mask & to_one_hot(stsHeaters_noz_ena)) {
-        // no need to preheat nozzle, it heats up much faster than bed
-        for (int8_t e = 0; e < HOTENDS; e++) {
-            thermalManager.setTargetHotend(0, e);
-            marlin_server::set_temp_to_display(0, e);
-        }
-    }
 }
 
 void CSelftest::restoreAfterSelftest() {
