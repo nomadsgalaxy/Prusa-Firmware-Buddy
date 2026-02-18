@@ -390,15 +390,6 @@ void CSelftest::phaseSelftestStart() {
     }
 
     m_result = config_store().selftest_result.get(); // read previous result
-    if (m_Mask & stmXAxis) {
-        m_result.xaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmYAxis) {
-        m_result.yaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmZAxis) {
-        m_result.zaxis = TestResult_Unknown;
-    }
     if (m_Mask & stmZcalib) {
         m_result.zalign = TestResult_Unknown;
     }
