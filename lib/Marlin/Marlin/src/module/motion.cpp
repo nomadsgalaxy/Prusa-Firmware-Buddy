@@ -866,17 +866,17 @@ void prepare_move_to(xyze_pos_t target, feedRate_t fr_mm_s, PrepareMoveHints hin
   if(hints.extrusion_safety_checks) {
     #if EITHER(PREVENT_COLD_EXTRUSION, PREVENT_LENGTHY_EXTRUDE)
       if (!DEBUGGING(DRYRUN)) {
-        if (destination.e != current_position.e) {
+        if (target.e != current_position.e) {
           #if ENABLED(PREVENT_COLD_EXTRUSION)
             if (thermalManager.tooColdToExtrude(active_extruder)) {
-              current_position.e = destination.e; // Behave as if the move really took place, but ignore E part
+              current_position.e = target.e; // Behave as if the move really took place, but ignore E part
               SERIAL_ECHO_MSG(MSG_ERR_COLD_EXTRUDE_STOP);
             }
           #endif // PREVENT_COLD_EXTRUSION
           #if ENABLED(PREVENT_LENGTHY_EXTRUDE)
-            const float e_delta = ABS(destination.e - current_position.e) * planner.e_factor[active_extruder];
+            const float e_delta = ABS(target.e - current_position.e) * planner.e_factor[active_extruder];
             if (e_delta > (EXTRUDE_MAXLENGTH)) {
-              current_position.e = destination.e; // Behave as if the move really took place, but ignore E part
+              current_position.e = target.e; // Behave as if the move really took place, but ignore E part
               SERIAL_ECHO_MSG(MSG_ERR_LONG_EXTRUDE_STOP);
             }
           #endif // PREVENT_LENGTHY_EXTRUDE
