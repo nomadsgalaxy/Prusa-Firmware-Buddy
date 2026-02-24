@@ -1288,6 +1288,7 @@ float homeaxis_single_run(const AxisEnum axis, const int axis_home_dir, const fe
     // BFW-8396
     current_position[axis] -= bump;
     planner.buffer_segment(current_position, real_fr_mm_s);
+    planner.synchronize();
 
     // Slow move towards endstop until triggered
     if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("Home 2 Slow:");
