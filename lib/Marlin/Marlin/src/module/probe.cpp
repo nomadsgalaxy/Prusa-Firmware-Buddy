@@ -709,7 +709,7 @@ float run_z_probe(float expected_trigger_z, bool single_only /*= false*/, bool *
         loadcell.WaitBarrier(window_end);
 
         METRIC_DEF(analysis_result, "probe_analysis", METRIC_VALUE_CUSTOM, 0, METRIC_ENABLED);
-        auto result = loadcell.analysis.Analyse();
+        auto result = loadcell.analysis.Analyse(is_nozzle_clean);
 
         if (result.isGood) {
           success = true;
