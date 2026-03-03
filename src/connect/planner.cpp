@@ -85,18 +85,16 @@ namespace {
     // All timestamps and durations are in milliseconds.
 
     // Don't send telemetry more often than this even if things change.
-    const constexpr Duration TELEMETRY_INTERVAL_MIN = 750;
+    const constexpr Duration TELEMETRY_INTERVAL_MIN = 1000 * 2;
 #if WEBSOCKET()
-    // ~~~Max of 2 minutes of telemetry silence.~~~
-    //
-    // Switching to 4 seconds for expreminent too.
-    const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 4;
+    // Telemetry every 15 seconds at least.
+    const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 15;
 #else
     // Telemetry every 4 seconds. We may want to have something more clever later on.
-    const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 4;
+    const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 5;
 #endif
     // Except when we are printing or processing something, we want it more often.
-    const constexpr Duration TELEMETRY_INTERVAL_SHORT = 1000;
+    const constexpr Duration TELEMETRY_INTERVAL_SHORT = 1000 * 5;
     // Make sure to send a full telemetry once in a while, even if there are no
     // relevant changes. That's because the server might forget the telemetry sometimes.
     const constexpr Duration TELEMETRY_INTERVAL_FULL = 1000 * 60 * 5;
