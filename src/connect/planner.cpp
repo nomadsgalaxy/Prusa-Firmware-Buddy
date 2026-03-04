@@ -84,17 +84,27 @@ namespace {
     //
     // All timestamps and durations are in milliseconds.
 
-    // Don't send telemetry more often than this even if things change.
-    const constexpr Duration TELEMETRY_INTERVAL_MIN = 1000 * 2;
-#if WEBSOCKET()
+    // iX prefers shorter intervals:
+    // * LAN communication, so it's mostly for free.
+    // * We wand to avoid delays during pick-up.
+#if PRINTER_IS_PRUSA_iX()
+    const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 4;
+    const constexpr Duration TELEMETRY_INTERVAL_SHORT = 1000;
+    const constexpr Duration TELEMETRY_INTERVAL_MIN = 750;
+#else
+    #if WEBSOCKET()
     // Telemetry every 15 seconds at least.
     const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 15;
-#else
-    // Telemetry every 4 seconds. We may want to have something more clever later on.
+    #else
+    // Telemetry every 4 seconds (unlike websocket, we can't receive a command
+    // asynchronously).
     const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 5;
-#endif
+    #endif
     // Except when we are printing or processing something, we want it more often.
     const constexpr Duration TELEMETRY_INTERVAL_SHORT = 1000 * 5;
+    // Never send more often than this, even if there are changes.
+    const constexpr Duration TELEMETRY_INTERVAL_MIN = 1000 * 2;
+#endif
     // Make sure to send a full telemetry once in a while, even if there are no
     // relevant changes. That's because the server might forget the telemetry sometimes.
     const constexpr Duration TELEMETRY_INTERVAL_FULL = 1000 * 60 * 5;
