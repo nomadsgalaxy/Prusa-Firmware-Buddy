@@ -9,7 +9,6 @@
 typedef enum {
     stsIdle,
     stsStart,
-    stsSelftestStart,
     stsLoadcell,
     stsWait_loadcell,
     stsZcalib,
@@ -65,7 +64,6 @@ enum SelftestMask_t : uint32_t {
     stmWait_heaters = to_one_hot(stsWait_heaters),
     stmFSensor = to_one_hot(stsFSensor_calibration),
     stmFSensor_flip_mmu_at_the_end = to_one_hot(stsFSensor_calibration) | to_one_hot(stsFSensor_flip_mmu_at_the_end),
-    stmSelftestStart = to_one_hot(stsSelftestStart),
     stmSelftestStop = to_one_hot(stsSelftestStop),
     stmNet_status = to_one_hot(stsNet_status),
 };

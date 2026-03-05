@@ -4,7 +4,6 @@
 enum SelftestState_t : uint8_t {
     stsIdle,
     stsStart,
-    stsSelftestStart,
     stsEnsureZAway,
     stsYAxis,
     stsXAxis,
@@ -45,6 +44,5 @@ enum SelftestMask_t : uint32_t {
     stmWait_heaters = to_one_hot(stsWait_heaters),
     stmFSensor = to_one_hot(stsFSensor_calibration),
     stmFSensor_flip_mmu_at_the_end = to_one_hot(stsFSensor_calibration) | to_one_hot(stsFSensor_flip_mmu_at_the_end),
-    stmSelftestStart = to_one_hot(stsSelftestStart),
     stmSelftestStop = to_one_hot(stsSelftestStop),
 };

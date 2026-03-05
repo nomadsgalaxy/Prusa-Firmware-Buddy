@@ -190,9 +190,6 @@ bool CSelftest::Start(const uint64_t test_mask, const TestData test_data) {
         m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmMoveZup)); // if Z is calibrated, move it up
     }
     if (m_Mask & stmFullSelftest) {
-        m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmSelftestStart)); // any selftest state will trigger selftest additional init
-    }
-    if (m_Mask & stmFullSelftest) {
         m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmSelftestStop)); // any selftest state will trigger selftest additional deinit
     }
 
@@ -217,8 +214,6 @@ void CSelftest::Loop() {
         return;
     case stsStart:
         phaseStart();
-        break;
-    case stsSelftestStart:
         break;
     case stsXAxis: {
         if (selftest::phaseAxis(pXAxis, Config_XAxis)) {
