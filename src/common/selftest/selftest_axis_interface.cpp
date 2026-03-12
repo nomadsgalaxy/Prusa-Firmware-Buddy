@@ -11,6 +11,7 @@
 #include "../../Marlin/src/module/stepper.h"
 #include "selftest_part.hpp"
 #include <config_store/store_instance.hpp>
+#include <buddy/unreachable.hpp>
 
 namespace selftest {
 
@@ -93,7 +94,7 @@ bool phaseAxis(IPartHandler *&m_pAxis, const AxisConfig_t &config_axis, Separate
             result.zaxis = new_result;
             break;
         default:
-            bsod_unreachable();
+            BUDDY_UNREACHABLE();
             break;
         }
         config_store().selftest_result.set(result);
