@@ -137,6 +137,11 @@ void pressure_advance_step_generator_init(const move_t &move, pressure_advance_s
 
     pressure_advance_state_init(step_generator, PressureAdvance::pressure_advance_params, move, axis);
 
+    // Set the initial step flags from the last cached values
+    step_generator.step_flags = 0;
+    step_generator.step_flags |= step_generator_state.current_flags & (STEP_EVENT_FLAG_X_DIR << axis);
+    step_generator.step_flags |= step_generator_state.current_flags & (STEP_EVENT_FLAG_X_ACTIVE << axis);
+
     // Set the initial direction and activity flags for the entire next move
     step_generator.move_step_flags = 0;
     step_generator.move_step_flags |= (!pa_state->step_dir) * STEP_EVENT_FLAG_E_DIR;

@@ -2,6 +2,7 @@
 
 #include <option/has_phase_stepping.h>
 #include <option/has_burst_stepping.h>
+#include <buddy/unreachable.hpp>
 
 #include "../precise_stepping/fwdecl.hpp"
 
@@ -16,7 +17,6 @@
     #include <utils/atomic_circular_queue.hpp>
     #include <core/types.h>
     #include <bsod.h>
-    #include <buddy/unreachable.hpp>
 
     #include <algorithm>
     #include <memory>
@@ -55,7 +55,7 @@ struct AxisState {
     CorrectedCurrentLut forward_current, backward_current;
 
     bool inverted = false; // Inverted axis direction flag
-    int zero_rotor_phase = 0; // Rotor phase for position 0
+    float offset = 0; // Physical offset to apply to targets
     int last_phase = 0; // Last known physical rotor phase
     #if HAS_BURST_STEPPING()
     int driver_phase = 0; // Last known phase the driver uses
@@ -189,20 +189,32 @@ struct AxisState {
 };
 
 /**
- * Initializes phase stepping. It has to be called before any other phase
- * stepping function.
+ * @brief Initializes internal phase stepping state.
+ * It has to be called before any other phase stepping function.
  **/
 void init();
 
 /**
- * Set the axis phase origin for a single axis
+ * @brief Directly jump to the given position without any ramping motion.
+ * @param axis_enum Axis to move
+ * @param pos Physical position to move to
+ * @param set_origin Alter the origin so that the given position doesn't move
+ *
+ * Command the motor to move at the given physical position. The rotor must be at standstill and
+ * already close to the intended position in order not to skip. When set_origin is true alter the
+ * origin instead for the motor not to move at the given position.
  */
-void set_phase_origin(AxisEnum axis_num, float pos);
+void jump_to_position(AxisEnum axis_num, float pos, bool set_origin);
 
 /**
- * Generic function for enabling/disabling axis. Unless needed otherwise, this
- * should be the default way of enabling/disabling it for an axis. When axis is
- * already in desired state, it does nothing.
+ * @brief Generic function for enabling/disabling axis.
+ *
+ * Unless needed otherwise, this should be the default way of enabling/disabling it for an axis.
+ * When axis is already in desired state, it does nothing.
+ *
+ * At least one call to jump_to_position() is required to set the starting position prior to enable
+ * one axis.
+ *
  **/
 void enable(AxisEnum axis_num, bool enable);
 

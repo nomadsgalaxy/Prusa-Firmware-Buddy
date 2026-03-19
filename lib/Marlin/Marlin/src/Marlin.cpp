@@ -675,6 +675,7 @@ void setup() {
     // NOTE: this enables (timer) interrupts!
     planner.init();
     stepper.init();
+    PreciseStepping::init_stepper();
     #if HAS_PHASE_STEPPING()
       phase_stepping::init();
     #endif

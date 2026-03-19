@@ -72,7 +72,9 @@ static_assert(MoveFlag::MOVE_FLAG_RESET_POSITION_X == (1ul << MOVE_FLAG_RESET_PO
 typedef struct move_t {
     double start_v;
     double half_accel;
+    /// move duration - relative time in seconds
     double move_time;
+    /// start of move - absolute time in seconds
     double print_time;
 
     xyze_double_t axes_r;
@@ -135,6 +137,7 @@ static_assert(StepEventFlag::STEP_EVENT_FLAG_X_ACTIVE == (1u << STEP_EVENT_FLAG_
 struct step_event_i32_t {
     int32_t time_ticks;
     StepEventFlag_t flags;
+    uint32_t time_absolute_us;
 };
 
 // Used by step event queue. So, the maximum time difference between step events is 2^16 / STEPPER_TIMER_RATE,
