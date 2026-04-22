@@ -172,7 +172,7 @@ if(FILAMENT_SENSOR)
 endif()
 
 if(HAS_LOADCELL)
-  target_sources(firmware PRIVATE loadcell.cpp probe_position_lookback.cpp)
+  target_sources(firmware PRIVATE loadcell.cpp pa_calibration.cpp probe_position_lookback.cpp)
 endif()
 if(HAS_LOADCELL_HX717)
   target_sources(firmware PRIVATE hx717.cpp)

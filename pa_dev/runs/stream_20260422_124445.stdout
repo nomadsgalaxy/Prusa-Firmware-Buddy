@@ -1,0 +1,10 @@
+STATE port=COM5 file=pa_test_20260422_122429.gcode total_lines=887 log=C:\Users\Antdr\OneDrive\Computers\Work Computers\Prusa\Documents\Claude\Prusa\Prusa-Firmware-Buddy\pa_dev\runs\stream_20260422_124445.log
+TX 0/0    M115  (handshake)
+TX 1/887   M140 S60
+TX 2/887   M104 S215
+TX 3/887   G90
+TX 4/887   M83
+TX 5/887   G21
+TX 6/887   M107
+TX 7/887   G28
+TX 8/887   G29

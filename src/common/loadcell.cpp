@@ -13,6 +13,7 @@
 #include "timing.h"
 #include <logging/log.hpp>
 #include "probe_position_lookback.hpp"
+#include "pa_calibration.hpp"
 #include "bsod.h"
 #include "config_features.h"
 #if ENABLED(POWER_PANIC)
@@ -324,6 +325,13 @@ void Loadcell::ProcessSample(int32_t loadcellRaw, uint32_t time_us) {
     sensor_data().loadCell = tared_z_load;
     if (!std::isfinite(tared_z_load)) {
         fatal_error(ErrCode::ERR_SYSTEM_LOADCELL_INFINITE_LOAD);
+    }
+
+    // Pressure Advance calibration — capture the tared Z load during a
+    // scripted extrusion pattern (M573 / inline filament-load). Hot path: one
+    // relaxed atomic load and a predicted-taken branch when inactive.
+    if (auto &pa_cap = pa_calibration::Capture::instance(); pa_cap.IsActive()) {
+        pa_cap.StoreSample(tared_z_load, time_us);
     }
 
     if (Endstops::is_z_probe_enabled()) {

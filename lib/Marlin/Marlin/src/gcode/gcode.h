@@ -185,6 +185,7 @@
  * M540 - Enable/disable SD card abort on endstop hit: "M540 S<state>". (Requires SD_ABORT_ON_ENDSTOP_HIT)
  * M569 - Enable stealthChop on an axis. (Requires at least one _DRIVER_TYPE to be TMC2130/2160/2208/2209/5130/5160)
  * M572 - Set parameters for pressure advance.
+ * M573 - Loadcell-based pressure advance calibration (signal capture). (Requires HAS_LOADCELL)
  * M593 - Set parameters for input shapers.
  * M600 - Pause for filament change: "M600 X<pos> Y<pos> Z<raise> E<first_retract> L<later_retract>". (Requires ADVANCED_PAUSE_FEATURE)
  * M601 - Pause and park print-head in marlin's defined position. (Requires ADVANCED_PAUSE_FEATURE)
@@ -716,6 +717,10 @@ private:
 
   static void M572();
   static void M572_internal(float pressure_advance, float smooth_time);
+
+  #if HAS_LOADCELL()
+    static void M573();
+  #endif
 
   #if ENABLED(BAUD_RATE_GCODE)
     static void M575();

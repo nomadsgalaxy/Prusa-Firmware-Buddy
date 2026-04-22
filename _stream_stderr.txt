@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "C:\Users\Antdr\OneDrive\Computers\Work Computers\Prusa\Documents\Claude\Prusa\Prusa-Firmware-Buddy\pa_dev\tools\stream_gcode.py", line 236, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "C:\Users\Antdr\OneDrive\Computers\Work Computers\Prusa\Documents\Claude\Prusa\Prusa-Firmware-Buddy\pa_dev\tools\stream_gcode.py", line 179, in main
+    rx = read_line_blocking(ser, 2.0)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Antdr\OneDrive\Computers\Work Computers\Prusa\Documents\Claude\Prusa\Prusa-Firmware-Buddy\pa_dev\tools\stream_gcode.py", line 62, in read_line_blocking
+    ch = ser.read(1)
+         ^^^^^^^^^^^
+  File "C:\Users\Antdr\AppData\Roaming\Python\Python312\site-packages\serial\serialwin32.py", line 275, in read
+    raise SerialException("ClearCommError failed ({!r})".format(ctypes.WinError()))
+serial.serialutil.SerialException: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))

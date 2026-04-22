@@ -224,6 +224,13 @@ if(BOARD_IS_MASTER_BOARD)
       target_link_libraries(Marlin PRIVATE sfl-library)
     endif()
   endif()
+
+  if(HAS_LOADCELL)
+    # Loadcell-based Pressure Advance calibration (signal-capture prototype).
+    target_sources(
+      Marlin PRIVATE Marlin/Marlin/src/gcode/feature/pressure_advance/M573.cpp
+      )
+  endif()
 endif()
 
 target_compile_features(Marlin PUBLIC cxx_std_17)

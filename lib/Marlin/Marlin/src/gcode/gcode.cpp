@@ -603,6 +603,10 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
 
       case 572: M572(); break;                                    // M572: Set parameters for pressure advance.
 
+      #if HAS_LOADCELL()
+        case 573: M573(); break;                                  // M573: Loadcell-based pressure advance calibration (signal capture).
+      #endif
+
       #if ENABLED(BAUD_RATE_GCODE)
         case 575: M575(); break;                                  // M575: Set serial baudrate
       #endif

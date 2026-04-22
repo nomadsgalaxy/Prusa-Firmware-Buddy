@@ -1,0 +1,5 @@
+wrote C:\Users\Antdr\OneDrive\Computers\Work Computers\Prusa\Documents\Claude\Prusa\Prusa-Firmware-Buddy\pa_dev\gcode\pa_test_20260422_133336.gcode
+  K values: 36  (0.0350..0.0700 step 0.001)
+  layers:   3
+  per-line: slow 25 / fast 30 / slow 25 mm  (total X = 80 mm, Y extent = 105 mm)
+  extrusion total: 399.70 mm filament (\u22480.96 cm³)
