@@ -21,9 +21,6 @@
  */
 #pragma once
 
-// Print debug messages with M111 S2 (Uses 156 bytes of PROGMEM)
-//#define DEBUG_STOPWATCH
-
 #include "../core/macros.h" // for FORCE_INLINE
 
 #include <stdint.h>
@@ -105,14 +102,4 @@ class Stopwatch {
      * @return the delta since starting the stopwatch
      */
     static millis_t duration();
-
-    #ifdef DEBUG_STOPWATCH
-
-      /**
-       * @brief Print a debug message
-       * @details Print a simple debug message "Stopwatch::function"
-       */
-      static void debug(const char func[]);
-
-    #endif
 };

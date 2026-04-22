@@ -13,7 +13,11 @@ void CFanCtlPuppy::exit_selftest_mode() {
 }
 
 void CFanCtlPuppy::reset_fan() {
-    set_pwm(is_autofan ? buddy::puppies::Dwarf::FAN_MODE_AUTO_PWM : 0);
+    if (is_autofan) {
+        buddy::puppies::dwarfs[dwarf_nr].set_fan_auto(fan_nr);
+    } else {
+        buddy::puppies::dwarfs[dwarf_nr].set_fan(fan_nr, 0);
+    }
 }
 
 bool CFanCtlPuppy::set_pwm(uint16_t pwm) {

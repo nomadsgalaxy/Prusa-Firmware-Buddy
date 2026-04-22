@@ -30,6 +30,9 @@ constexpr std::array presets {
     /// Reset everything, keep just HW configuration
     PresetConfig { N_("Keep HW Config"), FactoryReset::item_bitset({ Item::hw_config }) },
 
+    /// For the factory guys to run after the printer is assembled and tested
+    PresetConfig { N_("Shipping Reset"), FactoryReset::item_bitset({ Item::hw_config, Item::calibrations }) },
+
     /// Full wipe with firmware clear is a special case handlded a slightly different way
     PresetConfig { N_("Full Reset"), {} },
 };

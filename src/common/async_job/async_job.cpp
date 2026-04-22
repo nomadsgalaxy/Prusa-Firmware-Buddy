@@ -20,32 +20,9 @@ void AsyncJobBase::issue(const Callback &callback, AsyncJobExecutor &executor) {
 
     std::lock_guard mutex_guard(executor.mutex);
 
-    // Insert the job in the linked list
-    {
-        assert(next_job == nullptr);
-        assert(previous_job == nullptr);
-
-        auto &ex = executor.synchronized_data;
-
-        if (ex.first_job != nullptr) {
-            // The linked list is not empty -> insert this after the last job
-            assert(ex.last_job != nullptr);
-            previous_job = ex.last_job;
-            previous_job->next_job = this;
-
-        } else {
-            // The linked list was empty -> make this a first job and wake the executor
-            assert(!ex.first_job);
-            ex.first_job = this;
-            executor.empty_queue_condition.notify_one();
-        }
-
-        ex.last_job = this;
-    }
-
     this->executor = &executor;
     this->callback = callback;
-    state_ = State::queued;
+    enqueue_nolock();
 }
 
 bool AsyncJobBase::try_cancel() {
@@ -81,7 +58,7 @@ void AsyncJobBase::discard() {
 
         case State::running:
             // The job is currently being processed -> mark it as discarded so that the worker task does not try to write to this structure afterwards
-            executor->synchronized_data.current_job_discarded = true;
+            executor->synchronized_data.current_job = nullptr;
             break;
 
         case State::finished:
@@ -120,4 +97,29 @@ void AsyncJobBase::unqueue_nolock() {
         assert(ex.last_job == this);
         ex.last_job = previous_job;
     }
+}
+
+void AsyncJobBase::enqueue_nolock() {
+    assert(executor);
+    assert(next_job == nullptr);
+    assert(previous_job == nullptr);
+
+    auto &ex = executor->synchronized_data;
+
+    if (ex.first_job != nullptr) {
+        // The linked list is not empty -> insert this after the last job
+        assert(ex.last_job != nullptr);
+        previous_job = ex.last_job;
+        previous_job->next_job = this;
+
+    } else {
+        // The linked list was empty -> make this a first job and wake the executor
+        assert(!ex.first_job);
+        ex.first_job = this;
+        executor->empty_queue_condition.notify_one();
+    }
+
+    ex.last_job = this;
+
+    state_ = State::queued;
 }

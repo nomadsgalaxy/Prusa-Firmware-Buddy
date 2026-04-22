@@ -1,3 +1,7 @@
+/// @file
+#include "heap.h"
+#include "heap.hpp"
+
 // Simplified and customized version based on a code from article below.
 // http://www.nadler.com/embedded/newlibAndFreeRTOS.html
 #include <atomic>
@@ -11,7 +15,6 @@
 #include <string.h>
 #include "newlib.h"
 #include "bsod.h"
-#include "heap.h"
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
 #include <option/board_is_master_board.h>
@@ -92,13 +95,9 @@ extern "C" uint32_t heap_bytes_remaining() {
     return heap_total_size() - (current_heap_end() - heap_start);
 }
 
-extern "C" void setup_isr_stack_overflow_trap() {
-    *reinterpret_cast<uint32_t *>(heap_end()) = 0xdeadbeef;
-}
-extern "C" void check_isr_stack_overflow() {
-    if (*reinterpret_cast<uint32_t *>(heap_end()) != 0xdeadbeef) {
-        bsod("ISR stack overflow");
-    }
+StackOverflowChecker &isr_stack_overflow_checker() {
+    static StackOverflowChecker checker(std::as_writable_bytes(std::span { heap_end(), ram_end }));
+    return checker;
 }
 
 void *_sbrk_r([[maybe_unused]] struct _reent *pReent, int incr) {

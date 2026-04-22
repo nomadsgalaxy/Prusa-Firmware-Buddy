@@ -1,7 +1,7 @@
 #pragma once
 
 #include <assert.h>
-#include "device/board.h" // for BOARD_IS_xxx
+#include "device/board.h"
 
 #ifdef __cplusplus
 extern "C" {

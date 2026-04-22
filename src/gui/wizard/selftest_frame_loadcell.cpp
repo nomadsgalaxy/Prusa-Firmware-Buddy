@@ -59,7 +59,7 @@ SelftestFrameLoadcell::SelftestFrameLoadcell(window_t *parent, PhasesSelftest ph
     , text_result(this, ChangeableRect, is_multiline::no) {
     text_result.SetAlignment(Align_t::Center());
     text_big.set_font(Font::big);
-    text_big.SetBlinkColor(COLOR_ORANGE); // Blink orange if temperature is to high
+    text_big.SetBlinkColor(COLOR_BRAND); // Blink brand color if temperature is too high
     text_big.SetAlignment(Align_t::Center());
     qr.SetAlignment(Align_t::RightTop());
     text_details.set_font(Font::small);
@@ -191,10 +191,10 @@ void SelftestFrameLoadcell::change() {
     case PhasesSelftest::Loadcell_user_tap_countdown:
     case PhasesSelftest::Loadcell_user_tap_check:
     case PhasesSelftest::Loadcell_user_tap_ok:
-        progress.SetProgressPercent(dt.progress);
+        progress.set_progress_percent(dt.progress);
         break;
     default:
-        progress.SetProgressPercent(0);
+        progress.set_progress_percent(0);
         break;
     }
 };

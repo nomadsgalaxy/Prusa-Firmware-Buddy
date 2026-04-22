@@ -13,6 +13,11 @@ void RadioButtonFSM::set_fsm_and_phase(FSMAndPhase target) {
     fsm_and_phase_ = target;
 }
 
+void RadioButtonFSM::set_fsm_and_phase(FSMAndPhase target, PhaseResponses responses) {
+    RadioButton::Change(responses);
+    fsm_and_phase_ = target;
+}
+
 void RadioButtonFSM::windowEvent(window_t *sender, GUI_event_t event, void *param) {
     switch (event) {
     case GUI_event_t::CLICK:

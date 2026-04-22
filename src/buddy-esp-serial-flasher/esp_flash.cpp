@@ -7,7 +7,7 @@ extern "C" {
 }
 #include <algorithm>
 #include <cstring>
-#include <gui/gui_bootstrap_screen.hpp>
+#include <buddy/bootstrap_state.hpp>
 #include <logging/log.hpp>
 #include <option/has_embedded_esp32.h>
 #include <option/has_gui.h>
@@ -18,6 +18,8 @@ extern "C" {
 #include <str_utils.hpp>
 
 LOG_COMPONENT_REF(Buddy);
+
+using buddy::BootstrapStage;
 
 namespace buddy_esp_serial_flasher {
 
@@ -61,12 +63,15 @@ public:
     }
     void report_progress(size_t increment) final {
         current += increment;
-        gui_bootstrap_screen_set_state(100 * current / total, retry ? "[ESP] Reflashing broken sectors" : "Flashing ESP");
+        bootstrap_state_set(100 * current / total, retry ? BootstrapStage::reflashing_esp : BootstrapStage::flashing_esp);
     }
 };
 
 static Result generic_upload(const Part &part, generic_start_function start, generic_write_function write, ProgressHookInterface &progress_hook) {
     uint8_t buffer[esp::flash::buffer_size];
+
+    // We better have some filesystem before we try opening a file.
+    TaskDeps::wait(TaskDeps::make(TaskDeps::Dependency::resources_ready));
 
     unique_file_ptr file { fopen(part.filename, "rb") };
     if (file.get() == nullptr) {
@@ -230,12 +235,6 @@ Result flash() {
         return Result::not_connected;
     }
 
-#if !HAS_EMBEDDED_ESP32()
-    // With ESP8266 we need to wait for resources early to be able to flush the stub
-    // TODO: Add more resources flags for esp and do a more granular dependency check
-    TaskDeps::wait(TaskDeps::make(TaskDeps::Dependency::resources_ready));
-#endif
-
     FlashPartsResults results;
     if (const Result result = verify_all_flash_parts(results); result != Result::success) {
         return result;
@@ -254,12 +253,6 @@ Result flash() {
         if (const Result result = run_rom(); result != Result::success) {
             return result;
         }
-
-#if HAS_EMBEDDED_ESP32()
-        // ESP32 doesn't need the stub so we can wait for resources here.
-        // This makes the verification happend during the Install phase so we don't need to wait at the end for it
-        TaskDeps::wait(TaskDeps::make(TaskDeps::Dependency::resources_ready));
-#endif
 
         // Flash everything that needs to be flashed
         BootstrapProgressHook progress_hook { total, tries != REFLASH_MAX_TRIES };

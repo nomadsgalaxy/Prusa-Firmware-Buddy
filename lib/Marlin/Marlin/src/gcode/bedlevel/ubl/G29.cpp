@@ -25,10 +25,11 @@
  */
 
 #include "../../../inc/MarlinConfig.h"
-#include <buddy/unreachable.hpp>
-#include "feature/nozzle_cleaning_failed/nozzle_cleaning_failed_wizard.hpp"
+#include <feature/auto_retract/auto_retract.hpp>
+#include <feature/nozzle_cleaning_failed/nozzle_cleaning_failed_wizard.hpp>
 #include <config_store/store_instance.hpp>
 #include <feature/print_status_message/print_status_message_guard.hpp>
+#include <mapi/parking.hpp>
 
 #if ENABLED(AUTO_BED_LEVELING_UBL)
 
@@ -41,6 +42,12 @@
     #include <option/has_uneven_bed_prompt.h>
 
     #include <mapi/motion.hpp>
+
+#include <option/has_nozzle_cleaner.h>
+
+#if HAS_NOZZLE_CLEANER()
+    #include "../../../feature/nozzle_cleaner/include/nozzle_cleaner.hpp"
+#endif
 
 /** \addtogroup G-Codes
  * @{
@@ -263,6 +270,11 @@ void GcodeSuite::G29() {
 
     BlockEStallDetection block_e_stall_detection;
 
+#if HAS_NOZZLE_CLEANER()
+    const uint8_t max_nozzle_cleaning_retries = 3;        
+    uint8_t nozzle_cleaning_retries = 0;
+#endif
+
     while (true) {
         ubl.g29_min_max_measured_z = std::nullopt;
         ubl.g29_nozzle_cleaning_failed = false;
@@ -289,6 +301,44 @@ void GcodeSuite::G29() {
 
     #if HAS_LOADCELL() && ENABLED(PROBE_CLEANUP_SUPPORT)
         if (ubl.g29_nozzle_cleaning_failed) {
+        #if HAS_NOZZLE_CLEANER()
+            // If we have nozzle cleaner, we try to use it first and retry nozzle cleaning but only a limited number of times
+            if (nozzle_cleaning_retries < max_nozzle_cleaning_retries) {
+                nozzle_cleaning_retries++;
+                // Park over the bin
+                mapi::park(mapi::ZAction::absolute_move, mapi::ParkingPosition::from_xyz_pos({ { XYZ_WASTEBIN_POINT } }));
+
+                // Extrude a bit and retract quickly (skip ramming)
+                const float purge_length = 8.f;
+                buddy::auto_retract().ensure_retracted_no_ramming(purge_length);
+                // Ensure the nozzle cleaner is ready
+                while (true) {
+                    if (planner.draining()) return;
+                    
+                    if (nozzle_cleaner::is_loader_idle()) {
+                        nozzle_cleaner::load_clean_gcode();
+                    }
+                    if (nozzle_cleaner::is_loader_buffering()) {
+                        idle(true); // Wait for the loader to finish buffering
+                        continue; // We are not ready yet, we need to wait for the loader to finish buffering
+                    }
+                    break;
+                }
+
+                // Clean the nozzle
+                if(nozzle_cleaner::execute()) {
+                    // Nozzle cleaner cleaning succeeded, proceed to retry nozzle cleaning
+                    continue;
+                } else {
+                    // Something went wrong, we cannot continue
+                    log_error(Marlin, "Nozzle cleaner cleaning failed and cannot continue");
+                    // and fallthrough to the wizard
+                }
+            } else {
+                nozzle_cleaning_retries = 0;
+                //and fallthrough to the wizard
+            }
+        #endif
             // Using the M600 position for this. While we are not changing
             // filament, we want the nozzle to park at an accessible place to
             // have it cleaned and the M600 position happens to be just what we
@@ -308,7 +358,7 @@ void GcodeSuite::G29() {
                 // Retry nozzle cleaning without purge
                 continue;
             default:
-                BUDDY_UNREACHABLE();
+                bsod_unreachable();
             }
         }
     #endif

@@ -54,6 +54,13 @@ const char *footer::to_string(Item item) {
                 HAS_CHAMBER_API() ? (const char *)N_("Chamber temperature")
                                   : nullptr //
         },
+        { Item::f_s_value_side,
+#if HAS_SIDE_FSENSOR()
+            N_("FS Value Side")
+#else
+            nullptr
+#endif
+        },
     };
 
     return texts.get_fallback(item, Item::none);

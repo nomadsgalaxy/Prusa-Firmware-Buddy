@@ -127,13 +127,19 @@ enum class CalibrateAxisError : uint8_t {
 
 const char *to_string(CalibrateAxisError);
 
+using CalibrateAxisResult = std::expected<std::array<MotorPhaseCorrection, 2>, CalibrateAxisError>;
+
 /**
  * Assuming the printer is homed, calibrate given axis. The progress is reported
  * via hooks. The routine is blocking.
  *
+ * WARNING! G28_no_parser(true, true, false, { .only_if_needed = true, .z_raise = 3, .precise = false });
+ * should be executed before calling this function.
+ * Within this function it may be called as well and then it needs lot of stack space.
+ *
  * Returns an array with forward and backward calibration
+ * The result is passed by reference, because it's quite big (several > 100 B)
  */
-std::expected<std::array<MotorPhaseCorrection, 2>, CalibrateAxisError>
-calibrate_axis(AxisEnum axis, CalibrateAxisHooks &hooks);
+void calibrate_axis(AxisEnum axis, CalibrateAxisHooks &hooks, CalibrateAxisResult &result);
 
 } // namespace phase_stepping

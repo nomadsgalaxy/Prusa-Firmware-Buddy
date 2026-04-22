@@ -19,9 +19,17 @@
                     "type": "STRING",
                     "value": "COREONE"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -70,9 +78,17 @@
                     "type": "STRING",
                     "value": "COREONE"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -121,9 +137,17 @@
                     "type": "STRING",
                     "value": "COREONE"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -172,9 +196,489 @@
                     "type": "STRING",
                     "value": "COREONE"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak_debug_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONE"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak_debug_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONE"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak_release_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONE"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreone_oak_release_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONE"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "ON"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreonel_debug_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONEL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreonel_debug_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONEL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreonel_release_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONEL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
+                },
+                "XBUDDY_EXTENSION_BINARY_DIR": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/build-vscode-xbuddy-extension"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreonel_release_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-buddy",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONEL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "STANDARD"
                 },
                 "XBUDDY_EXTENSION_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -223,6 +727,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -269,6 +777,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -317,6 +829,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -364,6 +880,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -410,6 +930,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -462,6 +986,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -512,6 +1040,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -564,6 +1096,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -614,6 +1150,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -666,6 +1206,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -716,6 +1260,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -768,6 +1316,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -818,6 +1370,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -870,6 +1426,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -920,6 +1480,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -972,6 +1536,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1022,6 +1590,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1074,6 +1646,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1124,6 +1700,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1176,6 +1756,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1226,6 +1810,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1278,6 +1866,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1328,6 +1920,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1380,6 +1976,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1430,6 +2030,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1482,6 +2086,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1532,6 +2140,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1584,6 +2196,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1634,6 +2250,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1686,6 +2306,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1736,6 +2360,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1788,6 +2416,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1838,6 +2470,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1890,6 +2526,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -1940,6 +2580,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MINI"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -1992,6 +2636,10 @@
                     "type": "STRING",
                     "value": "MINI"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "BUDDY"
@@ -2043,6 +2691,10 @@
                     "type": "STRING",
                     "value": "MK4"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
@@ -2089,6 +2741,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MK4"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -2137,6 +2793,10 @@
                     "type": "STRING",
                     "value": "MK4"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
@@ -2184,6 +2844,10 @@
                     "type": "STRING",
                     "value": "MK4"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
@@ -2230,6 +2894,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MK4"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -2282,6 +2950,10 @@
                     "type": "STRING",
                     "value": "MK4"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
@@ -2332,6 +3004,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MK4"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -2384,6 +3060,10 @@
                     "type": "STRING",
                     "value": "MK4"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
@@ -2435,6 +3115,10 @@
                     "type": "STRING",
                     "value": "MK3.5"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
@@ -2481,6 +3165,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MK3.5"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -2529,6 +3217,10 @@
                     "type": "STRING",
                     "value": "MK3.5"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
@@ -2575,6 +3267,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "MK3.5"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -2623,9 +3319,17 @@
                     "type": "STRING",
                     "value": "iX"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "iX"
                 },
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -2674,9 +3378,17 @@
                     "type": "STRING",
                     "value": "iX"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "iX"
                 },
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -2725,9 +3437,17 @@
                     "type": "STRING",
                     "value": "iX"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "iX"
                 },
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -2776,9 +3496,17 @@
                     "type": "STRING",
                     "value": "iX"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY"
+                },
+                "XBUDDY_EXTENSION_VARIANT": {
+                    "type": "STRING",
+                    "value": "iX"
                 },
                 "MODULARBED_BINARY_DIR": {
                     "type": "FILEPATH",
@@ -2826,6 +3554,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -2882,6 +3614,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XLBUDDY"
@@ -2936,6 +3672,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -2992,6 +3732,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XLBUDDY"
@@ -3046,6 +3790,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -3106,6 +3854,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XLBUDDY"
@@ -3164,6 +3916,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -3224,6 +3980,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XLBUDDY"
@@ -3283,6 +4043,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XLBUDDY"
@@ -3303,11 +4067,11 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_BELT_TUNING": {
+                "HAS_CANCEL_OBJECT": {
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_CANCEL_OBJECT": {
+                "HAS_E2EE_SUPPORT": {
                     "type": "BOOL",
                     "value": "NO"
                 },
@@ -3370,6 +4134,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XLBUDDY"
@@ -3390,11 +4158,11 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_BELT_TUNING": {
+                "HAS_CANCEL_OBJECT": {
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_CANCEL_OBJECT": {
+                "HAS_E2EE_SUPPORT": {
                     "type": "BOOL",
                     "value": "NO"
                 },
@@ -3457,6 +4225,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XLBUDDY"
@@ -3477,11 +4249,11 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_BELT_TUNING": {
+                "HAS_CANCEL_OBJECT": {
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_CANCEL_OBJECT": {
+                "HAS_E2EE_SUPPORT": {
                     "type": "BOOL",
                     "value": "NO"
                 },
@@ -3544,6 +4316,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XLBUDDY"
@@ -3564,11 +4340,11 @@
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_BELT_TUNING": {
+                "HAS_CANCEL_OBJECT": {
                     "type": "BOOL",
                     "value": "NO"
                 },
-                "HAS_CANCEL_OBJECT": {
+                "HAS_E2EE_SUPPORT": {
                     "type": "BOOL",
                     "value": "NO"
                 },
@@ -3631,6 +4407,10 @@
                     "type": "STRING",
                     "value": "XL_DEV_KIT"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XL_DEV_KIT_XLB"
@@ -3677,6 +4457,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL_DEV_KIT"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -3725,6 +4509,10 @@
                     "type": "STRING",
                     "value": "XL_DEV_KIT"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XL_DEV_KIT_XLB"
@@ -3771,6 +4559,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL_DEV_KIT"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -3819,6 +4611,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "DWARF"
@@ -3865,6 +4661,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -3913,6 +4713,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "DWARF"
@@ -3959,6 +4763,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -4007,6 +4815,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
@@ -4053,6 +4865,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -4101,6 +4917,10 @@
                     "type": "STRING",
                     "value": "XL"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
@@ -4147,6 +4967,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "XL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -4195,6 +5019,10 @@
                     "type": "STRING",
                     "value": "iX"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
@@ -4241,6 +5069,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "iX"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -4289,6 +5121,10 @@
                     "type": "STRING",
                     "value": "iX"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
@@ -4336,9 +5172,217 @@
                     "type": "STRING",
                     "value": "iX"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "MODULARBED"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "ix-xbuddy-extension_debug_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-xbuddy-extension",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "iX"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY_EXTENSION"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "ix-xbuddy-extension_debug_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-xbuddy-extension",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "iX"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY_EXTENSION"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "ix-xbuddy-extension_release_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-xbuddy-extension",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "iX"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY_EXTENSION"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "ix-xbuddy-extension_release_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-xbuddy-extension",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "iX"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY_EXTENSION"
                 },
                 "BOOTLOADER": {
                     "type": "STRING",
@@ -4382,6 +5426,10 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "COREONE"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",
@@ -4430,6 +5478,10 @@
                     "type": "STRING",
                     "value": "COREONE"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY_EXTENSION"
@@ -4477,6 +5529,10 @@
                     "type": "STRING",
                     "value": "COREONE"
                 },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
                 "BOARD": {
                     "type": "STRING",
                     "value": "XBUDDY_EXTENSION"
@@ -4523,6 +5579,214 @@
                 "PRINTER": {
                     "type": "STRING",
                     "value": "COREONE"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY_EXTENSION"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreonel-xbuddy-extension_debug_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-xbuddy-extension",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONEL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY_EXTENSION"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreonel-xbuddy-extension_debug_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-xbuddy-extension",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONEL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY_EXTENSION"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "NO"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Debug"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreonel-xbuddy-extension_release_boot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-xbuddy-extension",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONEL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
+                },
+                "BOARD": {
+                    "type": "STRING",
+                    "value": "XBUDDY_EXTENSION"
+                },
+                "BOOTLOADER": {
+                    "type": "STRING",
+                    "value": "YES"
+                },
+                "GENERATE_DFU": {
+                    "type": "BOOL",
+                    "value": "OFF"
+                },
+                "SIGNING_KEY": {
+                    "type": "FILEPATH",
+                    "value": ""
+                },
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/cmake/GccArmNoneEabi.cmake"
+                },
+                "CMAKE_BUILD_TYPE": {
+                    "type": "STRING",
+                    "value": "Release"
+                },
+                "PROJECT_VERSION_SUFFIX": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                },
+                "PROJECT_VERSION_SUFFIX_SHORT": {
+                    "type": "STRING",
+                    "value": "<auto>"
+                }
+            }
+        },
+        {
+            "name": "coreonel-xbuddy-extension_release_noboot",
+            "generator": "Ninja",
+            "binaryDir": "build-vscode-xbuddy-extension",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "${sourceDir}/.dependencies/ninja-1.10.2/ninja"
+                },
+                "PRINTER": {
+                    "type": "STRING",
+                    "value": "COREONEL"
+                },
+                "SIGNATURE_OAK": {
+                    "type": "STRING",
+                    "value": "OFF"
                 },
                 "BOARD": {
                     "type": "STRING",

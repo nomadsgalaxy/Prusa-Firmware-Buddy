@@ -56,8 +56,8 @@
 #include "module/probe.h"
 #include "module/temperature.h"
 #include "module/configuration_store.h"
-#include "module/printcounter.h" // PrintCounter or Stopwatch
-#include "feature/closedloop.h"
+#include "module/printcounter.h"
+
 #include <option/board_is_master_board.h>
 #if BOARD_IS_MASTER_BOARD()
 #include "pause_stubbed.hpp"
@@ -80,10 +80,6 @@
   #include "feature/host_actions.h"
 #endif
 
-#if USE_BEEPER
-  #include "libs/buzzer.h"
-#endif
-
 #if ENABLED(DIGIPOT_I2C)
   #include "feature/digipot/digipot.h"
 #endif
@@ -101,10 +97,6 @@
   #include "module/servo.h"
 #endif
 
-#if ENABLED(DAC_STEPPER_CURRENT)
-  #include "feature/dac/stepper_dac.h"
-#endif
-
 #if ENABLED(I2C_POSITION_ENCODERS)
   #include "feature/I2CPositionEncoder.h"
 #endif
@@ -116,12 +108,6 @@
 #if ENABLED(G38_PROBE_TARGET)
   uint8_t G38_move; // = 0
   bool G38_did_trigger; // = false
-#endif
-
-#if ENABLED(DELTA)
-  #include "module/delta.h"
-#elif IS_SCARA
-  #include "module/scara.h"
 #endif
 
 #if HAS_LEVELING
@@ -138,14 +124,6 @@
 
 #if HAS_CASE_LIGHT
   #include "feature/caselight.h"
-#endif
-
-#if HAS_FANMUX
-  #include "feature/fanmux.h"
-#endif
-
-#if DO_SWITCH_EXTRUDER || ANY(SWITCHING_NOZZLE, PARKING_EXTRUDER, MAGNETIC_PARKING_EXTRUDER, ELECTROMAGNETIC_SWITCHING_TOOLHEAD)
-  #include "module/tool_change.h"
 #endif
 
 #if ENABLED(PRUSA_MMU2)
@@ -208,26 +186,6 @@ void setup_powerhold() {
   void disableStepperDrivers() { OUT_WRITE(STEPPER_RESET_PIN, LOW); } // Drive down to keep motor driver chips in reset
   void enableStepperDrivers()  { SET_INPUT(STEPPER_RESET_PIN); }      // Set to input, allowing pullups to pull the pin high
 #endif
-
-/**
- * Sensitive pin test for M42, M226
- */
-
-#include "pins/sensitive_pins.h"
-
-bool pin_is_protected(const pin_t pin) {
-  static const pin_t sensitive_pins[] PROGMEM = SENSITIVE_PINS;
-  for (uint8_t i = 0; i < COUNT(sensitive_pins); i++) {
-    pin_t sensitive_pin;
-    memcpy_P(&sensitive_pin, &sensitive_pins[i], sizeof(pin_t));
-    if (pin == sensitive_pin) return true;
-  }
-  return false;
-}
-
-void protected_pin_err() {
-  SERIAL_ERROR_MSG(MSG_ERR_PROTECTED_PIN);
-}
 
 #if HAS_PLANNER()
   void quickstop_stepper() {
@@ -325,7 +283,7 @@ bool anyHeatherIsActive() {
   #if HAS_HEATED_BED
     active |= thermalManager.degTargetBed() != 0;
   #endif
-  HOTEND_LOOP() active |= thermalManager.degTargetHotend(e) != 0;
+  for (int8_t e = 0; e < HOTENDS; e++) active |= thermalManager.degTargetHotend(e) != 0;
   return active;
 }
 
@@ -402,15 +360,6 @@ void manage_inactivity() {
   #if ENABLED(AUTO_POWER_CONTROL)
     powerManager.check();
   #endif
-  #if ENABLED(DUAL_X_CARRIAGE)
-    // handle delayed move timeout
-    if (delayed_move_time && ELAPSED(ms, delayed_move_time + 1000UL) && IsRunning()) {
-      // travel moves have been received so enact them
-      delayed_move_time = 0xFFFFFFFFUL; // force moves to be done
-      destination = current_position;
-      prepare_move_to_destination();
-    }
-  #endif
 
   #if ENABLED(MONITOR_DRIVER_STATUS)
     monitor_motor_drivers();
@@ -466,15 +415,6 @@ void idle(bool waiting) {
 
   thermalManager.manage_heater();
 
-
-  #if ENABLED(PRINTCOUNTER)
-    print_job_timer.tick();
-  #endif
-
-  #if USE_BEEPER
-    buzzer.tick();
-  #endif
-
   #if ENABLED(I2C_POSITION_ENCODERS)
     static millis_t i2cpem_next_update_ms;
     if (planner.busy()) {
@@ -511,8 +451,8 @@ void idle(bool waiting) {
     if( EMotorStallDetector::Instance().Evaluate(stepper.axis_is_moving(E_AXIS), ! stepper.motor_direction(E_AXIS))){
         // E-motor stall has been detected, issue a modified M600
         SERIAL_ECHOLNPGM("E-motor stall detected");
-#if PRINTER_IS_PRUSA_COREONE()
-        // do not issue an M600 on CORE One for now. Instead, clear the flag after 1s to allow reporting future issues like this
+#if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
+        // do not issue an M600 for now. Instead, clear the flag after 1s to allow reporting future issues like this
         static uint32_t last_report_ms = 0;
         if( ticks_diff(ticks_ms(), last_report_ms) > 1000 ){
             EMotorStallDetector::Instance().ClearReported();
@@ -610,10 +550,6 @@ void setup() {
   motor_driver_init();
   motor_driver_check_connections();
 
-  #ifdef BOARD_INIT
-    BOARD_INIT();
-  #endif
-
   // Check startup - does nothing if bootloader sets MCUSR to 0
   byte mcu = HAL_get_reset_source();
   if (mcu &  1) SERIAL_ECHOLNPGM(MSG_POWERUP);
@@ -675,9 +611,10 @@ void setup() {
     // NOTE: this enables (timer) interrupts!
     planner.init();
     stepper.init();
-    #if HAS_PHASE_STEPPING()
-      phase_stepping::init();
-    #endif
+    PreciseStepping::init_stepper();
+#if HAS_PHASE_STEPPING()
+    phase_stepping::init();
+#endif
     PreciseStepping::init();
     #ifdef ADVANCED_STEP_GENERATORS
       input_shaper::init();
@@ -720,10 +657,6 @@ void setup() {
     digipot_i2c_init();
   #endif
 
-  #if ENABLED(DAC_STEPPER_CURRENT)
-    dac_init();
-  #endif
-
   #if EITHER(Z_PROBE_SLED, SOLENOID_PROBE) && HAS_SOLENOID_1
     OUT_WRITE(SOL1_PIN, LOW); // OFF
   #endif
@@ -747,10 +680,6 @@ void setup() {
     SET_OUTPUT(E_MUX2_PIN);
   #endif
 
-  #if HAS_FANMUX
-    fanmux_init();
-  #endif
-
   #if ENABLED(BLTOUCH)
     bltouch.init(/*set_voltage=*/true);
   #endif
@@ -759,38 +688,8 @@ void setup() {
     I2CPEM.init();
   #endif
 
-  #if DO_SWITCH_EXTRUDER
-    move_extruder_servo(0);   // Initialize extruder servo
-  #endif
-
-  #if ENABLED(SWITCHING_NOZZLE)
-    // Initialize nozzle servo(s)
-    #if SWITCHING_NOZZLE_TWO_SERVOS
-      lower_nozzle(0);
-      raise_nozzle(1);
-    #else
-      move_nozzle_servo(0);
-    #endif
-  #endif
-
-  #if ENABLED(MAGNETIC_PARKING_EXTRUDER)
-    mpe_settings_init();
-  #endif
-
-  #if ENABLED(PARKING_EXTRUDER)
-    pe_solenoid_init();
-  #endif
-
-  #if ENABLED(ELECTROMAGNETIC_SWITCHING_TOOLHEAD)
-    est_init();
-  #endif
-
   #if ENABLED(USE_WATCHDOG)
     watchdog_init();          // Reinit watchdog after HAL_get_reset_source call
-  #endif
-
-  #if ENABLED(EXTERNAL_CLOSED_LOOP_CONTROLLER)
-    init_closedloop();
   #endif
 
   #ifdef STARTUP_COMMANDS
@@ -802,7 +701,7 @@ void setup() {
   #endif
 
   #if HAS_TEMP_HEATBREAK_CONTROL
-    HOTEND_LOOP(){
+    for (int8_t e = 0; e < HOTENDS; e++){
       thermalManager.setTargetHeatbreak(DEFAULT_HEATBREAK_TEMPERATURE, e);
     }
   #endif

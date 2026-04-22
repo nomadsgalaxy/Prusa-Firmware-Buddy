@@ -4,7 +4,7 @@
 #include "feature/prusa/crash_recovery.hpp"
 #include <logging/log.hpp>
 #include "marlin_server.hpp"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 
 LOG_COMPONENT_DEF(Selftest, logging::Severity::debug);
 

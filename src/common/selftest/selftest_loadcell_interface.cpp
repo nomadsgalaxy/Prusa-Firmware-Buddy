@@ -29,7 +29,7 @@ TestReturn phaseLoadcell(const ToolMask tool_mask, std::array<IPartHandler *, HO
             // clang-format off
             m_pLoadcell[i] = selftest::Factory::CreateDynamical<CSelftestPart_Loadcell>(config[i],
                 staticLoadCellResult[i],
-                &CSelftestPart_Loadcell::stateMoveUp, &CSelftestPart_Loadcell::stateMoveUpInit, &CSelftestPart_Loadcell::stateMoveUpWaitFinish,
+                &CSelftestPart_Loadcell::stateParkingInit, &CSelftestPart_Loadcell::statePrepareParking, &CSelftestPart_Loadcell::stateParking,
                 &CSelftestPart_Loadcell::stateCooldownInit, &CSelftestPart_Loadcell::stateCooldown, &CSelftestPart_Loadcell::stateCooldownDeinit,
                 &CSelftestPart_Loadcell::stateToolSelectInit, &CSelftestPart_Loadcell::stateToolSelectWaitFinish,
                 &CSelftestPart_Loadcell::stateConnectionCheck,

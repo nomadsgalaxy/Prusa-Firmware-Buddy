@@ -31,9 +31,9 @@ constexpr const char *label_resources[] = {
 ScreenPrintingModel::ScreenPrintingModel(const string_view_utf8 &caption)
     : IScreenPrinting(caption)
     , buttons {
-        { this, GetButtonRect(0), &icon_resources[std::to_underlying(BtnRes::Settings)], [this](window_t &) { TuneAction(); } },
-        { this, GetButtonRect(1), &icon_resources[std::to_underlying(BtnRes::Pause)], [this](window_t &) { PauseAction(); } },
-        { this, GetButtonRect(2), &icon_resources[std::to_underlying(BtnRes::Stop)], [this](window_t &) { StopAction(); } },
+        { this, GetButtonRect(0), &icon_resources[std::to_underlying(BtnRes::Settings)], [this](window_t &) { tuneAction(); } },
+        { this, GetButtonRect(1), &icon_resources[std::to_underlying(BtnRes::Pause)], [this](window_t &) { pauseAction(); } },
+        { this, GetButtonRect(2), &icon_resources[std::to_underlying(BtnRes::Stop)], [this](window_t &) { stopAction(); } },
     }
     , labels {
         { this, GetButtonLabelRect(0), is_multiline::no, is_closed_on_click_t::no, _(label_resources[std::to_underlying(LabelRes::Settings)]) },

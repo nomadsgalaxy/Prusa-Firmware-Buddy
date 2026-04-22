@@ -1,5 +1,4 @@
 #include "nozzle_cleaning_failed_wizard.hpp"
-#include <buddy/unreachable.hpp>
 #include <feature/auto_retract/auto_retract.hpp>
 #include <gcode/temperature/M104_M109.hpp>
 #include <mapi/motion.hpp>
@@ -8,6 +7,7 @@
 #include <Marlin/src/Marlin.h>
 #include <common/marlin_server.hpp>
 #include <gcode/gcode.h>
+#include <raii/auto_restore.hpp>
 
 using namespace marlin_server;
 using namespace nozzle_cleaning_failed_wizard;
@@ -54,7 +54,7 @@ public:
                 return Result::abort;
 
             default:
-                BUDDY_UNREACHABLE();
+                bsod_unreachable();
             }
         }
 
@@ -136,7 +136,7 @@ public:
             break;
 
         default:
-            BUDDY_UNREACHABLE();
+            bsod_unreachable();
         }
     }
 #endif
@@ -151,7 +151,7 @@ public:
         case Response::No:
             return false;
         default:
-            BUDDY_UNREACHABLE();
+            bsod_unreachable();
         }
     }
 
@@ -168,7 +168,7 @@ public:
         };
 
         // takes care of progress reporing and also handles abort correctly
-        CallbackHookGuard subscriber(marlin_server::idle_hook_point, [&temps, this] {
+        Subscriber subscriber(marlin_server::idle_publisher, [&temps, this] {
             if (marlin_server::get_response_from_phase(Phase::wait_temp) == Response::Abort) {
                 if (confirm_abort(Phase::wait_temp)) {
                     // Interrupt the M109
@@ -200,7 +200,7 @@ public:
         const int16_t total_length = buddy::auto_retract().retracted_distance().value_or(0) + purge_length; // We need to ensure we purge even if the value is invalid (nullopt)
         int16_t reference_e_pos = marlin_vars().native_pos[MARLIN_VAR_INDEX_E];
 
-        CallbackHookGuard subscriber(marlin_server::idle_hook_point, [reference_e_pos, total_length, this] {
+        Subscriber subscriber(marlin_server::idle_publisher, [reference_e_pos, total_length, this] {
             if (marlin_server::get_response_from_phase(Phase::purge) == Response::Abort) {
                 if (confirm_abort(Phase::purge)) {
                     // Interrupt the purging
@@ -246,7 +246,7 @@ public:
                     continue;
                 }
             default:
-                BUDDY_UNREACHABLE();
+                bsod_unreachable();
             }
         }
     }
@@ -266,7 +266,7 @@ public:
             warn_active = false;
             return false;
         default:
-            BUDDY_UNREACHABLE();
+            bsod_unreachable();
         }
     }
 };

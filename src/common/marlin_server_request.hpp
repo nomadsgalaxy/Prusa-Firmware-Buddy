@@ -63,7 +63,6 @@ using RequestQueue = freertos::Queue<Request, 1>;
 extern RequestQueue request_queue;
 
 enum class RequestFlag : uint8_t {
-    PrintReady,
     PrintAbort,
     PrintPause,
     PrintResume,
@@ -72,7 +71,6 @@ enum class RequestFlag : uint8_t {
     KnobMoveUp,
     KnobMoveDown,
     KnobClick,
-    GuiCantPrint,
 #if HAS_SELFTEST()
     TestAbort,
 #endif

@@ -1,0 +1,21 @@
+
+# Puppy fault codes.
+#
+# Each puppy should have this in its status message.
+# Each bit corresponds to FAULT_*XX*. If set, fault is active.
+# MSb faults (31, 30, ...) are shared, LSb faults (0, 1, ...) are specific for each puppy.
+
+# These are shared fault codes available for all honeybee puppies
+uint32 FAULT_UNKNOWN = 31 # This should not happen, means bug in fault handling
+uint32 FAULT_HEARTBEAT_MISSING = 30
+uint32 FAULT_DATA_TIMEOUT = 29
+uint32 FAULT_PCB_OVERHEAT = 28
+uint32 FAULT_MCU_OVERHEAT = 27
+
+# This is a helper constant that reserves space for shared faults
+uint32 FAULT_SHARED_FIRST = 24
+
+# This contains shared and specific faults
+uint32 bitmask
+
+@sealed

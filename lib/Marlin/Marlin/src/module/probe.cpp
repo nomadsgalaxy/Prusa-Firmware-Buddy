@@ -34,7 +34,6 @@
   #include "dbg.h"
 #endif
 
-#include "../libs/buzzer.h"
 #include "motion.h"
 #include "temperature.h"
 #include "endstops.h"
@@ -48,10 +47,6 @@
 
 #if HAS_LEVELING
   #include "../feature/bedlevel/bedlevel.h"
-#endif
-
-#if ENABLED(DELTA)
-  #include "delta.h"
 #endif
 
 #if ENABLED(MEASURE_BACKLASH_WHEN_PROBING)
@@ -258,7 +253,7 @@ xyz_pos_t probe_offset; // Initialized by settings.load()
     #endif
     #if ENABLED(PROBING_STEPPERS_OFF)
       disable_e_steppers();
-      #if NONE(DELTA, HOME_AFTER_DEACTIVATE)
+      #if NONE(HOME_AFTER_DEACTIVATE)
         disable_XY();
       #endif
     #endif
@@ -415,10 +410,6 @@ static bool do_probe_move(const float z, const feedRate_t fr_mm_s) {
   // Disable stealthChop if used. Enable diag1 pin on driver.
   #if ENABLED(SENSORLESS_PROBING)
     sensorless_t stealth_states { false };
-    #if ENABLED(DELTA)
-      stealth_states.x = enable_crash_detection(X_AXIS);
-      stealth_states.y = enable_crash_detection(Y_AXIS);
-    #endif
     stealth_states.z = enable_crash_detection(Z_AXIS);
     endstops.enable(true);
   #endif
@@ -444,9 +435,6 @@ static bool do_probe_move(const float z, const feedRate_t fr_mm_s) {
 
   // Check to see if the probe was triggered
   const bool probe_triggered =
-    #if BOTH(DELTA, SENSORLESS_PROBING)
-      endstops.trigger_state() & (_BV(X_MIN) | _BV(Y_MIN) | _BV(Z_MIN))
-    #else
       TEST(endstops.trigger_state(),
         #if ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
           Z_MIN
@@ -454,7 +442,6 @@ static bool do_probe_move(const float z, const feedRate_t fr_mm_s) {
           Z_MIN_PROBE
         #endif
       )
-    #endif
   ;
 
   #if QUIET_PROBING
@@ -465,10 +452,6 @@ static bool do_probe_move(const float z, const feedRate_t fr_mm_s) {
   #if ENABLED(SENSORLESS_PROBING)
     endstops.not_homing();
     #if NEITHER(ENDSTOPS_ALWAYS_ON_DEFAULT, CRASH_RECOVERY)
-      #if ENABLED(DELTA)
-        disable_crash_detection(X_AXIS, stealth_states.x);
-        disable_crash_detection(Y_AXIS, stealth_states.y);
-      #endif
       disable_crash_detection(Z_AXIS, stealth_states.z);
     #endif
   #endif
@@ -533,22 +516,24 @@ static xy_pos_t offset_for_probe_try(int try_idx) {
  * @details Used by probe_at_point to get the bed Z height at the current XY.
  *          Leaves current_position.z at the height where the probe triggered.
  *
- * @param expected_trigger_z do not probe lower than expected_trigger_z + Z_PROBE_LOW_POINT [mm]
- * @param single_only
- * @param[out] endstop_triggered
+ * @param params Struct containing parameters for the probing operation:
+ * @param params.expected_trigger_z do not probe lower than expected_trigger_z + Z_PROBE_LOW_POINT [mm]
+ * @param params.single_only
+ * @param[out] params.endstop_triggered
  *  - true endstop was triggered earlier than expected_trigger_z was reached
  *  - false endstop was not reached
+ * @param params.is_nozzle_clean If true, skip any nozzle cleaning routines before probing.
  *
  * @return The Z position of the bed at the current XY or NAN on error.
  */
-float run_z_probe(float expected_trigger_z, bool single_only, bool *endstop_triggered) {
+float run_z_probe(const RunZProbeParams& params) {
   if (DEBUGGING(LEVELING)) DEBUG_POS(">>> run_z_probe", current_position);
 
   // Stop the probe before it goes too low to prevent damage.
   // If Z isn't known then probe to -10mm.
-  float z_probe_low_point = expected_trigger_z + Z_PROBE_LOW_POINT;
-  if (endstop_triggered)
-    *endstop_triggered = true;
+  float z_probe_low_point = params.expected_trigger_z + Z_PROBE_LOW_POINT;
+  if (params.endstop_triggered)
+    *params.endstop_triggered = true;
 
   // We expect PA delays to be already avoided here
   assert(pressure_advance::PressureAdvanceDisabler::is_active());
@@ -564,8 +549,8 @@ float run_z_probe(float expected_trigger_z, bool single_only, bool *endstop_trig
 
     // Do a first probe at the fast speed
     if (do_probe_move(z_probe_low_point, MMM_TO_MMS(Z_PROBE_SPEED_FAST))) {
-      if(endstop_triggered)
-        *endstop_triggered = false;
+      if(params.endstop_triggered)
+        *params.endstop_triggered = false;
       if (planner.draining())
         return NAN;
 
@@ -590,7 +575,7 @@ float run_z_probe(float expected_trigger_z, bool single_only, bool *endstop_trig
 
     // If the nozzle is well over the travel height then
     // move down quickly before doing the slow probe
-    const float z = expected_trigger_z + Z_CLEARANCE_DEPLOY_PROBE + 5.0 + (probe_offset.z < 0 ? -probe_offset.z : 0) - TERN0(HAS_HOTEND_OFFSET, hotend_currently_applied_offset.z);
+    const float z = params.expected_trigger_z + Z_CLEARANCE_DEPLOY_PROBE + 5.0f + (probe_offset.z < 0 ? -probe_offset.z : 0) - TERN0(HAS_HOTEND_OFFSET, hotend_currently_applied_offset.z);
     if (current_position.z > z) {
       // Probe down fast. If the probe never triggered, raise for probe clearance
       if (!do_probe_move(z, MMM_TO_MMS(Z_PROBE_SPEED_FAST))) {
@@ -649,8 +634,8 @@ float run_z_probe(float expected_trigger_z, bool single_only, bool *endstop_trig
 
       // Probe downward slowly to find the bed
       if (do_probe_move(z_probe_low_point, MMM_TO_MMS(Z_PROBE_SPEED_SLOW))) {
-        if(endstop_triggered)
-          *endstop_triggered = false;
+        if(params.endstop_triggered)
+          *params.endstop_triggered = false;
         if (planner.draining())
           return NAN;
 
@@ -709,18 +694,21 @@ float run_z_probe(float expected_trigger_z, bool single_only, bool *endstop_trig
         loadcell.WaitBarrier(window_end);
 
         METRIC_DEF(analysis_result, "probe_analysis", METRIC_VALUE_CUSTOM, 0, METRIC_ENABLED);
-        auto result = loadcell.analysis.Analyse();
+        auto result = loadcell.analysis.Analyse(params.is_nozzle_clean);
 
-        if (result.isGood) {
+        if (result.has_value()) {
           success = true;
-          last_probe_z = result.zCoordinate;
+          last_probe_z = result->z_coordinate;
           metric_record_custom(&analysis_result, " ok=%i,desc=\"all-good\"", true);
           SERIAL_ECHO_MSG("Probe classified as clean and OK");
           break;
+
         } else {
-          metric_record_custom(&analysis_result, " ok=%i,desc=\"%s\"", false, result.description);
+          const auto &err = result.error();
+          metric_record_custom(&analysis_result, " ok=%i,desc=\"%s\",arg=%f", false, err.description, err.arg);
           SERIAL_ECHO_START();
-          SERIAL_ECHOPAIR("Probe classified as NOK (", result.description);
+          SERIAL_ECHOPAIR("Probe classified as NOK (", err.description);
+          SERIAL_ECHOPAIR(", ", err.arg);
           SERIAL_ECHOLN(")");
         }
       #elif TOTAL_PROBING > 2
@@ -729,7 +717,7 @@ float run_z_probe(float expected_trigger_z, bool single_only, bool *endstop_trig
         UNUSED(z);
       #endif
 
-      if (single_only)
+      if (params.single_only)
         break;
 
       #if TOTAL_PROBING > 2
@@ -799,40 +787,7 @@ void prepare_for_nozzle_cleaning() {
   // Do not auto retract filaments marked do_not_auto_retract, they might get tangled in the extruder (BFW-6953)
   // Skip if retracted distance is known and filament is out of the nozzle
   if (!do_not_autoretract && retracted_distance < 5.0f) {
-
-    // Save target temperature to put back at the end
-    const auto previous_target_temp = static_cast<float>(thermalManager.degTargetHotend(active_extruder));
-
-    // Ensure safe temperature
-    const M109Flags flags_pre = {
-      // Filament target temperature can be altered through PrusaSlicer
-      // We don't have access to this information here, so we use filament presets
-      // Filament had to be loaded with the preset's temperature anyway, so we should be able to retract with it
-      // TODO: Could be passed to G29 as a parameter
-      .target_temp = static_cast<float>(config_store().get_filament_type(active_extruder).parameters().nozzle_temperature),
-    };
-    M109_no_parser(active_extruder, flags_pre);
-
-    {
-      PrintStatusMessageGuard pmg_retract;
-      pmg_retract.update<PrintStatusMessage::auto_retracting>({});
-
-      // Retract to standard distance 
-      const auto hotend = marlin_vars().active_hotend_id();
-      const auto standard_distance = buddy::AutoRetract::minimum_auto_retract_distance;
-      const auto retract_compensation_distance = (-1) * (standard_distance - retracted_distance);
-      assert(retract_compensation_distance < 0);
-      buddy::auto_retract().set_retracted_distance(hotend, std::nullopt);
-      mapi::extruder_move(retract_compensation_distance, FILAMENT_CHANGE_FAST_LOAD_FEEDRATE);
-      planner.synchronize();
-      buddy::auto_retract().set_retracted_distance(hotend, standard_distance);
-    }
-
-    const M109Flags flags_post = {
-      .target_temp = previous_target_temp,
-      .wait_heat_or_cool = true,
-    };
-    M109_no_parser(active_extruder, flags_post);
+    buddy::auto_retract().ensure_retracted_no_ramming();
   }
 }
 #endif
@@ -841,6 +796,12 @@ void prepare_for_nozzle_cleaning() {
  * @brief Probe within a given rectangle in order to cleanup loadcell-based probe.
  */
 bool cleanup_probe(const xy_pos_t &rect_min, const xy_pos_t &rect_max) {
+  GcodeSuite::G28_no_parser(true, true, true,
+    {
+        .only_if_needed = true,
+        .precise = false
+    });
+
   float radius = 1.0f;
   bool probe_deployed = false;
   const int required_clean_cnt = 3;
@@ -888,7 +849,12 @@ bool cleanup_probe(const xy_pos_t &rect_min, const xy_pos_t &rect_max) {
       probe_deployed = true;
 
       // probe
-      float result = run_z_probe(0, /*single_only=*/true);
+      float result = run_z_probe({
+        .expected_trigger_z = 0.f,
+        .single_only = true,
+        .endstop_triggered = nullptr,
+        .is_nozzle_clean = true
+      });
       if (planner.draining()) {
         should_continue = false;
         break;
@@ -933,7 +899,7 @@ float probe_here(float expected_trigger_z)
   float res = NAN;
   DEPLOY_PROBE();
   for(int i=0; i <= TOTAL_PROBING; i++){
-    res = run_z_probe(expected_trigger_z, true) + probe_offset.z + TERN0(HAS_HOTEND_OFFSET, hotend_currently_applied_offset.z);
+    res = run_z_probe({ .expected_trigger_z = expected_trigger_z, .single_only = true }) + probe_offset.z + TERN0(HAS_HOTEND_OFFSET, hotend_currently_applied_offset.z);
     if (!std::isnan(res))
       break;
   }
@@ -962,7 +928,6 @@ float probe_at_point(const xy_pos_t &pos, const ProbePtRaise raise_after/*=PROBE
     DEBUG_POS("", current_position);
   }
 
-  // TODO: Adapt for SCARA, where the offset rotates
   xyz_pos_t npos = pos;
   if (probe_relative) {
     if (!position_is_reachable_by_probe(npos)) {
@@ -985,12 +950,7 @@ float probe_at_point(const xy_pos_t &pos, const ProbePtRaise raise_after/*=PROBE
   #endif
 
   npos.z =
-    #if ENABLED(DELTA)
-      // Move below clip height or xy move will be aborted by do_blocking_move_to
-      _MIN(current_position.z, delta_clip_start_height)
-    #else
       current_position.z
-    #endif
   ;
 
   const float old_feedrate_mm_s = feedrate_mm_s;
@@ -1012,7 +972,7 @@ float probe_at_point(const xy_pos_t &pos, const ProbePtRaise raise_after/*=PROBE
 
   float measured_z = NAN;
   if (!DEPLOY_PROBE()) {
-    measured_z = run_z_probe(0);
+    measured_z = run_z_probe({ .expected_trigger_z = 0.f});
     const float move_away_from = std::isnan(measured_z) ? current_position.z : measured_z;
 
     measured_z += probe_offset.z;

@@ -31,6 +31,10 @@ TestResult get_test_result(Action action, [[maybe_unused]] Tool tool) {
     case Action::FirstLayer:
         // instead of test result that isn't saved to eeprom, consider calibrated sheet as passed.
         return SteelSheets::IsSheetCalibrated(config_store().active_sheet.get()) ? TestResult_Passed : TestResult_Unknown;
+    case Action::FilamentSensorCalibration:
+        return merge_hotends(tool, [&](const int8_t e) {
+            return evaluate_results(sr.tools[e].fsensor);
+        });
     case Action::_count:
         break;
     }
@@ -53,14 +57,18 @@ uint64_t get_test_mask(Action action) {
         return stmZcalib;
     case Action::FirstLayer:
         return stmFirstLayer;
+
     case Action::Fans:
-        bsod("get_test_mask");
+    case Action::FilamentSensorCalibration:
+        // Implemented as a gcode
+        bsod_unreachable();
         break;
+
     case Action::_count:
         break;
     }
-    assert(false);
-    return stmNone;
+
+    bsod_unreachable();
 }
 
 } // namespace SelftestSnake

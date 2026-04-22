@@ -2,6 +2,7 @@
 
 #include <device/hal.h>
 #include <hw/buffered_serial.hpp>
+#include <option/has_esp.h>
 #include <option/has_mmu2.h>
 #include <option/has_mmu2_over_uart.h>
 #include <option/has_puppies.h>
@@ -16,7 +17,7 @@ void uart_init_tmc();
 #if HAS_PUPPIES()
 extern UART_HandleTypeDef uart_handle_for_puppies;
 extern buddy::hw::BufferedSerial uart_for_puppies;
-void uart_init_puppies();
+void uart_init_puppies(bool tester_mode);
 #endif
 
 #if HAS_MMU2_OVER_UART()
@@ -25,5 +26,7 @@ extern buddy::hw::BufferedSerial uart_for_mmu;
 void uart_init_mmu();
 #endif
 
+#if HAS_ESP()
 extern UART_HandleTypeDef uart_handle_for_esp;
 void uart_init_esp();
+#endif

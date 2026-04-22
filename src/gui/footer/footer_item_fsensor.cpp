@@ -3,7 +3,7 @@
  */
 
 #include "footer_item_fsensor.hpp"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "img_resources.hpp"
 #include "i18n.h"
 #include <algorithm>

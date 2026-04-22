@@ -59,34 +59,6 @@ const char* i8tostr3(const int8_t x) {
   return &conv[4];
 }
 
-#if HAS_PRINT_PROGRESS_PERMYRIAD
-  // Convert unsigned 16-bit permyriad to percent with 100 / 23 / 23.4 / 3.45 format
-  const char* permyriadtostr4(const uint16_t xx) {
-    if (xx >= 10000)
-      return "100";
-    else if (xx >= 1000) {
-      conv[3] = DIGIMOD(xx, 1000);
-      conv[4] = DIGIMOD(xx, 100);
-      conv[5] = '.';
-      conv[6] = DIGIMOD(xx, 10);
-      return &conv[3];
-    }
-    else if (xx % 100 == 0) {
-      conv[4] = ' ';
-      conv[5] = RJDIGIT(xx, 1000);
-      conv[6] = DIGIMOD(xx, 100);
-      return &conv[4];
-    }
-    else {
-      conv[3] = DIGIMOD(xx, 100);
-      conv[4] = '.';
-      conv[5] = DIGIMOD(xx, 10);
-      conv[6] = RJDIGIT(xx, 1);
-      return &conv[3];
-    }
-  }
-#endif
-
 // Convert unsigned 16bit int to string 12345 format
 const char* ui16tostr5(const uint16_t xx) {
   conv[2] = RJDIGIT(xx, 10000);
@@ -197,23 +169,6 @@ const char* ftostr52(const float &f) {
   conv[6] = DIGIMOD(i, 1);
   return &conv[1];
 }
-
-#if ENABLED(LCD_DECIMAL_SMALL_XY)
-
-  // Convert float to rj string with 1234, _123, -123, _-12, 12.3, _1.2, or -1.2 format
-  const char* ftostr4sign(const float &f) {
-    const int i = (f * 100 + (f < 0 ? -5: 5)) / 10;
-    if (!WITHIN(i, -99, 999)) return i16tostr4sign((int)f);
-    const bool neg = i < 0;
-    const int ii = neg ? -i : i;
-    conv[3] = neg ? '-' : (ii >= 100 ? DIGIMOD(ii, 100) : ' ');
-    conv[4] = DIGIMOD(ii, 10);
-    conv[5] = '.';
-    conv[6] = DIGIMOD(ii, 1);
-    return &conv[3];
-  }
-
-#endif
 
 // Convert float to fixed-length string with +123.4 / -123.4 format
 const char* ftostr41sign(const float &f) {

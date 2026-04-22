@@ -1,6 +1,7 @@
 #include "lfn.h"
 
 #include <cassert>
+#include <common/directory.hpp>
 #include <cstring>
 #include <dirent.h>
 
@@ -30,18 +31,14 @@ void search_file(char *path, C &&callback) {
     callback(fname, nullptr);
 
     *last = '\0';
-    DIR *d = opendir(path);
+    Directory d { path };
     *last = '/';
     if (!d) {
         return;
     }
 
     struct dirent *ent;
-    /*
-     * Even though it doesn't look so from the signature, our readdir
-     * is thread safe. The returned buffer is inside the DIR structure.
-     */
-    while ((ent = readdir(d))) {
+    while ((ent = d.read())) {
         /*
          * Allow the input some flexibility - both long and short file
          * names and case insensitive (it's FAT, after all).
@@ -51,7 +48,6 @@ void search_file(char *path, C &&callback) {
             break;
         }
     }
-    closedir(d);
 }
 
 } // namespace
@@ -100,18 +96,14 @@ void get_SFN_path_copy(const char *lfn, char *sfn_out, size_t size) {
     sfn_out[len] = '\0';
 
     char *fname = last + 1;
-    DIR *d = opendir(sfn_out);
+    Directory d { sfn_out };
     if (!d) {
         strlcpy(sfn_out, lfn, size);
         return;
     }
 
     struct dirent *ent;
-    /*
-     * Even though it doesn't look so from the signature, our readdir
-     * is thread safe. The returned buffer is inside the DIR structure.
-     */
-    while ((ent = readdir(d))) {
+    while ((ent = d.read())) {
         /*
          * Allow the input some flexibility - both long and short file
          * names and case insensitive (it's FAT, after all).
@@ -130,6 +122,4 @@ void get_SFN_path_copy(const char *lfn, char *sfn_out, size_t size) {
     if (*fname != '\0' && !ent) {
         strlcpy(sfn_out, lfn, size);
     }
-
-    closedir(d);
 }

@@ -23,16 +23,9 @@
 #include "hwio_pindef.h"
 #include <device/board.h>
 
-#if !defined(STM32F4) && !defined(STM32F4xx)
-  #error "Oops! Select a Buddy board in 'Tools > Board.'"
-#endif
+static_assert(BOARD_IS_BUDDY() || BOARD_IS_XBUDDY());
 
 #define DEFAULT_MACHINE_NAME "Prusa-mini"
-#define BOARD_NAME "Buddy Board"
-
-#define I2C_EEPROM
-
-#define E2END 0x03ff // EEPROM end address (1kB)
 
 #if HOTENDS > 1 || E_STEPPERS > 2
   #error "Buddy supports up to 1 hotends / E-steppers."
@@ -97,11 +90,11 @@
 #if BOARD_IS_XBUDDY()
   #define Z_SLAVE_ADDRESS 2
   #define E0_SLAVE_ADDRESS 0
-#elif(BOARD_TYPE == BUDDY_BOARD)
+#elif BOARD_IS_BUDDY()
   #define Z_SLAVE_ADDRESS 0
   #define E0_SLAVE_ADDRESS 2
 #else
-  #error "macro BOARD_TYPE is not defined"
+  #error
 #endif
 #elif HAS_DRIVER(TMC2130)
 #define X_CS_PIN MARLIN_PIN(CS_X)
@@ -141,11 +134,11 @@
     #undef E0_AUTO_FAN_PIN         //todo fixme, remove other definition of E0_AUTO_FAN_PIN
     #define E0_AUTO_FAN_PIN        MARLIN_PIN(FAN1)
   #endif
-#elif (BOARD_TYPE == BUDDY_BOARD)
+#elif BOARD_IS_BUDDY()
   #undef E0_AUTO_FAN_PIN         //todo fixme, remove other definition of E0_AUTO_FAN_PIN
   #define E0_AUTO_FAN_PIN        MARLIN_PIN(FAN1)
 #else
-  #error "macro BOARD_TYPE is not defined"
+  #error
 #endif
 
 #if defined(MARLIN_PORT_HEATER_ENABLE) && defined(MARLIN_PIN_NR_HEATER_ENABLE)

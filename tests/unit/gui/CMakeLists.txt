@@ -49,7 +49,7 @@ target_include_directories(
   PUBLIC ${CMAKE_SOURCE_DIR}/src/common ${CMAKE_SOURCE_DIR}/src/gui
          ${CMAKE_SOURCE_DIR}/src/gui/dialogs ${CMAKE_SOURCE_DIR}/include
   )
-target_compile_definitions(std_text_input_layout_tests PUBLIC BOARD=2)
+target_compile_definitions(std_text_input_layout_tests PUBLIC BOARD=BOARD_XBUDDY)
 add_catch_test(std_text_input_layout_tests)
 
 # mini_text_input_layout_tests
@@ -59,7 +59,7 @@ target_include_directories(
   PUBLIC ${CMAKE_SOURCE_DIR}/src/common ${CMAKE_SOURCE_DIR}/src/gui
          ${CMAKE_SOURCE_DIR}/src/gui/dialogs ${CMAKE_SOURCE_DIR}/include
   )
-target_compile_definitions(mini_text_input_layout_tests PUBLIC BOARD=1)
+target_compile_definitions(mini_text_input_layout_tests PUBLIC BOARD=BOARD_BUDDY)
 add_catch_test(mini_text_input_layout_tests)
 
 # color_tests
@@ -70,6 +70,7 @@ add_executable(
   )
 target_include_directories(
   color_tests PUBLIC ${CMAKE_SOURCE_DIR}/src/common ${CMAKE_SOURCE_DIR}/src/lang
+                     ${CMAKE_SOURCE_DIR}/include
   )
 add_catch_test(color_tests)
 

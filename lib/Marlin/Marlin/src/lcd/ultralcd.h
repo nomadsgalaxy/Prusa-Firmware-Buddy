@@ -24,15 +24,8 @@
 #include "../inc/MarlinConfig.h"
 #include <option/has_gui.h>
 
-#if HAS_BUZZER
-  #include "../libs/buzzer.h"
-#endif
-
 #define HAS_DIGITAL_BUTTONS (BUTTONS_EXIST(EN1, EN2) || ANY_BUTTON(ENC, BACK, UP, DWN, LFT, RT))
 #define HAS_ENCODER_WHEEL   (BUTTONS_EXIST(EN1, EN2))
-
-// I2C buttons must be read in the main thread
-#define HAS_SLOW_BUTTONS EITHER(LCD_I2C_VIKI, LCD_I2C_PANELOLU2)
 
 #if HAS_DIGITAL_BUTTONS
 
@@ -48,40 +41,6 @@
   #if BUTTON_EXISTS(ENC)
     #define BLEN_C 2
     #define EN_C _BV(BLEN_C)
-  #endif
-
-  #if ENABLED(LCD_I2C_VIKI)
-
-    #define B_I2C_BTN_OFFSET 3 // (the first three bit positions reserved for EN_A, EN_B, EN_C)
-
-    // button and encoder bit positions within 'buttons'
-    #define B_LE (BUTTON_LEFT   << B_I2C_BTN_OFFSET)      // The remaining normalized buttons are all read via I2C
-    #define B_UP (BUTTON_UP     << B_I2C_BTN_OFFSET)
-    #define B_MI (BUTTON_SELECT << B_I2C_BTN_OFFSET)
-    #define B_DW (BUTTON_DOWN   << B_I2C_BTN_OFFSET)
-    #define B_RI (BUTTON_RIGHT  << B_I2C_BTN_OFFSET)
-
-    #if BUTTON_EXISTS(ENC)                                // The pause/stop/restart button is connected to BTN_ENC when used
-      #define B_ST (EN_C)                                 // Map the pause/stop/resume button into its normalized functional name
-      #define BUTTON_CLICK() (buttons & (B_MI|B_RI|B_ST)) // Pause/stop also acts as click until a proper pause/stop is implemented.
-    #else
-      #define BUTTON_CLICK() (buttons & (B_MI|B_RI))
-    #endif
-
-    // I2C buttons take too long to read inside an interrupt context and so we read them during lcd_update
-
-  #elif ENABLED(LCD_I2C_PANELOLU2)
-
-    #if !BUTTON_EXISTS(ENC) // Use I2C if not directly connected to a pin
-
-      #define B_I2C_BTN_OFFSET 3 // (the first three bit positions reserved for EN_A, EN_B, EN_C)
-
-      #define B_MI (PANELOLU2_ENCODER_C << B_I2C_BTN_OFFSET) // requires LiquidTWI2 library v1.2.3 or later
-
-      #define BUTTON_CLICK() (buttons & B_MI)
-
-    #endif
-
   #endif
 
 #else
@@ -135,10 +94,6 @@ public:
   MarlinUI() {
   }
 
-  #if HAS_BUZZER
-    static void buzz(const long duration, const uint16_t freq);
-  #endif
-
   #if ENABLED(LCD_HAS_STATUS_INDICATORS)
     static void update_indicators();
   #endif
@@ -159,37 +114,6 @@ public:
     static uint8_t alert_level; // Higher levels block lower levels
     static inline void reset_alert_level() { alert_level = 0; }
 
-    #if ENABLED(STATUS_MESSAGE_SCROLLING)
-      static uint8_t status_scroll_offset;
-      static void advance_status_scroll();
-      static char* status_and_len(uint8_t &len);
-    #endif
-
-    #if HAS_PRINT_PROGRESS
-      #if HAS_PRINT_PROGRESS_PERMYRIAD
-        typedef uint16_t progress_t;
-        #define PROGRESS_SCALE 100U
-        #define PROGRESS_MASK 0x7FFF
-      #else
-        typedef uint8_t progress_t;
-        #define PROGRESS_SCALE 1U
-        #define PROGRESS_MASK 0x7F
-      #endif
-      #if ENABLED(LCD_SET_PROGRESS_MANUALLY)
-        static progress_t progress_override;
-        static void set_progress(const progress_t p) { progress_override = _MIN(p, 100U * (PROGRESS_SCALE)); }
-        static void set_progress_done() { progress_override = (PROGRESS_MASK + 1U) + 100U * (PROGRESS_SCALE); }
-        static void progress_reset() { if (progress_override & (PROGRESS_MASK + 1U)) set_progress(0); }
-      #endif
-      static progress_t _get_progress();
-      #if HAS_PRINT_PROGRESS_PERMYRIAD
-        static uint16_t get_progress_permyriad() { return _get_progress(); }
-      #endif
-      static uint8_t get_progress_percent() { return uint8_t(_get_progress() / (PROGRESS_SCALE)); }
-    #else
-      static constexpr uint8_t get_progress_percent() { return 0; }
-    #endif
-
     static void refresh() {}
 
     static bool get_blink();
@@ -209,7 +133,6 @@ public:
     static inline void reset_status() {}
     static inline void reset_alert_level() {}
     static constexpr bool has_status() { return false; }
-    static constexpr uint8_t get_progress_percent() { return 0; }
 
   #endif
 

@@ -68,6 +68,16 @@ This does not apply to 3rd party code in our repository.
 
 ## Documentation
 
+API documentation goes to the declaration (header file), using doxygen syntax.
+Prefer `///` over `/** */` variant. This includes whatever the user of the API
+might need to know - invariants, corner cases, error conditions, intended uses.
+No need to overdo on the formal part of doxygen - eg. there's no need to fill in
+`@return` for a `bool is_enabled() const` method, since the meaning of it is
+obvious.
+
+Implementation details can be documented as inline comments inside the relevant
+code.
+
 ### G-Code command documentation
  - Use following format and syntax
 ```

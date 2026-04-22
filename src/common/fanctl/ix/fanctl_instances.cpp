@@ -1,5 +1,6 @@
 
 #include <fanctl.hpp>
+#include "fan_ctl_ix_turbine.hpp"
 #include "hwio_pindef.h"
 #include "CFanCtl3Wire.hpp"
 
@@ -11,7 +12,7 @@ CFanCtlCommon &Fans::print(size_t index) {
         FANCTLPRINT_RPM_MIN, FANCTLPRINT_RPM_MAX,
         FANCTLPRINT_PWM_THR,
         is_autofan_t::no,
-        skip_tacho_t::yes,
+        skip_tacho_t::no,
         FANCTLPRINT_MIN_PWM_TO_MEASURE_RPM);
 
     if (index) {
@@ -21,15 +22,7 @@ CFanCtlCommon &Fans::print(size_t index) {
 };
 
 CFanCtlCommon &Fans::heat_break(size_t index) {
-    static CFanCtl3Wire instance = CFanCtl3Wire(
-        buddy::hw::fanHeatBreakPwm,
-        buddy::hw::fanTach,
-        FANCTLHEATBREAK_PWM_MIN, FANCTLHEATBREAK_PWM_MAX,
-        FANCTLHEATBREAK_RPM_MIN, FANCTLHEATBREAK_RPM_MAX,
-        FANCTLHEATBREAK_PWM_THR,
-        is_autofan_t::yes,
-        skip_tacho_t::no,
-        FANCTLHEATBREAK_MIN_PWM_TO_MEASURE_RPM);
+    static FanCtlIxTurbine instance;
 
     if (index) {
         bsod("Heat break fan %u does not exist", index);
@@ -38,18 +31,5 @@ CFanCtlCommon &Fans::heat_break(size_t index) {
 };
 
 void Fans::tick() {
-    CFanCtl3Wire &heatbreak_fan = static_cast<CFanCtl3Wire &>(Fans::heat_break(0));
-    CFanCtl3Wire &print_fan = static_cast<CFanCtl3Wire &>(Fans::print(0));
-
-    if (heatbreak_fan.getSkipTacho() != skip_tacho_t::yes && heatbreak_fan.get_rpm_measured()) {
-        buddy::hw::tachoSelectPrintFan.write(buddy::hw::Pin::State::high);
-        print_fan.setSkipTacho(skip_tacho_t::no);
-        heatbreak_fan.setSkipTacho(skip_tacho_t::yes);
-    } else if (print_fan.getSkipTacho() != skip_tacho_t::yes && print_fan.get_rpm_measured()) {
-        buddy::hw::tachoSelectPrintFan.write(buddy::hw::Pin::State::low);
-        heatbreak_fan.setSkipTacho(skip_tacho_t::no);
-        print_fan.setSkipTacho(skip_tacho_t::yes);
-    }
     Fans::print(0).tick();
-    Fans::heat_break(0).tick();
 }

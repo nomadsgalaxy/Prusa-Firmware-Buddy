@@ -21,6 +21,7 @@
  */
 
 #include "tmc_util.h"
+#include <libs/duration_t.h>
 #include <module/printcounter.h>
 #include <module/stepper/trinamic.h>
 #include <module/motion.h>
@@ -1196,7 +1197,7 @@ static TMC2130Stepper *pStep[4] = { nullptr, nullptr, nullptr, nullptr };
 static TMC2209Stepper *pStep[4] = { nullptr, nullptr, nullptr, nullptr };
 #endif
 
-tmc_reg_t tmc_reg_map[] = {
+constinit const tmc_reg_t tmc_reg_map[] = {
     /*  { cmd_name, reg_adr, write, read }, */
     { "gconf", 0x00, true, true },
     { "gstat", 0x01, true, true },
@@ -1385,7 +1386,7 @@ static char should_log_register_operation(uint8_t reg_addr) {
 }
 
 static const char *tmc_reg_addr_to_name(uint8_t addr) {
-    tmc_reg_t *tmc_reg = tmc_reg_map;
+    const tmc_reg_t *tmc_reg = tmc_reg_map;
     while (tmc_reg->cmd_name != NULL) {
         if (tmc_reg->reg_adr == addr) {
             return tmc_reg->cmd_name;

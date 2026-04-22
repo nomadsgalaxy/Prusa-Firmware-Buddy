@@ -1,6 +1,6 @@
 #include "config_features.h"
 #include "../PrusaGcodeSuite.hpp"
-#include "RAII.hpp"
+#include <raii/auto_restore.hpp>
 #include "M70X.hpp"
 #include "fs_event_autolock.hpp"
 #include "../../../lib/Marlin/Marlin/src/gcode/gcode.h"
@@ -60,7 +60,7 @@ void GcodeSuite::M701() {
     const int8_t mmu_slot = p.option<int8_t>('P').value_or(-1);
     const ResumePrint_t resume_print = static_cast<ResumePrint_t>(p.option<bool>('R').value_or(false));
 
-    M701_no_parser(filament_to_be_loaded, fast_load_length, min_Z_pos, op_preheat, target_extruder, mmu_slot, color_to_be_loaded, resume_print);
+    M701_load(filament_to_be_loaded, fast_load_length, min_Z_pos, op_preheat, target_extruder, mmu_slot, color_to_be_loaded, resume_print);
 }
 
 /**
@@ -101,6 +101,6 @@ void GcodeSuite::M702() {
         op_preheat = RetAndCool_t(preheat);
     }
 
-    M702_no_parser(unload_len, min_Z_pos, op_preheat, target_extruder, ask_unloaded);
+    M702_unload(unload_len, min_Z_pos, op_preheat, target_extruder, ask_unloaded);
 }
 /** @}*/

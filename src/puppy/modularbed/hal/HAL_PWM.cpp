@@ -1,7 +1,6 @@
 #include "PuppyConfig.hpp"
 #include "hal/HAL_PWM.hpp"
 #include "hal/HAL_System.hpp"
-#include "hal/HAL_Common.hpp"
 #include "hal/HAL_MultiWatchdog.hpp"
 
 #include "stm32g0xx_hal.h"

@@ -11,9 +11,13 @@ static void check_prefetch_mutex_not_locked() {
     CHECK(freertos::Mutex::locked_mutex_count == 0);
 }
 
-AnyGcodeFormatReader::AnyGcodeFormatReader(const char *filename) {
+AnyGcodeFormatReader::AnyGcodeFormatReader(const char *filename, bool allow_decryption
+#if HAS_E2EE_SUPPORT()
+    ,
+    e2ee::IdentityCheckLevel identity_check_lvl
+#endif
+) {
     check_prefetch_mutex_not_locked();
-
     provider = StubGcodeProviderBase::from_filename(filename);
 }
 
@@ -42,4 +46,8 @@ AnyGcodeFormatReader::~AnyGcodeFormatReader() {
     if (provider) {
         check_prefetch_mutex_not_locked();
     }
+}
+
+bool AnyGcodeFormatReader::valid_for_print([[maybe_unused]] bool) {
+    return is_open() && provider->valid_for_print;
 }

@@ -4,6 +4,7 @@ easyocr~=1.7
 ecdsa~=0.18
 littlefs-python==0.8
 numpy==1.26.4
+nunavut~=2.3
 pillow~=10.4
 pip~=23.0
 polib~=1.2

@@ -32,7 +32,6 @@
 
 #include "../HAL/platforms.h"
 
-#include "../core/boards.h"
 #include "../core/macros.h"
 #include "Configuration.h"
 #include <device/board.h>

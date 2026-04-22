@@ -57,12 +57,8 @@ void Measure_axis::quick_home_start() {
     sync_plan_position();
 
     int axis_home_dir[2];
-    axis_home_dir[X_AXIS] = (
-        #if ENABLED(DUAL_X_CARRIAGE)
-        axis == X_AXIS ? x_home_dir(active_extruder) :
-        #endif
-            invert_dir.x ? (-home_dir(X_AXIS))
-                         : home_dir(X_AXIS));
+    axis_home_dir[X_AXIS] = (invert_dir.x ? (-home_dir(X_AXIS))
+                                          : home_dir(X_AXIS));
 
     axis_home_dir[Y_AXIS] = invert_dir.y ? (-home_dir(X_AXIS)) : home_dir(X_AXIS);
 
@@ -152,12 +148,8 @@ void Measure_axis::sensorless_disable(AxisEnum axis) {
 void Measure_axis::home_back(AxisEnum axis) {
     // FIXME: duplicit code
     #if ENABLED(MOVE_BACK_BEFORE_HOMING)
-    const int axis_home_dir = (
-        #if ENABLED(DUAL_X_CARRIAGE)
-        axis == X_AXIS ? x_home_dir(active_extruder) :
-        #endif
-            invert_dir[axis] ? (-home_dir(axis))
-                             : home_dir(axis));
+    const int axis_home_dir = (invert_dir[axis] ? (-home_dir(axis))
+                                                : home_dir(axis));
     float dist = (axis_home_dir > 0) ? -MOVE_BACK_BEFORE_HOMING_DISTANCE : MOVE_BACK_BEFORE_HOMING_DISTANCE;
     do_homing_move_axis_rel(axis, dist, fr[axis]);
     #endif
@@ -165,12 +157,8 @@ void Measure_axis::home_back(AxisEnum axis) {
 
 void Measure_axis::home_start(AxisEnum axis, bool invert) {
     // FIXME: duplicit code
-    const int axis_home_dir = (
-    #if ENABLED(DUAL_X_CARRIAGE)
-        axis == X_AXIS ? x_home_dir(active_extruder) :
-    #endif
-            invert_dir[axis] ^ invert ? (-home_dir(axis))
-                                      : home_dir(axis));
+    const int axis_home_dir = (invert_dir[axis] ^ invert ? (-home_dir(axis))
+                                                         : home_dir(axis));
     float dist = 1.5f * max_length(axis) * axis_home_dir;
     do_homing_move_axis_rel(axis, dist, fr[axis]);
 }

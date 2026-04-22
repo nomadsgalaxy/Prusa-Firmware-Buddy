@@ -42,7 +42,7 @@ bool is_selftest_successfully_completed() {
     }
 #endif /* HAS_SHEET_PROFILES() */
 
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
 #if HAS_TOOLCHANGER()
         if (!prusa_toolchanger.is_tool_enabled(e)) {
             continue;
@@ -69,11 +69,12 @@ bool is_selftest_successfully_completed() {
         }
 #endif /* HAS_GEARBOX_ALIGNMENT */
 
-#if FILAMENT_SENSOR_IS_ADC()
-        if (!all_passed(sr.tools[e].fsensor)) {
+        if (
+            sr.tools[e].fsensor == TestResult_Failed
+            // For the Mini, the filament sensor is optional
+            && !(PRINTER_IS_PRUSA_MINI() && sr.tools[0].fsensor == TestResult_Skipped)) {
             return false;
         }
-#endif /* FILAMENT_SENSOR_ADC() */
 
 #if HAS_LOADCELL()
         if (!all_passed(sr.tools[e].loadcell)) {

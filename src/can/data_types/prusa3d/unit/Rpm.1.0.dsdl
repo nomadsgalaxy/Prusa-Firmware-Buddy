@@ -1,0 +1,5 @@
+# Revolutions per Minute
+
+float32 rpm # Rotation speed [revolutions per minute], should be positive or 0
+
+@sealed

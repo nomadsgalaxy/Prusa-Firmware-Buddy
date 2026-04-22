@@ -34,14 +34,6 @@
   #include "../libs/hex_print_routines.h"
 #endif
 
-#if ENABLED(TEMPERATURE_UNITS_SUPPORT)
-  typedef enum : uint8_t { TEMPUNIT_C, TEMPUNIT_K, TEMPUNIT_F } TempUnit;
-#endif
-
-#if ENABLED(INCH_MODE_SUPPORT)
-  typedef enum : uint8_t { LINEARUNIT_MM, LINEARUNIT_INCH } LinearUnit;
-#endif
-
 /**
  * GCode parser
  *
@@ -71,14 +63,6 @@ public:
   // Global states for GCode-level units features
 
   static bool volumetric_enabled;
-
-  #if ENABLED(INCH_MODE_SUPPORT)
-    static float linear_unit_factor, volumetric_unit_factor;
-  #endif
-
-  #if ENABLED(TEMPERATURE_UNITS_SUPPORT)
-    static TempUnit input_temp_units;
-  #endif
 
   // Command line state
   static char *command_ptr,               // The command, so it can be echoed
@@ -212,11 +196,6 @@ public:
   // This uses 54 bytes of SRAM to speed up seen/value
   static void parse(char * p);
 
-  #if ENABLED(CNC_COORDINATE_SYSTEMS)
-    // Parse the next parameter as a new command
-    static bool chain();
-  #endif
-
   // The code value pointer was set
   FORCE_INLINE static bool has_value() { return value_ptr != nullptr; }
 
@@ -261,40 +240,12 @@ public:
 
   // Units modes: Inches, Fahrenheit, Kelvin
 
-  #if ENABLED(INCH_MODE_SUPPORT)
-    static inline float mm_to_linear_unit(const float mm)     { return mm / linear_unit_factor; }
-    static inline float mm_to_volumetric_unit(const float mm) { return mm / (volumetric_enabled ? volumetric_unit_factor : linear_unit_factor); }
-
-    // Init linear units by constructor
-    GCodeParser() { set_input_linear_units(LINEARUNIT_MM); }
-
-    static inline void set_input_linear_units(const LinearUnit units) {
-      switch (units) {
-        default:
-        case LINEARUNIT_MM:   linear_unit_factor =  1.0f; break;
-        case LINEARUNIT_INCH: linear_unit_factor = 25.4f; break;
-      }
-      volumetric_unit_factor = POW(linear_unit_factor, 3);
-    }
-
-    static inline float axis_unit_factor(const AxisEnum axis) {
-      return (axis >= E_AXIS && volumetric_enabled ? volumetric_unit_factor : linear_unit_factor);
-    }
-
-    static inline float linear_value_to_mm(const float v)                    { return v * linear_unit_factor; }
-    static inline float axis_value_to_mm(const AxisEnum axis, const float v) { return v * axis_unit_factor(axis); }
-    static inline float per_axis_value(const AxisEnum axis, const float v)   { return v / axis_unit_factor(axis); }
-
-  #else
-
     static inline float mm_to_linear_unit(const float mm)     { return mm; }
     static inline float mm_to_volumetric_unit(const float mm) { return mm; }
 
     static inline float linear_value_to_mm(const float v)               { return v; }
     static inline float axis_value_to_mm(const AxisEnum, const float v) { return v; }
     static inline float per_axis_value(const AxisEnum, const float v)   { return v; }
-
-  #endif
 
   #define LINEAR_UNIT(V)     parser.mm_to_linear_unit(V)
   #define VOLUMETRIC_UNIT(V) parser.mm_to_volumetric_unit(V)
@@ -303,44 +254,10 @@ public:
   static inline float value_axis_units(const AxisEnum axis)     { return axis_value_to_mm(axis, value_float()); }
   static inline float value_per_axis_units(const AxisEnum axis) { return per_axis_value(axis, value_float()); }
 
-  #if ENABLED(TEMPERATURE_UNITS_SUPPORT)
-
-    static inline void set_input_temp_units(const TempUnit units) { input_temp_units = units; }
-
-    static inline float value_celsius() {
-      const float f = value_float();
-      switch (input_temp_units) {
-        case TEMPUNIT_F:
-          return (f - 32) * 0.5555555556f;
-        case TEMPUNIT_K:
-          return f - 273.15f;
-        case TEMPUNIT_C:
-        default:
-          return f;
-      }
-    }
-
-    static inline float value_celsius_diff() {
-      switch (input_temp_units) {
-        case TEMPUNIT_F:
-          return value_float() * 0.5555555556f;
-        case TEMPUNIT_C:
-        case TEMPUNIT_K:
-        default:
-          return value_float();
-      }
-    }
-
-    #define TEMP_UNIT(N) parser.to_temp_units(N)
-
-  #else // !TEMPERATURE_UNITS_SUPPORT
-
     static inline float value_celsius()      { return value_float(); }
     static inline float value_celsius_diff() { return value_float(); }
 
     #define TEMP_UNIT(N) (N)
-
-  #endif // !TEMPERATURE_UNITS_SUPPORT
 
   static inline feedRate_t value_feedrate() { return MMM_TO_MMS(value_linear_units()); }
 

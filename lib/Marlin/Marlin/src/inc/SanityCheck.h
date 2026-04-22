@@ -58,9 +58,7 @@
 /**
  * Warnings for old configurations
  */
-#ifndef MOTHERBOARD
-  #error "MOTHERBOARD is required. Please update your configuration."
-#elif !defined(X_BED_SIZE) || !defined(Y_BED_SIZE)
+#if !defined(X_BED_SIZE) || !defined(Y_BED_SIZE)
   #error "X_BED_SIZE and Y_BED_SIZE are now required! Please update your configuration."
 #elif WATCH_TEMP_PERIOD > 500
   #error "WATCH_TEMP_PERIOD now uses seconds instead of milliseconds."
@@ -188,8 +186,6 @@
   #error "MIN_STEPS_PER_SEGMENT must be at least 1. Please update your Configuration_adv.h."
 #elif defined(PREVENT_DANGEROUS_EXTRUDE)
   #error "PREVENT_DANGEROUS_EXTRUDE is now PREVENT_COLD_EXTRUSION. Please update your configuration."
-#elif defined(SCARA)
-  #error "SCARA is now MORGAN_SCARA. Please update your configuration."
 #elif defined(MESH_NUM_X_POINTS) || defined(MESH_NUM_Y_POINTS)
   #error "MESH_NUM_[XY]_POINTS is now GRID_MAX_POINTS_[XY]. Please update your configuration."
 #elif defined(UBL_MESH_NUM_X_POINTS) || defined(UBL_MESH_NUM_Y_POINTS)
@@ -198,8 +194,6 @@
   #error "BLTOUCH_V3 is obsolete. Please update your configuration."
 #elif defined(BLTOUCH_FORCE_OPEN_DRAIN_MODE)
   #error "BLTOUCH_FORCE_OPEN_DRAIN_MODE is obsolete. Please update your configuration."
-#elif defined(BEEPER)
-  #error "BEEPER is now BEEPER_PIN. Please update your pins definitions."
 #elif defined(EXTRUDER_0_AUTO_FAN_PIN) || defined(EXTRUDER_1_AUTO_FAN_PIN) || defined(EXTRUDER_2_AUTO_FAN_PIN) || defined(EXTRUDER_3_AUTO_FAN_PIN)
   #error "EXTRUDER_[0123]_AUTO_FAN_PIN is now E[0123]_AUTO_FAN_PIN. Please update your Configuration_adv.h."
 #elif defined(min_software_endstops) || defined(max_software_endstops)
@@ -208,8 +202,6 @@
   #error "Replace SLED_PIN with SOL1_PIN (applies to both Z_PROBE_SLED and SOLENOID_PROBE)."
 #elif defined(MIN_RETRACT)
   #error "MIN_RETRACT is now MIN_AUTORETRACT and MAX_AUTORETRACT. Please update your Configuration_adv.h."
-#elif ENABLED(DELTA) && defined(DELTA_PROBEABLE_RADIUS)
-  #error "Remove DELTA_PROBEABLE_RADIUS and use MIN_PROBE_EDGE to inset the probe area instead."
 #elif defined(UBL_MESH_INSET)
   #error "UBL_MESH_INSET is now just MESH_INSET. Please update your configuration."
 #elif defined(UBL_MESH_MIN_X) || defined(UBL_MESH_MIN_Y) || defined(UBL_MESH_MAX_X) || defined(UBL_MESH_MAX_Y)
@@ -232,8 +224,6 @@
   #error "K1 is now PID_K1. Please update your configuration."
 #elif defined(PROBE_DOUBLE_TOUCH)
   #error "PROBE_DOUBLE_TOUCH is now MULTIPLE_PROBING. Please update your configuration."
-#elif defined(LCD_I2C_SAINSMART_YWROBOT)
-  #error "LCD_I2C_SAINSMART_YWROBOT is now LCD_SAINSMART_I2C_(1602|2004). Please update your configuration."
 #elif defined(HAVE_TMCDRIVER)
   #error "HAVE_TMCDRIVER is now [AXIS]_DRIVER_TYPE TMC26X. Please update your Configuration.h."
 #elif defined(STEALTHCHOP)
@@ -270,12 +260,8 @@
   #error "JUNCTION_ACCELERATION_FACTOR is obsolete. Delete it from Configuration_adv.h."
 #elif defined(JUNCTION_ACCELERATION)
   #error "JUNCTION_ACCELERATION is obsolete. Delete it from Configuration_adv.h."
-#elif defined(ENDSTOP_NOISE_FILTER)
-  #error "ENDSTOP_NOISE_FILTER is now ENDSTOP_NOISE_THRESHOLD [2-7]. Please update your configuration."
 #elif defined(RETRACT_ZLIFT)
   #error "RETRACT_ZLIFT is now RETRACT_ZRAISE. Please update your Configuration_adv.h."
-#elif defined(TOOLCHANGE_PARK_ZLIFT) || defined(TOOLCHANGE_UNPARK_ZLIFT)
-  #error "TOOLCHANGE_PARK_ZLIFT and TOOLCHANGE_UNPARK_ZLIFT are now TOOLCHANGE_ZRAISE. Please update your configuration."
 #elif defined(SINGLENOZZLE_TOOLCHANGE_ZRAISE)
   #error "SINGLENOZZLE_TOOLCHANGE_ZRAISE is now TOOLCHANGE_ZRAISE. Please update your configuration."
 #elif defined(SINGLENOZZLE_SWAP_LENGTH)
@@ -290,10 +276,6 @@
   #error "SINGLENOZZLE_TOOLCHANGE_XY is now TOOLCHANGE_PARK_XY. Please update your configuration."
 #elif defined(SINGLENOZZLE_PARK_XY_FEEDRATE)
   #error "SINGLENOZZLE_PARK_XY_FEEDRATE is now TOOLCHANGE_PARK_XY_FEEDRATE. Please update your configuration."
-#elif defined(PARKING_EXTRUDER_SECURITY_RAISE)
-  #error "PARKING_EXTRUDER_SECURITY_RAISE is now TOOLCHANGE_ZRAISE. Please update your configuration."
-#elif defined(SWITCHING_TOOLHEAD_SECURITY_RAISE)
-  #error "SWITCHING_TOOLHEAD_SECURITY_RAISE is now TOOLCHANGE_ZRAISE. Please update your configuration."
 #elif defined(G0_FEEDRATE) && G0_FEEDRATE == 0
   #error "G0_FEEDRATE is now used to set the G0 feedrate. Please update your configuration."
 #elif defined(MBL_Z_STEP)
@@ -310,8 +292,6 @@
   #error "SPINDLE_STOP_ON_DIR_CHANGE is now SPINDLE_CHANGE_DIR_STOP. Please update your Configuration_adv.h."
 #elif defined(SPINDLE_LASER_ENABLE_INVERT)
   #error "SPINDLE_LASER_ENABLE_INVERT is now SPINDLE_LASER_ACTIVE_HIGH. Please update your Configuration_adv.h."
-#elif defined(CHAMBER_HEATER_PIN)
-  #error "CHAMBER_HEATER_PIN is now HEATER_CHAMBER_PIN. Please update your configuration and/or pins."
 #elif defined(TMC_Z_CALIBRATION)
   #error "TMC_Z_CALIBRATION has been deprecated in favor of Z_STEPPER_AUTO_ALIGN. Please update your configuration."
 #elif defined(Z_MIN_PROBE_ENDSTOP)
@@ -328,8 +308,6 @@
   #error "Replace POWER_SUPPLY 2 by enabling PSU_CONTROL and setting PSU_ACTIVE_HIGH to 'true'."
 #elif defined(POWER_SUPPLY)
   #error "POWER_SUPPLY is now obsolete. Please remove it from Configuration.h."
-#elif defined(MKS_ROBIN_TFT)
-  #error "MKS_ROBIN_TFT is now FSMC_GRAPHICAL_TFT. Please update your configuration."
 #elif defined(STRING_SPLASH_LINE1) || defined(STRING_SPLASH_LINE2)
   #error "STRING_SPLASH_LINE[12] are now obsolete. Please remove them from Configuration.h."
 #elif defined(Z_PROBE_ALLEN_KEY_DEPLOY_1_X) || defined(Z_PROBE_ALLEN_KEY_STOW_1_X)
@@ -343,40 +321,6 @@
 #elif defined(JUNCTION_DEVIATION)
   #error "JUNCTION_DEVIATION is no longer required. (See CLASSIC_JERK). Please remove it from Configuration.h."
 #endif
-
-#define BOARD_MKS_13        -1000
-#define BOARD_TRIGORILLA    -1001
-#define BOARD_RURAMPS4D     -1002
-#define BOARD_FORMBOT_TREX2 -1003
-#define BOARD_BIQU_SKR_V1_1 -1004
-#define BOARD_STM32F1R      -1005
-#define BOARD_STM32F103R    -1006
-#define BOARD_ESP32         -1007
-#if MB(MKS_13)
-  #error "BOARD_MKS_13 has been renamed BOARD_MKS_GEN_13. Please update your configuration."
-#elif MB(TRIGORILLA)
-  #error "BOARD_TRIGORILLA has been renamed BOARD_TRIGORILLA_13. Please update your configuration."
-#elif MB(RURAMPS4D)
-  #error "BOARD_RURAMPS4D has been renamed BOARD_RURAMPS4D_11. Please update your configuration."
-#elif MB(FORMBOT_TREX2)
-  #error "FORMBOT_TREX2 has been renamed BOARD_FORMBOT_TREX2PLUS. Please update your configuration."
-#elif MB(BIQU_SKR_V1_1)
-  #error "BOARD_BIQU_SKR_V1_1 has been renamed BOARD_BIGTREE_SKR_V1_1. Please update your configuration."
-#elif MB(STM32F1R)
-  #error "BOARD_STM32F1R has been renamed BOARD_STM32F103RE. Please update your configuration."
-#elif MB(STM32F103R)
-  #error "BOARD_STM32F103R has been renamed BOARD_STM32F103RE. Please update your configuration."
-#elif MOTHERBOARD == BOARD_ESP32
-  #error "BOARD_ESP32 has been renamed BOARD_ESPRESSIF_ESP32. Please update your configuration."
-#endif
-#undef BOARD_MKS_13
-#undef BOARD_TRIGORILLA
-#undef BOARD_RURAMPS4D
-#undef BOARD_FORMBOT_TREX2
-#undef BOARD_BIQU_SKR_V1_1
-#undef BOARD_STM32F1R
-#undef BOARD_STM32F103R
-#undef BOARD_ESP32
 
 /**
  * Marlin release, version and default string
@@ -425,9 +369,7 @@
 /**
  * Dual / Triple Stepper Drivers
  */
-#if BOTH(X_DUAL_STEPPER_DRIVERS, DUAL_X_CARRIAGE)
-  #error "DUAL_X_CARRIAGE is not compatible with X_DUAL_STEPPER_DRIVERS."
-#elif ENABLED(X_DUAL_STEPPER_DRIVERS) && !(HAS_X2_ENABLE && HAS_X2_STEP && HAS_X2_DIR)
+#if ENABLED(X_DUAL_STEPPER_DRIVERS) && !(HAS_X2_ENABLE && HAS_X2_STEP && HAS_X2_DIR)
   #error "X_DUAL_STEPPER_DRIVERS requires X2 pins (and an extra E plug)."
 #elif ENABLED(Y_DUAL_STEPPER_DRIVERS) && !(HAS_Y2_ENABLE && HAS_Y2_STEP && HAS_Y2_DIR)
   #error "Y_DUAL_STEPPER_DRIVERS requires Y2 pins (and an extra E plug)."
@@ -489,21 +431,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
   #error "Enable only one of ENDSTOPPULLUP_Z_MIN or ENDSTOPPULLDOWN_Z_MIN."
 #endif
 
-/**
- * Progress Bar
- */
-#if ENABLED(LCD_PROGRESS_BAR)
-  #if DISABLED(LCD_SET_PROGRESS_MANUALLY)
-    #error "LCD_PROGRESS_BAR requires LCD_SET_PROGRESS_MANUALLY."
-  #elif 1
-    #error "LCD_PROGRESS_BAR requires a character LCD."
-  #elif PROGRESS_MSG_EXPIRE < 0
-    #error "PROGRESS_MSG_EXPIRE must be greater than or equal to 0."
-  #endif
-#elif ENABLED(LCD_SET_PROGRESS_MANUALLY) && DISABLED(EXTENSIBLE_UI)
-  #error "LCD_SET_PROGRESS_MANUALLY requires LCD_PROGRESS_BAR, Graphical LCD, or EXTENSIBLE_UI."
-#endif
-
 #if ENABLED(SD_REPRINT_LAST_SELECTED_FILE)
   #error "SD_REPRINT_LAST_SELECTED_FILE currently requires a Marlin-native LCD menu."
 #endif
@@ -513,13 +440,6 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
  */
 #if EITHER(SHOW_CUSTOM_BOOTSCREEN, CUSTOM_STATUS_SCREEN_IMAGE)
   #error "Graphical LCD is required for SHOW_CUSTOM_BOOTSCREEN and CUSTOM_STATUS_SCREEN_IMAGE."
-#endif
-
-/**
- * LCD Lightweight Screen Style
- */
-#if ENABLED(LIGHTWEIGHT_UI) && DISABLED(U8GLIB_ST7920)
-  #error "LIGHTWEIGHT_UI requires a U8GLIB_ST7920-based display."
 #endif
 
 /**
@@ -564,11 +484,7 @@ static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS
  * Babystepping
  */
 #if ENABLED(BABYSTEPPING)
-  #if ENABLED(SCARA)
-    #error "BABYSTEPPING is not implemented for SCARA yet."
-  #elif BOTH(DELTA, BABYSTEP_XY)
-    #error "BABYSTEPPING only implemented for Z axis on deltabots."
-  #elif ENABLED(BABYSTEP_ZPROBE_OFFSET) && !HAS_BED_PROBE
+  #if ENABLED(BABYSTEP_ZPROBE_OFFSET) && !HAS_BED_PROBE
     #error "BABYSTEP_ZPROBE_OFFSET requires a probe."
   #elif ENABLED(BABYSTEP_ZPROBE_GFX_OVERLAY)
     #error "BABYSTEP_ZPROBE_GFX_OVERLAY requires a Graphical LCD."
@@ -629,13 +545,6 @@ constexpr float npp[] = XYZ_NOZZLE_PARK_POINT;
 static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.");
 
 /**
- * Individual axis homing is useless for DELTAS
- */
-#if BOTH(INDIVIDUAL_AXIS_HOMING_MENU, DELTA)
-  #error "INDIVIDUAL_AXIS_HOMING_MENU is incompatible with DELTA kinematics."
-#endif
-
-/**
  * Options only for EXTRUDERS > 1
  */
 #if EXTRUDERS > 1
@@ -646,23 +555,6 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
 
   #if ENABLED(HEATERS_PARALLEL)
     #error "EXTRUDERS must be 1 with HEATERS_PARALLEL."
-  #endif
-
-  #if ENABLED(TOOLCHANGE_FILAMENT_SWAP)
-    #ifndef TOOLCHANGE_FIL_SWAP_LENGTH
-      #error "TOOLCHANGE_FILAMENT_SWAP requires TOOLCHANGE_FIL_SWAP_LENGTH. Please update your Configuration."
-    #elif !defined(TOOLCHANGE_FIL_SWAP_RETRACT_SPEED)
-      #error "TOOLCHANGE_FILAMENT_SWAP requires TOOLCHANGE_FIL_SWAP_RETRACT_SPEED. Please update your Configuration."
-    #elif !defined(TOOLCHANGE_FIL_SWAP_PRIME_SPEED)
-      #error "TOOLCHANGE_FILAMENT_SWAP requires TOOLCHANGE_FIL_SWAP_PRIME_SPEED. Please update your Configuration."
-    #endif
-  #endif
-  #if ENABLED(TOOLCHANGE_PARK)
-    #ifndef TOOLCHANGE_PARK_XY
-      #error "TOOLCHANGE_PARK requires TOOLCHANGE_PARK_XY. Please update your Configuration."
-    #elif !defined(TOOLCHANGE_PARK_XY_FEEDRATE)
-      #error "TOOLCHANGE_PARK requires TOOLCHANGE_PARK_XY_FEEDRATE. Please update your Configuration."
-    #endif
   #endif
 
   #ifndef TOOLCHANGE_ZRAISE
@@ -682,177 +574,8 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
   #error "SNMM is now MK2_MULTIPLEXER. Please update your configuration."
 #endif
 
-/**
- * A Dual Nozzle carriage with switching servo
- */
-#if ENABLED(SWITCHING_NOZZLE)
-  #if ENABLED(DUAL_X_CARRIAGE)
-    #error "SWITCHING_NOZZLE and DUAL_X_CARRIAGE are incompatible."
-  #elif ENABLED(SINGLENOZZLE)
-    #error "SWITCHING_NOZZLE and SINGLENOZZLE are incompatible."
-  #elif EXTRUDERS != 2
-    #error "SWITCHING_NOZZLE requires exactly 2 EXTRUDERS."
-  #elif NUM_SERVOS < 1
-    #error "SWITCHING_NOZZLE requires NUM_SERVOS >= 1."
-  #endif
-
-  #ifndef SWITCHING_NOZZLE_SERVO_NR
-    #error "SWITCHING_NOZZLE requires SWITCHING_NOZZLE_SERVO_NR."
-  #elif SWITCHING_NOZZLE_SERVO_NR == 0 && !PIN_EXISTS(SERVO0)
-    #error "SERVO0_PIN must be defined for your SWITCHING_NOZZLE."
-  #elif SWITCHING_NOZZLE_SERVO_NR == 1 && !PIN_EXISTS(SERVO1)
-    #error "SERVO1_PIN must be defined for your SWITCHING_NOZZLE."
-  #elif SWITCHING_NOZZLE_SERVO_NR == 2 && !PIN_EXISTS(SERVO2)
-    #error "SERVO2_PIN must be defined for your SWITCHING_NOZZLE."
-  #elif SWITCHING_NOZZLE_SERVO_NR == 3 && !PIN_EXISTS(SERVO3)
-    #error "SERVO3_PIN must be defined for your SWITCHING_NOZZLE."
-  #endif
-
-  #ifdef SWITCHING_NOZZLE_E1_SERVO_NR
-    #if SWITCHING_NOZZLE_E1_SERVO_NR == SWITCHING_NOZZLE_SERVO_NR
-      #error "SWITCHING_NOZZLE_E1_SERVO_NR must be different from SWITCHING_NOZZLE_SERVO_NR."
-    #elif SWITCHING_NOZZLE_E1_SERVO_NR == 0 && !PIN_EXISTS(SERVO0)
-      #error "SERVO0_PIN must be defined for your SWITCHING_NOZZLE."
-    #elif SWITCHING_NOZZLE_E1_SERVO_NR == 1 && !PIN_EXISTS(SERVO1)
-      #error "SERVO1_PIN must be defined for your SWITCHING_NOZZLE."
-    #elif SWITCHING_NOZZLE_E1_SERVO_NR == 2 && !PIN_EXISTS(SERVO2)
-      #error "SERVO2_PIN must be defined for your SWITCHING_NOZZLE."
-    #elif SWITCHING_NOZZLE_E1_SERVO_NR == 3 && !PIN_EXISTS(SERVO3)
-      #error "SERVO3_PIN must be defined for your SWITCHING_NOZZLE."
-    #endif
-  #endif
-#endif
-
-/**
- * Single Stepper Dual Extruder with switching servo
- */
-#if ENABLED(SWITCHING_EXTRUDER)
-  #if NUM_SERVOS < 1
-    #error "SWITCHING_EXTRUDER requires NUM_SERVOS >= 1."
-  #elif SWITCHING_EXTRUDER_SERVO_NR == 0 && !PIN_EXISTS(SERVO0)
-    #error "SERVO0_PIN must be defined for your SWITCHING_EXTRUDER."
-  #elif SWITCHING_EXTRUDER_SERVO_NR == 1 && !PIN_EXISTS(SERVO1)
-    #error "SERVO1_PIN must be defined for your SWITCHING_EXTRUDER."
-  #elif SWITCHING_EXTRUDER_SERVO_NR == 2 && !PIN_EXISTS(SERVO2)
-    #error "SERVO2_PIN must be defined for your SWITCHING_EXTRUDER."
-  #elif SWITCHING_EXTRUDER_SERVO_NR == 3 && !PIN_EXISTS(SERVO3)
-    #error "SERVO3_PIN must be defined for your SWITCHING_EXTRUDER."
-  #endif
-  #if EXTRUDERS > 3
-    #if NUM_SERVOS < 2
-      #error "SWITCHING_EXTRUDER with 4 extruders requires NUM_SERVOS >= 2."
-    #elif SWITCHING_EXTRUDER_E23_SERVO_NR == 0 && !PIN_EXISTS(SERVO0)
-      #error "SERVO0_PIN must be defined for your SWITCHING_EXTRUDER."
-    #elif SWITCHING_EXTRUDER_E23_SERVO_NR == 1 && !PIN_EXISTS(SERVO1)
-      #error "SERVO1_PIN must be defined for your SWITCHING_EXTRUDER."
-    #elif SWITCHING_EXTRUDER_E23_SERVO_NR == 2 && !PIN_EXISTS(SERVO2)
-      #error "SERVO2_PIN must be defined for your SWITCHING_EXTRUDER."
-    #elif SWITCHING_EXTRUDER_E23_SERVO_NR == 3 && !PIN_EXISTS(SERVO3)
-      #error "SERVO3_PIN must be defined for your SWITCHING_EXTRUDER."
-    #elif SWITCHING_EXTRUDER_E23_SERVO_NR == SWITCHING_EXTRUDER_SERVO_NR
-      #error "SWITCHING_EXTRUDER_E23_SERVO_NR should be a different extruder from SWITCHING_EXTRUDER_SERVO_NR."
-    #endif
-  #endif
-#endif
-
-/**
- * Special tool-changing options
- */
-#if 1 < 0 \
-  + ENABLED(SINGLENOZZLE) \
-  + ENABLED(DUAL_X_CARRIAGE) \
-  + ENABLED(PARKING_EXTRUDER) \
-  + ENABLED(MAGNETIC_PARKING_EXTRUDER) \
-  + ENABLED(SWITCHING_TOOLHEAD) \
-  + ENABLED(MAGNETIC_SWITCHING_TOOLHEAD) \
-  + ENABLED(ELECTROMAGNETIC_SWITCHING_TOOLHEAD)
-  #error "Please select only one of SINGLENOZZLE, DUAL_X_CARRIAGE, PARKING_EXTRUDER, SWITCHING_TOOLHEAD, MAGNETIC_SWITCHING_TOOLHEAD, or ELECTROMAGNETIC_SWITCHING_TOOLHEAD."
-#endif
-
-/**
- * (Magnetic) Parking Extruder requirements
- */
-#if ANY(PARKING_EXTRUDER, MAGNETIC_PARKING_EXTRUDER)
-  #if ENABLED(EXT_SOLENOID)
-    #error "(MAGNETIC_)PARKING_EXTRUDER and EXT_SOLENOID are incompatible. (Pins are used twice.)"
-  #elif EXTRUDERS != 2
-    #error "(MAGNETIC_)PARKING_EXTRUDER requires exactly 2 EXTRUDERS."
-  #elif !defined(PARKING_EXTRUDER_PARKING_X)
-    #error "(MAGNETIC_)PARKING_EXTRUDER requires PARKING_EXTRUDER_PARKING_X."
-  #elif !defined(TOOLCHANGE_ZRAISE)
-    #error "(MAGNETIC_)PARKING_EXTRUDER requires TOOLCHANGE_ZRAISE."
-  #elif TOOLCHANGE_ZRAISE < 0
-    #error "TOOLCHANGE_ZRAISE must be 0 or higher."
-  #elif ENABLED(PARKING_EXTRUDER)
-    #if !PIN_EXISTS(SOL0, SOL1)
-      #error "PARKING_EXTRUDER requires SOL0_PIN and SOL1_PIN."
-    #elif !defined(PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE) || !WITHIN(PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE, LOW, HIGH)
-      #error "PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE must be defined as HIGH or LOW."
-    #elif !defined(PARKING_EXTRUDER_SOLENOIDS_DELAY) || !WITHIN(PARKING_EXTRUDER_SOLENOIDS_DELAY, 0, 2000)
-      #error "PARKING_EXTRUDER_SOLENOIDS_DELAY must be between 0 and 2000 (ms)."
-    #endif
-  #endif
-#endif
-
-/**
- * Switching Toolhead requirements
- */
-#if ENABLED(SWITCHING_TOOLHEAD)
-  #ifndef SWITCHING_TOOLHEAD_SERVO_NR
-    #error "SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_SERVO_NR."
-  #elif EXTRUDERS < 2
-    #error "SWITCHING_TOOLHEAD requires at least 2 EXTRUDERS."
-  #elif NUM_SERVOS < (SWITCHING_TOOLHEAD_SERVO_NR - 1)
-    #if SWITCHING_TOOLHEAD_SERVO_NR == 0
-      #error "A SWITCHING_TOOLHEAD_SERVO_NR of 0 requires NUM_SERVOS >= 1."
-    #elif SWITCHING_TOOLHEAD_SERVO_NR == 1
-      #error "A SWITCHING_TOOLHEAD_SERVO_NR of 1 requires NUM_SERVOS >= 2."
-    #elif SWITCHING_TOOLHEAD_SERVO_NR == 2
-      #error "A SWITCHING_TOOLHEAD_SERVO_NR of 2 requires NUM_SERVOS >= 3."
-    #elif SWITCHING_TOOLHEAD_SERVO_NR == 3
-      #error "A SWITCHING_TOOLHEAD_SERVO_NR of 3 requires NUM_SERVOS >= 4."
-    #endif
-  #elif !defined(TOOLCHANGE_ZRAISE)
-    #error "SWITCHING_TOOLHEAD requires TOOLCHANGE_ZRAISE."
-  #elif TOOLCHANGE_ZRAISE < 0
-    #error "TOOLCHANGE_ZRAISE must be 0 or higher."
-  #endif
-#endif
-
-/**
- * (Electro)magnetic Switching Toolhead requirements
- */
-#if EITHER(MAGNETIC_SWITCHING_TOOLHEAD, ELECTROMAGNETIC_SWITCHING_TOOLHEAD)
-  #ifndef SWITCHING_TOOLHEAD_Y_POS
-    #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Y_POS"
-  #elif !defined(SWITCHING_TOOLHEAD_X_POS)
-    #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_X_POS"
-  #elif !defined(SWITCHING_TOOLHEAD_Z_HOP)
-    #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Z_HOP."
-  #elif !defined(SWITCHING_TOOLHEAD_Y_CLEAR)
-    #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SWITCHING_TOOLHEAD_Y_CLEAR."
-  #elif ENABLED(ELECTROMAGNETIC_SWITCHING_TOOLHEAD)
-    #if ENABLED(EXT_SOLENOID)
-      #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD and EXT_SOLENOID are incompatible. (Pins are used twice.)"
-    #elif !PIN_EXISTS(SOL0)
-      #error "(ELECTRO)MAGNETIC_SWITCHING_TOOLHEAD requires SOL0_PIN."
-    #endif
-  #endif
-#endif
-
 #if HAS_REMOTE_ACCELEROMETER() && !HAS_TOOLCHANGER()
   #error "REMOTE_ACCELEROMETER requires PRUSA_TOOLCHANGER"
-#endif
-
-/**
- * Part-Cooling Fan Multiplexer requirements
- */
-#if PIN_EXISTS(FANMUX1)
-  #if !HAS_FANMUX
-    #error "FANMUX0_PIN must be set before FANMUX1_PIN can be set."
-  #endif
-#elif PIN_EXISTS(FANMUX2)
-  #error "FANMUX0_PIN and FANMUX1_PIN must be set before FANMUX2_PIN can be set."
 #endif
 
 /**
@@ -865,7 +588,7 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
 /**
  * Servo deactivation depends on servo endstops, switching nozzle, or switching extruder
  */
-#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && !HAS_Z_SERVO_PROBE && !defined(SWITCHING_NOZZLE_SERVO_NR) && !defined(SWITCHING_EXTRUDER_SERVO_NR) && !defined(SWITCHING_TOOLHEAD_SERVO_NR)
+#if ENABLED(DEACTIVATE_SERVOS_AFTER_MOVE) && !HAS_Z_SERVO_PROBE
   #error "Z_PROBE_SERVO_NR, switching nozzle, switching toolhead or switching extruder is required for DEACTIVATE_SERVOS_AFTER_MOVE."
 #endif
 
@@ -877,28 +600,13 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
  * Allow only one kinematic type to be defined
  */
 #if 1 < 0 \
-  + ENABLED(DELTA) \
-  + ENABLED(MORGAN_SCARA) \
   + ENABLED(COREXY) \
   + ENABLED(COREXZ) \
   + ENABLED(COREYZ) \
   + ENABLED(COREYX) \
   + ENABLED(COREZX) \
   + ENABLED(COREZY)
-  #error "Please enable only one of DELTA, MORGAN_SCARA, COREXY, COREYX, COREXZ, COREZX, COREYZ, or COREZY."
-#endif
-
-/**
- * Delta requirements
- */
-#if ENABLED(DELTA)
-  #if NONE(USE_XMAX_PLUG, USE_YMAX_PLUG, USE_ZMAX_PLUG)
-    #error "You probably want to use Max Endstops for DELTA!"
-  #elif ENABLED(ENABLE_LEVELING_FADE_HEIGHT) && !UBL_SEGMENTED
-    #error "ENABLE_LEVELING_FADE_HEIGHT on DELTA requires AUTO_BED_LEVELING_UBL."
-  #elif ENABLED(DELTA_AUTO_CALIBRATION) && !(HAS_BED_PROBE)
-    #error "DELTA_AUTO_CALIBRATION requires a probe or LCD Controller."
-  #endif
+  #error "Please enable only one of COREXY, COREYX, COREXZ, COREZX, COREYZ, or COREZY."
 #endif
 
 /**
@@ -923,14 +631,6 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
 #endif
 
 #if HAS_BED_PROBE
-
-  /**
-   * Z_PROBE_SLED is incompatible with DELTA
-   */
-  #if BOTH(Z_PROBE_SLED, DELTA)
-    #error "You cannot use Z_PROBE_SLED with DELTA."
-  #endif
-
   /**
    * SOLENOID_PROBE requirements
    */
@@ -998,9 +698,7 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
    * Require pin options and pins to be defined
    */
   #if ENABLED(SENSORLESS_PROBING)
-    #if ENABLED(DELTA) && !(AXIS_HAS_STALLGUARD(X) && AXIS_HAS_STALLGUARD(Y) && AXIS_HAS_STALLGUARD(Z))
-      #error "SENSORLESS_PROBING requires TMC2130/2160/2209/5130/5160 drivers on X, Y, and Z."
-    #elif !AXIS_HAS_STALLGUARD(Z)
+    #if !AXIS_HAS_STALLGUARD(Z)
       #error "SENSORLESS_PROBING requires a TMC2130/2160/2209/5130/5160 driver on Z."
     #endif
   #elif ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
@@ -1063,9 +761,7 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
   // Hide PROBE_MANUALLY from the rest of the code
   #undef PROBE_MANUALLY
 
-  #if IS_SCARA
-    #error "AUTO_BED_LEVELING_UBL does not yet support SCARA printers."
-  #elif !WITHIN(GRID_MAX_POINTS_X, 3, 36) || !WITHIN(GRID_MAX_POINTS_Y, 3, 36)
+  #if !WITHIN(GRID_MAX_POINTS_X, 3, 36) || !WITHIN(GRID_MAX_POINTS_Y, 3, 36)
     #error "GRID_MAX_POINTS_[XY] must be a whole number between 3 and 36."
   #elif !defined(RESTORE_LEVELING_AFTER_G28)
     #error "AUTO_BED_LEVELING_UBL used to enable RESTORE_LEVELING_AFTER_G28. To keep this behavior enable RESTORE_LEVELING_AFTER_G28. Otherwise define it as 'false'."
@@ -1113,13 +809,8 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
  * Make sure Z_SAFE_HOMING point is reachable
  */
 #if ENABLED(Z_SAFE_HOMING)
-  #if HAS_BED_PROBE && (ENABLED(DELTA) || IS_SCARA)
-    static_assert(WITHIN(Z_SAFE_HOMING_X_POINT, PROBE_X_MIN, PROBE_X_MAX), "Z_SAFE_HOMING_X_POINT is outside the probe region.");
-    static_assert(WITHIN(Z_SAFE_HOMING_Y_POINT, PROBE_Y_MIN, PROBE_Y_MAX), "Z_SAFE_HOMING_Y_POINT is outside the probe region.");
-  #else
-    static_assert(WITHIN(Z_SAFE_HOMING_X_POINT, X_MIN_POS, X_MAX_POS), "Z_SAFE_HOMING_X_POINT can't be reached by the nozzle.");
-    static_assert(WITHIN(Z_SAFE_HOMING_Y_POINT, Y_MIN_POS, Y_MAX_POS), "Z_SAFE_HOMING_Y_POINT can't be reached by the nozzle.");
-  #endif
+  static_assert(WITHIN(Z_SAFE_HOMING_X_POINT, X_MIN_POS, X_MAX_POS), "Z_SAFE_HOMING_X_POINT can't be reached by the nozzle.");
+  static_assert(WITHIN(Z_SAFE_HOMING_Y_POINT, Y_MIN_POS, Y_MAX_POS), "Z_SAFE_HOMING_Y_POINT can't be reached by the nozzle.");
 #endif // Z_SAFE_HOMING
 
 /**
@@ -1131,46 +822,12 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
   #endif
 #endif
 
-#if ENCODER_PULSES_PER_STEP < 0
-  #error "ENCODER_PULSES_PER_STEP should not be negative, use REVERSE_MENU_DIRECTION instead."
-#endif
-
-/**
- * SAV_3DGLCD display options
- */
-#if ENABLED(SAV_3DGLCD)
-  #if NONE(U8GLIB_SSD1306, U8GLIB_SH1106)
-    #error "Enable a SAV_3DGLCD display type: U8GLIB_SSD1306 or U8GLIB_SH1106."
-  #elif BOTH(U8GLIB_SSD1306, U8GLIB_SH1106)
-    #error "Only enable one SAV_3DGLCD display type: U8GLIB_SSD1306 or U8GLIB_SH1106."
-  #endif
-#endif
-
 /**
  * Allen Key
  * Deploying the Allen Key probe uses big moves in z direction. Too dangerous for an unhomed z-axis.
  */
 #if ENABLED(Z_PROBE_ALLEN_KEY) && (Z_HOME_DIR < 0) && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
   #error "You can't home to a z min endstop with a Z_PROBE_ALLEN_KEY"
-#endif
-
-/**
- * Dual X Carriage requirements
- */
-#if ENABLED(DUAL_X_CARRIAGE)
-  #if EXTRUDERS < 2
-    #error "DUAL_X_CARRIAGE requires 2 (or more) extruders."
-  #elif CORE_IS_XY || CORE_IS_XZ
-    #error "DUAL_X_CARRIAGE cannot be used with COREXY, COREYX, COREXZ, or COREZX."
-  #elif !(HAS_X2_ENABLE && HAS_X2_STEP && HAS_X2_DIR)
-    #error "DUAL_X_CARRIAGE requires X2 stepper pins to be defined."
-  #elif !HAS_X_MAX
-    #error "DUAL_X_CARRIAGE requires USE_XMAX_PLUG and an X Max Endstop."
-  #elif !defined(X2_HOME_POS) || !defined(X2_MIN_POS) || !defined(X2_MAX_POS)
-    #error "DUAL_X_CARRIAGE requires X2_HOME_POS, X2_MIN_POS, and X2_MAX_POS."
-  #elif X_HOME_DIR != -1 || X2_HOME_DIR != 1
-    #error "DUAL_X_CARRIAGE requires X_HOME_DIR -1 and X2_HOME_DIR 1."
-  #endif
 #endif
 
 /**
@@ -1301,12 +958,8 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
 #if ENABLED(MULTI_NOZZLE_DUPLICATION)
   #if HOTENDS < 2
     #error "MULTI_NOZZLE_DUPLICATION requires 2 or more hotends."
-  #elif ENABLED(DUAL_X_CARRIAGE)
-    #error "MULTI_NOZZLE_DUPLICATION is incompatible with DUAL_X_CARRIAGE."
   #elif ENABLED(SINGLENOZZLE)
     #error "MULTI_NOZZLE_DUPLICATION is incompatible with SINGLENOZZLE."
-  #elif ENABLED(SWITCHING_EXTRUDER)
-    #error "MULTI_NOZZLE_DUPLICATION is incompatible with SWITCHING_EXTRUDER."
   #endif
 #endif
 
@@ -1365,17 +1018,16 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
 #endif
 
 // Delta and Cartesian use 3 homing endstops
-#if !IS_SCARA
-  #if X_HOME_DIR < 0 && DISABLED(USE_XMIN_PLUG)
-    #error "Enable USE_XMIN_PLUG when homing X to MIN."
-  #elif X_HOME_DIR > 0 && DISABLED(USE_XMAX_PLUG)
-    #error "Enable USE_XMAX_PLUG when homing X to MAX."
-  #elif Y_HOME_DIR < 0 && DISABLED(USE_YMIN_PLUG)
-    #error "Enable USE_YMIN_PLUG when homing Y to MIN."
-  #elif Y_HOME_DIR > 0 && DISABLED(USE_YMAX_PLUG)
-    #error "Enable USE_YMAX_PLUG when homing Y to MAX."
-  #endif
+#if X_HOME_DIR < 0 && DISABLED(USE_XMIN_PLUG)
+  #error "Enable USE_XMIN_PLUG when homing X to MIN."
+#elif X_HOME_DIR > 0 && DISABLED(USE_XMAX_PLUG)
+  #error "Enable USE_XMAX_PLUG when homing X to MAX."
+#elif Y_HOME_DIR < 0 && DISABLED(USE_YMIN_PLUG)
+  #error "Enable USE_YMIN_PLUG when homing Y to MIN."
+#elif Y_HOME_DIR > 0 && DISABLED(USE_YMAX_PLUG)
+  #error "Enable USE_YMAX_PLUG when homing Y to MAX."
 #endif
+
 #if Z_HOME_DIR < 0 && DISABLED(USE_ZMIN_PLUG)
   #error "Enable USE_ZMIN_PLUG when homing Z to MIN."
 #elif Z_HOME_DIR > 0 && DISABLED(USE_ZMAX_PLUG)
@@ -1400,8 +1052,6 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
     #error "USE_ZMAX_PLUG is required when X2_USE_ENDSTOP is _ZMAX_."
   #elif !HAS_X2_MIN && !HAS_X2_MAX
     #error "X2_USE_ENDSTOP has been assigned to a nonexistent endstop!"
-  #elif ENABLED(DELTA)
-    #error "X_DUAL_ENDSTOPS is not compatible with DELTA."
   #endif
 #endif
 #if ENABLED(Y_DUAL_ENDSTOPS)
@@ -1421,8 +1071,6 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
     #error "USE_ZMAX_PLUG is required when Y2_USE_ENDSTOP is _ZMAX_."
   #elif !HAS_Y2_MIN && !HAS_Y2_MAX
     #error "Y2_USE_ENDSTOP has been assigned to a nonexistent endstop!"
-  #elif ENABLED(DELTA)
-    #error "Y_DUAL_ENDSTOPS is not compatible with DELTA."
   #endif
 #endif
 #if ENABLED(Z_DUAL_ENDSTOPS)
@@ -1442,8 +1090,6 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
     #error "USE_ZMAX_PLUG is required when Z2_USE_ENDSTOP is _ZMAX_."
   #elif !HAS_Z2_MIN && !HAS_Z2_MAX
     #error "Z2_USE_ENDSTOP has been assigned to a nonexistent endstop!"
-  #elif ENABLED(DELTA)
-    #error "Z_DUAL_ENDSTOPS is not compatible with DELTA."
   #endif
 #endif
 #if ENABLED(Z_TRIPLE_ENDSTOPS)
@@ -1463,8 +1109,6 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
     #error "USE_ZMAX_PLUG is required when Z2_USE_ENDSTOP is _ZMAX_."
   #elif !HAS_Z2_MIN && !HAS_Z2_MAX
     #error "Z2_USE_ENDSTOP has been assigned to a nonexistent endstop!"
-  #elif ENABLED(DELTA)
-    #error "Z_TRIPLE_ENDSTOPS is not compatible with DELTA."
   #endif
   #if !Z3_USE_ENDSTOP
     #error "You must set Z3_USE_ENDSTOP with Z_TRIPLE_ENDSTOPS."
@@ -1482,13 +1126,7 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
     #error "USE_ZMAX_PLUG is required when Z3_USE_ENDSTOP is _ZMAX_."
   #elif !HAS_Z3_MIN && !HAS_Z3_MAX
     #error "Z3_USE_ENDSTOP has been assigned to a nonexistent endstop!"
-  #elif ENABLED(DELTA)
-    #error "Z_TRIPLE_ENDSTOPS is not compatible with DELTA."
   #endif
-#endif
-
-#if defined(ENDSTOP_NOISE_THRESHOLD) && !WITHIN(ENDSTOP_NOISE_THRESHOLD, 2, 7)
-  #error "ENDSTOP_NOISE_THRESHOLD must be an integer from 2 to 7."
 #endif
 
 /**
@@ -1527,52 +1165,9 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
  * Make sure only one display is enabled
  */
 #if 1 < 0 \
-  + (ENABLED(REPRAP_DISCOUNT_SMART_CONTROLLER) && DISABLED(IS_RRD_SC)) \
-  + (ENABLED(REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER) && DISABLED(IS_RRD_FG_SC)) \
-  + (ENABLED(U8GLIB_SSD1306) && DISABLED(IS_U8GLIB_SSD1306)) \
-  + (ENABLED(MINIPANEL) && DISABLED(MKS_MINI_12864)) \
-  + (ENABLED(EXTENSIBLE_UI) && DISABLED(IS_EXTUI)) \
-  + ENABLED(RADDS_DISPLAY) \
-  + ENABLED(ULTIMAKERCONTROLLER) \
-  + ENABLED(PANEL_ONE) \
-  + ENABLED(G3D_PANEL) \
-  + ENABLED(RIGIDBOT_PANEL) \
-  + ENABLED(MAKEBOARD_MINI_2_LINE_DISPLAY_1602) \
-  + ENABLED(LCD_SAINSMART_I2C_1602) \
-  + ENABLED(LCD_SAINSMART_I2C_2004) \
-  + ENABLED(LCM1602) \
-  + ENABLED(LCD_I2C_PANELOLU2) \
-  + ENABLED(LCD_I2C_VIKI) \
-  + ENABLED(SAV_3DLCD) \
-  + ENABLED(FF_INTERFACEBOARD) \
-  + ENABLED(REPRAPWORLD_GRAPHICAL_LCD) \
-  + ENABLED(VIKI2) \
-  + ENABLED(miniVIKI) \
-  + ENABLED(MAKRPANEL) \
-  + ENABLED(ELB_FULL_GRAPHIC_CONTROLLER) \
-  + ENABLED(BQ_LCD_SMART_CONTROLLER) \
-  + ENABLED(CARTESIO_UI) \
-  + ENABLED(LCD_FOR_MELZI) \
-  + ENABLED(ULTI_CONTROLLER) \
-  + ENABLED(MKS_MINI_12864) \
-  + ENABLED(CR10_STOCKDISPLAY) \
-  + ENABLED(ANET_FULL_GRAPHICS_LCD) \
-  + ENABLED(AZSMZ_12864) \
-  + ENABLED(SILVER_GATE_GLCD_CONTROLLER) \
-  + ENABLED(SAV_3DGLCD) \
-  + ENABLED(OLED_PANEL_TINYBOY2) \
-  + ENABLED(MKS_12864OLED) \
-  + ENABLED(MKS_12864OLED_SSD1306) \
-  + ENABLED(U8GLIB_SH1106_EINSTART) \
-  + ENABLED(OVERLORD_OLED) \
-  + ENABLED(FSMC_GRAPHICAL_TFT)
+  + (ENABLED(EXTENSIBLE_UI) && DISABLED(IS_EXTUI))
   #error "Please select no more than one LCD controller option."
 #endif
-
-#undef IS_RRD_SC
-#undef IS_RRD_FG_SC
-#undef IS_U8GLIB_SSD1306
-#undef IS_EXTUI
 
 /**
  * Check existing CS pins against enabled TMC SPI drivers.
@@ -1702,20 +1297,13 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
 #endif
 
 #if ENABLED(SENSORLESS_HOMING)
-  // Require STEALTHCHOP for SENSORLESS_HOMING on DELTA as the transition from spreadCycle to stealthChop
-  // is necessary in order to reset the stallGuard indication between the initial movement of all three
-  // towers to +Z and the individual homing of each tower. This restriction can be removed once a means of
-  // clearing the stallGuard activated status is found.
-
   // Stall detection DIAG = HIGH : TMC2209
   // Stall detection DIAG = LOW  : TMC2130/TMC2160/TMC2660/TMC5130/TMC5160
   #define X_ENDSTOP_INVERTING !AXIS_DRIVER_TYPE(X,TMC2209)
   #define Y_ENDSTOP_INVERTING !AXIS_DRIVER_TYPE(Y,TMC2209)
   #define Z_ENDSTOP_INVERTING !AXIS_DRIVER_TYPE(Z,TMC2209)
 
-  #if ENABLED(DELTA) && !BOTH(STEALTHCHOP_XY, STEALTHCHOP_Z)
-    #error "SENSORLESS_HOMING on DELTA currently requires STEALTHCHOP_XY and STEALTHCHOP_Z."
-  #elif X_SENSORLESS && X_HOME_DIR < 0 && DISABLED(ENDSTOPPULLUPS, ENDSTOPPULLUP_XMIN)
+  #if X_SENSORLESS && X_HOME_DIR < 0 && DISABLED(ENDSTOPPULLUPS, ENDSTOPPULLUP_XMIN)
     #error "SENSORLESS_HOMING requires ENDSTOPPULLUP_XMIN (or ENDSTOPPULLUPS) when homing to X_MIN."
   #elif X_SENSORLESS && X_HOME_DIR > 0 && DISABLED(ENDSTOPPULLUPS, ENDSTOPPULLUP_XMAX)
     #error "SENSORLESS_HOMING requires ENDSTOPPULLUP_XMAX (or ENDSTOPPULLUPS) when homing to X_MAX."
@@ -1763,8 +1351,6 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
     #else
       #error "SENSORLESS_HOMING requires Z_MAX_ENDSTOP_INVERTING = false when homing TMC2209 to Z_MAX."
     #endif
-  #elif ENDSTOP_NOISE_THRESHOLD
-    #error "SENSORLESS_HOMING is incompatible with ENDSTOP_NOISE_THRESHOLD."
   #elif !(X_SENSORLESS || Y_SENSORLESS || Z_SENSORLESS)
     #error "SENSORLESS_HOMING requires a TMC stepper driver with StallGuard on X, Y, or Z axes."
   #endif
@@ -1776,9 +1362,7 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
 
 // Sensorless probing requirements
 #if ENABLED(SENSORLESS_PROBING)
-  #if ENABLED(DELTA) && !(X_SENSORLESS && Y_SENSORLESS && Z_SENSORLESS)
-    #error "SENSORLESS_PROBING for DELTA requires TMC stepper drivers with StallGuard on X, Y, and Z axes."
-  #elif !Z_SENSORLESS
+  #if !Z_SENSORLESS
     #error "SENSORLESS_PROBING requires a TMC stepper driver with StallGuard on Z."
   #endif
 #endif
@@ -1862,10 +1446,6 @@ static_assert(COUNT(npp) == XYZ, "NOZZLE_PARK_POINT requires X, Y, and Z values.
 #endif
 #undef IN_CHAIN
 
-#if ENABLED(DELTA) && (ENABLED(STEALTHCHOP_XY) != ENABLED(STEALTHCHOP_Z))
-  #error "STEALTHCHOP_XY and STEALTHCHOP_Z must be the same on DELTA."
-#endif
-
 /**
  * Check per-axis initializers for errors
  */
@@ -1934,10 +1514,6 @@ static_assert(   _ARR_TEST(3,0) && _ARR_TEST(3,1) && _ARR_TEST(3,2)
 
 #undef _ARR_TEST
 
-#if BOTH(CNC_COORDINATE_SYSTEMS, NO_WORKSPACE_OFFSETS)
-  #error "CNC_COORDINATE_SYSTEMS is incompatible with NO_WORKSPACE_OFFSETS."
-#endif
-
 #if HAS_PLANNER()
   #if !BLOCK_BUFFER_SIZE || !IS_POWER_OF_2(BLOCK_BUFFER_SIZE)
     #error "BLOCK_BUFFER_SIZE must be a power of 2."
@@ -1991,37 +1567,6 @@ static_assert(   _ARR_TEST(3,0) && _ARR_TEST(3,1) && _ARR_TEST(3,2)
 
 #endif
 
-#if ENABLED(PRINTCOUNTER)
-  #error "PRINTCOUNTER requires EEPROM_SETTINGS. Please update your Configuration."
-#endif
-
-#if ENABLED(GCODE_MACROS) && !WITHIN(GCODE_MACROS_SLOTS, 1, 10)
-  #error "GCODE_MACROS_SLOTS must be a number from 1 to 10."
-#endif
-
-#if ENABLED(CUSTOM_USER_MENUS)
-  #ifdef USER_GCODE_1
-    constexpr char _chr1 = USER_GCODE_1[strlen(USER_GCODE_1) - 1];
-    static_assert(_chr1 != '\n' && _chr1 != '\r', "USER_GCODE_1 cannot have a newline at the end. Please remove it.");
-  #endif
-  #ifdef USER_GCODE_2
-    constexpr char _chr2 = USER_GCODE_2[strlen(USER_GCODE_2) - 1];
-    static_assert(_chr2 != '\n' && _chr2 != '\r', "USER_GCODE_2 cannot have a newline at the end. Please remove it.");
-  #endif
-  #ifdef USER_GCODE_3
-    constexpr char _chr3 = USER_GCODE_3[strlen(USER_GCODE_3) - 1];
-    static_assert(_chr3 != '\n' && _chr3 != '\r', "USER_GCODE_3 cannot have a newline at the end. Please remove it.");
-  #endif
-  #ifdef USER_GCODE_4
-    constexpr char _chr4 = USER_GCODE_4[strlen(USER_GCODE_4) - 1];
-    static_assert(_chr4 != '\n' && _chr4 != '\r', "USER_GCODE_4 cannot have a newline at the end. Please remove it.");
-  #endif
-  #ifdef USER_GCODE_5
-    constexpr char _chr5 = USER_GCODE_5[strlen(USER_GCODE_5) - 1];
-    static_assert(_chr5 != '\n' && _chr5 != '\r', "USER_GCODE_5 cannot have a newline at the end. Please remove it.");
-  #endif
-#endif
-
 #if ENABLED(BACKLASH_COMPENSATION)
   #if IS_CORE
     #error "BACKLASH_COMPENSATION is incompatible with CORE kinematics."
@@ -2067,25 +1612,10 @@ static_assert(   _ARR_TEST(3,0) && _ARR_TEST(3,1) && _ARR_TEST(3,2)
 #endif
 
 /**
- * Advanced PRINTCOUNTER settings
- */
-#if ENABLED(PRINTCOUNTER)
-  #if defined(SERVICE_INTERVAL_1) != defined(SERVICE_NAME_1)
-    #error "Both SERVICE_NAME_1 and SERVICE_INTERVAL_1 are required."
-  #elif defined(SERVICE_INTERVAL_2) != defined(SERVICE_NAME_2)
-    #error "Both SERVICE_NAME_2 and SERVICE_INTERVAL_2 are required."
-  #elif defined(SERVICE_INTERVAL_3) != defined(SERVICE_NAME_3)
-    #error "Both SERVICE_NAME_3 and SERVICE_INTERVAL_3 are required."
-  #endif
-#endif
-
-/**
  * Require soft endstops for certain setups
  */
 #if !BOTH(MIN_SOFTWARE_ENDSTOPS, MAX_SOFTWARE_ENDSTOPS)
-  #if ENABLED(DUAL_X_CARRIAGE)
-    #error "DUAL_X_CARRIAGE requires both MIN_ and MAX_SOFTWARE_ENDSTOPS."
-  #elif HAS_HOTEND_OFFSET
+  #if HAS_HOTEND_OFFSET
     #error "MIN_ and MAX_SOFTWARE_ENDSTOPS are both required with offset hotends."
   #endif
 #endif

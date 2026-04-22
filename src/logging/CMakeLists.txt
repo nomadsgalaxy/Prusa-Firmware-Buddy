@@ -24,6 +24,7 @@ target_link_libraries(
   PRIVATE BuddyHeaders # pretty much everything
           FreeRTOS::FreeRTOS # pretty much everything
           freertos
+          bsod
           Arduino::Core # config store 🤦
           SG14 # config store 🤦
           error_codes # config store 🤦

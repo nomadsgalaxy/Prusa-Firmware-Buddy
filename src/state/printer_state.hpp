@@ -40,7 +40,7 @@ struct Dialog {
     //
     // It might look "wrong" to have a dialog without any buttons, but we know of two cases:
     // * Not-implemented part where we don't yet provide the buttons (that should improve over time).
-    // * Redscreens/bluescreens are considered a "dialog" towards Connect, but don't have buttons.
+    // * Error screens are considered a "dialog" towards Connect, but don't have buttons.
     //
     // This is "pointer to array"; we don't use PhaseResponses, because it's
     // impossible to forward-declare. But it's a std::array<Response>, so we

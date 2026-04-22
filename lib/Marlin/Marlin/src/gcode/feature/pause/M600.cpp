@@ -56,19 +56,6 @@ void GcodeSuite::M600() {
   const int8_t target_extruder = get_target_extruder_from_command();
   if (target_extruder < 0) return;
 
-  #if ENABLED(DUAL_X_CARRIAGE)
-    int8_t DXC_ext = target_extruder;
-    if (!parser.seen('T')) {  // If no tool index is specified, M600 was (probably) sent in response to filament runout.
-                              // In this case, for duplicating modes set DXC_ext to the extruder that ran out.
-      #if HAS_FILAMENT_SENSOR && NUM_RUNOUT_SENSORS > 1
-        if (dxc_is_duplicating())
-          DXC_ext = (READ(FIL_RUNOUT2_PIN) == FIL_RUNOUT_INVERTING) ? 1 : 0;
-      #else
-        DXC_ext = active_extruder;
-      #endif
-    }
-  #endif
-
   #if ENABLED(HOME_BEFORE_FILAMENT_CHANGE)
     // Don't allow filament change without homing first
     if (axes_need_homing()) home_all_axes();
@@ -79,9 +66,6 @@ void GcodeSuite::M600() {
     const uint8_t active_extruder_before_filament_change = active_extruder;
     if (
       active_extruder != target_extruder
-      #if ENABLED(DUAL_X_CARRIAGE)
-        && dual_x_carriage_mode != DXC_DUPLICATION_MODE && dual_x_carriage_mode != DXC_MIRRORED_MODE
-      #endif
     ) tool_change(target_extruder, false);
   #endif
 
@@ -101,7 +85,7 @@ void GcodeSuite::M600() {
   if (parser.seenval('X')) park_point.x = parser.linearval('X');
   if (parser.seenval('Y')) park_point.y = parser.linearval('Y');
 
-  #if HAS_HOTEND_OFFSET && NONE(DUAL_X_CARRIAGE, DELTA) && DISABLED(PRUSA_TOOLCHANGER)
+  #if HAS_HOTEND_OFFSET && DISABLED(PRUSA_TOOLCHANGER)
     park_point += hotend_offset[active_extruder];
   #endif
 

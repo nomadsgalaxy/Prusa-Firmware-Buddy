@@ -1,8 +1,9 @@
 #pragma once
-#include <Marlin/src/inc/MarlinConfigPre.h>
+#include <inc/MarlinConfigPre.h>
 
 #include <bitset>
 
+#include <common/array_extensions.hpp>
 #include "constants.hpp"
 #include "defaults.hpp"
 #include <option/has_config_store_wo_backend.h>
@@ -22,7 +23,7 @@
 #include <selftest_result.hpp>
 #include <module/prusa/dock_position.hpp>
 #include <module/prusa/tool_offset.hpp>
-#include <filament_sensors_remap_data.hpp>
+#include <feature/filament_sensor/filament_sensors_remap_data.hpp>
 #include <tristate.hpp>
 #include <option/has_loadcell.h>
 #include <option/has_sheet_profiles.h>
@@ -32,7 +33,6 @@
 #include <option/has_toolchanger.h>
 #include <option/has_selftest.h>
 #include <option/has_phase_stepping.h>
-#include <option/has_phase_stepping_toggle.h>
 #include <option/has_i2c_expander.h>
 #include <option/has_xbuddy_extension.h>
 #include <option/has_emergency_stop.h>
@@ -41,15 +41,21 @@
 #include <option/has_precise_homing_corexy.h>
 #include <option/has_precise_homing.h>
 #include <option/has_chamber_filtration_api.h>
+#include <option/has_esp.h>
 #include <option/has_auto_retract.h>
 #include <option/has_door_sensor_calibration.h>
 #include <option/has_chamber_vents.h>
 #include <option/has_precise_homing_corexy.h>
+#include <option/has_e2ee_support.h>
 #include <option/has_manual_belt_tuning.h>
+#include <option/has_bed_fan.h>
+#include <option/has_psu_fan.h>
+#include <option/has_heatbed_screws_during_transport.h>
 #include <common/extended_printer_type.hpp>
 #include <common/hw_check.hpp>
 #include <pwm_utils.hpp>
 #include <feature/xbuddy_extension/xbuddy_extension_fan_results.hpp>
+#include <feature/bed_fan/selftest_result.hpp>
 #include <print_fan_type.hpp>
 
 #if HAS_SHEET_PROFILES()
@@ -73,6 +79,9 @@
 #include <option/has_hotend_type_support.h>
 #if HAS_HOTEND_TYPE_SUPPORT()
     #include <hotend_type.hpp>
+#endif
+#if HAS_E2EE_SUPPORT()
+    #include <e2ee/identity_check_levels.hpp>
 #endif
 
 #if HAS_SIDE_LEDS()
@@ -121,6 +130,11 @@ struct ItemFlag {
 
     /// Special items, completely outside of categorization and selective factory reset, that have a specific handling
     static constexpr ItemFlags special = 1 << 10;
+
+#if HAS_E2EE_SUPPORT()
+    /// Security stuff. Currently, End to end encryption.
+    static constexpr ItemFlags security = 1 << 11;
+#endif
 }; // namespace ItemFlag
 
 /**
@@ -149,15 +163,12 @@ struct CurrentStore
     /// Stores newest_migration_version of the previous firmware
     StoreItem<uint8_t, 0, ItemFlag::special, journal::hash("Config Version")> config_version;
 
-    // wizard flags
-    StoreItem<bool, true, ItemFlag::calibrations, journal::hash("Run Selftest")> run_selftest;
-
     /// If false, a ScreenPrinterSetup will appear on printer boot
-    StoreItem<bool, false, ItemFlag::network, journal::hash("Printer network done")> printer_network_setup_done;
+    StoreItem<bool, !HAS_ESP(), ItemFlag::network, journal::hash("Printer network done")> printer_network_setup_done;
     StoreItem<bool, false, ItemFlag::hw_config, journal::hash("Printer hw-config done")> printer_hw_config_done;
 
     /// Global filament sensor enable
-    StoreItem<bool, defaults::fsensor_enabled, ItemFlag::features | ItemFlag::common_misconfigurations, journal::hash("FSensor Enabled V2")> fsensor_enabled;
+    StoreItem<bool, true, ItemFlag::features | ItemFlag::common_misconfigurations, journal::hash("FSensor Enabled")> fsensor_enabled;
 
     /// BFW-5545 When filament sensor is not responding during filament change, the user has an option to disable it.
     /// This is a flag to remind them to turn it back on again when they finis printing
@@ -213,22 +224,22 @@ struct CurrentStore
     StoreItem<bool, true, ItemFlag::user_interface, journal::hash("Menu Timeout")> menu_timeout; // on / off menu timeout flag
     StoreItem<bool, true, ItemFlag::user_interface, journal::hash("Devhash in QR")> devhash_in_qr; // on / off sending UID in QR
 
-    StoreItem<footer::Item, defaults::footer_setting_0, ItemFlag::user_interface, journal::hash("Footer Setting 0 v3")> footer_setting_0;
-#if FOOTER_ITEMS_PER_LINE__ > 1
-    StoreItem<footer::Item, defaults::footer_setting_1, ItemFlag::user_interface, journal::hash("Footer Setting 1 v3")> footer_setting_1;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 2
-    StoreItem<footer::Item, defaults::footer_setting_2, ItemFlag::user_interface, journal::hash("Footer Setting 2 v3")> footer_setting_2;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 3
-    StoreItem<footer::Item, defaults::footer_setting_3, ItemFlag::user_interface, journal::hash("Footer Setting 3 v3")> footer_setting_3;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 4
-    StoreItem<footer::Item, defaults::footer_setting_4, ItemFlag::user_interface, journal::hash("Footer Setting 4 v3")> footer_setting_4;
-#endif
+    static constexpr auto footer_setting_hashes = stdext::array_sub_copy<FOOTER_ITEMS_PER_LINE__>(std::to_array<uint16_t>({
+        // Note: those // at the end are there to make the gen_journal_hashes script work
+        journal::hash("Footer Setting 0 v3"), //
+        journal::hash("Footer Setting 1 v3"), //
+        journal::hash("Footer Setting 2 v3"), //
+        journal::hash("Footer Setting 3 v3"), //
+        journal::hash("Footer Setting 4 v3"), //
+    }));
+    StoreItemLegacyArray<footer::Item, footer::default_items, ItemFlag::user_interface, footer_setting_hashes> footer_setting;
 
-    footer::Item get_footer_setting(uint8_t index);
-    void set_footer_setting(uint8_t index, footer::Item value);
+    inline footer::Item get_footer_setting(uint8_t index) {
+        return footer_setting.get(index);
+    }
+    inline void set_footer_setting(uint8_t index, footer::Item value) {
+        footer_setting.set(index, value);
+    }
 
     StoreItem<uint32_t, defaults::footer_draw_type, ItemFlag::user_interface, journal::hash("Footer Draw Type")> footer_draw_type;
     StoreItem<bool, true, ItemFlag::features | ItemFlag::common_misconfigurations, journal::hash("Fan Check Enabled")> fan_check_enabled;
@@ -236,7 +247,7 @@ struct CurrentStore
 
     StoreItem<uint32_t, 0, ItemFlag::stats, journal::hash("Odometer Time")> odometer_time;
     StoreItem<uint8_t, 0, ItemFlag::network, journal::hash("Active NetDev")> active_netdev; // active network device
-    StoreItem<bool, true, ItemFlag::network, journal::hash("PrusaLink Enabled")> prusalink_enabled;
+    StoreItem<bool, defaults::prusalink_enabled, ItemFlag::network, journal::hash("PrusaLink Enabled")> prusalink_enabled;
     StoreItem<std::array<char, pl_password_size>, defaults::prusalink_password, ItemFlag::network, journal::hash("PrusaLink Password")> prusalink_password;
 
     StoreItem<std::array<char, connect_host_size + 1>, defaults::connect_host, ItemFlag::network | ItemFlag::dev_items, journal::hash("Connect Host")> connect_host;
@@ -340,8 +351,8 @@ struct CurrentStore
     StoreItem<bool, true, ItemFlag::features, journal::hash("Verify Gcode")> verify_gcode;
 
     StoreItem<bool, true, ItemFlag::user_interface, journal::hash("Run LEDs")> run_leds;
-    StoreItem<bool, false, ItemFlag::features | ItemFlag::common_misconfigurations, journal::hash("Heat Entire Bed")> heat_entire_bed;
-    StoreItem<bool, false, ItemFlag::user_interface, journal::hash("Touch Enabled")> touch_enabled;
+    StoreItem<bool, defaults::heat_entire_bed, ItemFlag::features | ItemFlag::common_misconfigurations, journal::hash("Heat Entire Bed")> heat_entire_bed;
+    StoreItem<bool, true, ItemFlag::user_interface, journal::hash("Touch Enabled")> touch_enabled;
     StoreItem<bool, false, ItemFlag::user_interface | ItemFlag::hw_config | ItemFlag::common_misconfigurations, journal::hash("Touch Sig Workaround")> touch_sig_workaround;
 
 #if HAS_TOOLCHANGER() // for now not ifdefing per-extruder as well for simplicity
@@ -415,7 +426,7 @@ struct CurrentStore
     static_assert(HOTENDS <= 8);
 
     /// Stores whether a nozzle is hardened (resistant to abrasive filament) or not. One bit per each hotend
-    StoreItem<std::bitset<8>, 0, ItemFlag::hw_config, journal::hash("Nozzle is Hardened")> nozzle_is_hardened;
+    StoreItem<std::bitset<8>, defaults::nozzle_is_hardened, ItemFlag::hw_config, journal::hash("Nozzle is Hardened")> nozzle_is_hardened;
 
     /// Stores whether a nozzle is high-flow (supports high-flow print profile) or not. One bit per each hotend
     StoreItem<std::bitset<8>, defaults::nozzle_is_high_flow, ItemFlag::hw_config, journal::hash("Nozzle is High-Flow")> nozzle_is_high_flow;
@@ -479,6 +490,10 @@ struct CurrentStore
     StoreItem<HWCheckSeverity, defaults::hw_check_severity, ItemFlag::features, journal::hash("HW Check Input Shaper")> hw_check_input_shaper;
 #if HAS_GCODE_COMPATIBILITY()
     StoreItem<HWCheckSeverity, defaults::hw_check_severity, ItemFlag::features, journal::hash("HW Check Compatibility")> hw_check_gcode_compatibility;
+#endif
+
+#if HAS_E2EE_SUPPORT()
+    StoreItem<e2ee::IdentityCheckLevel, e2ee::IdentityCheckLevel::AnyIdentity, ItemFlag::security, journal::hash("E2EE Identity check")> identity_check;
 #endif
     template <typename F>
     auto visit_hw_check(HWCheckType type, const F &visitor) {
@@ -584,9 +599,9 @@ struct CurrentStore
 #endif
 
 #if HAS_PHASE_STEPPING()
-    static constexpr bool phase_stepping_ram_only = !HAS_PHASE_STEPPING_TOGGLE();
-    StoreItem<bool, defaults::phase_stepping_enabled_x, ItemFlag::features, journal::hash("Phase Stepping Enabled X"), 1, phase_stepping_ram_only> phase_stepping_enabled_x;
-    StoreItem<bool, defaults::phase_stepping_enabled_y, ItemFlag::features, journal::hash("Phase Stepping Enabled Y"), 1, phase_stepping_ram_only> phase_stepping_enabled_y;
+    static constexpr bool phase_stepping_ram_only = true;
+    StoreItem<bool, defaults::phase_stepping_enabled, ItemFlag::features, journal::hash("Phase Stepping Enabled X"), 1, phase_stepping_ram_only> phase_stepping_enabled_x;
+    StoreItem<bool, defaults::phase_stepping_enabled, ItemFlag::features, journal::hash("Phase Stepping Enabled Y"), 1, phase_stepping_ram_only> phase_stepping_enabled_y;
 
     bool get_phase_stepping_enabled();
     bool get_phase_stepping_enabled(AxisEnum axis);
@@ -633,6 +648,16 @@ struct CurrentStore
 
 #if HAS_EMERGENCY_STOP()
     StoreItem<bool, false, ItemFlag::features, journal::hash("Emergency stop enable v2")> emergency_stop_enable;
+
+    /// Whether the user has given a consent for the emergency stop to be disabled
+    StoreItem<bool, false, ItemFlag::features, journal::hash("Emergency stop disable consent")> emergency_stop_disable_consent_given;
+
+    // These two guys must have the same flags. If the emergency_stop gets factory-reset to off, we need to ask the user for the consent again.
+    static_assert(decltype(emergency_stop_enable)::flags == decltype(emergency_stop_disable_consent_given)::flags);
+#endif
+
+#if HAS_HEATBED_SCREWS_DURING_TRANSPORT()
+    StoreItem<bool, false, ItemFlag::features, journal::hash("Heatbed screws removal approved")> heatbed_screws_removal_approved;
 #endif
 
     StoreItem<bool, false, ItemFlag::features, journal::hash("Happy Printing Seen")> happy_printing_seen;
@@ -718,6 +743,15 @@ struct CurrentStore
     StoreItem<bool, false, ItemFlag::calibrations, journal::hash("Manual Belt Tuning Completed")> manual_belt_tuning_completed;
 #endif
 
+    StoreItem<bool, DEVELOPMENT_ITEMS(), ItemFlag::user_interface | ItemFlag::common_misconfigurations, journal::hash("Fast Draw Enabled")> fast_draw_enabled;
+
+#if HAS_BED_FAN()
+    StoreItem<bed_fan::SelftestResult, bed_fan::SelftestResult {}, ItemFlag::calibrations, journal::hash("Bed fan selftest results")> bed_fan_selftest_result;
+#endif
+#if HAS_PSU_FAN()
+    StoreItem<TestResult, defaults::test_result_unknown, ItemFlag::calibrations, journal::hash("PSU fan selftest result")> psu_fan_selftest_result;
+#endif
+
 private:
     void perform_config_migrations();
 };
@@ -743,25 +777,14 @@ struct DeprecatedStore
     // Selftest Result version before adding Gearbox Alignment result to EEPROM
     StoreItem<SelftestResult_pre_gears, defaults::selftest_result_pre_gears, journal::hash("Selftest Result V23")> selftest_result_pre_gears;
 
-    // Changing Filament Sensor default state to remove necessity of FS dialog on startup
-    StoreItem<bool, true, journal::hash("FSensor Enabled")> fsensor_enabled_v1;
-
     // An item was added to the middle of the footer enum and it caused eeprom corruption. This store footer item  was deleted and a new one is created without migration so as to force default footer value onto everyone, which is better than 'random values' (especially on mini where it could cause duplicated items shown). Default value was removed since we no longer need to keep it
     StoreItem<uint32_t, 0, journal::hash("Footer Setting")> footer_setting_v1;
 
-    StoreItem<footer::Item, defaults::footer_setting_0, journal::hash("Footer Setting 0")> footer_setting_0_v2;
-#if FOOTER_ITEMS_PER_LINE__ > 1
-    StoreItem<footer::Item, defaults::footer_setting_1, journal::hash("Footer Setting 1")> footer_setting_1_v2;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 2
-    StoreItem<footer::Item, defaults::footer_setting_2, journal::hash("Footer Setting 2")> footer_setting_2_v2;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 3
-    StoreItem<footer::Item, defaults::footer_setting_3, journal::hash("Footer Setting 3")> footer_setting_3_v2;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 4
-    StoreItem<footer::Item, defaults::footer_setting_4, journal::hash("Footer Setting 4")> footer_setting_4_v2;
-#endif
+    StoreItem<footer::Item, footer::Item {}, journal::hash("Footer Setting 0")> footer_setting_0_v2;
+    StoreItem<footer::Item, footer::Item {}, journal::hash("Footer Setting 1")> footer_setting_1_v2;
+    StoreItem<footer::Item, footer::Item {}, journal::hash("Footer Setting 2")> footer_setting_2_v2;
+    StoreItem<footer::Item, footer::Item {}, journal::hash("Footer Setting 3")> footer_setting_3_v2;
+    StoreItem<footer::Item, footer::Item {}, journal::hash("Footer Setting 4")> footer_setting_4_v2;
 
     // Filament types loaded in extruders
     StoreItem<EncodedFilamentType, EncodedFilamentType {}, journal::hash("Filament Type 0")> filament_type_0;
@@ -858,10 +881,21 @@ struct DeprecatedStore
         StoreItem<uint32_t, defaults::side_fs_value_span, ItemFlag::calibrations | ItemFlag::dev_items, journal::hash("Side FS Value Span 3")> side_fs_value_span_3;
         StoreItem<uint32_t, defaults::side_fs_value_span, ItemFlag::calibrations | ItemFlag::dev_items, journal::hash("Side FS Value Span 4")> side_fs_value_span_4;
         StoreItem<uint32_t, defaults::side_fs_value_span, ItemFlag::calibrations | ItemFlag::dev_items, journal::hash("Side FS Value Span 5")> side_fs_value_span_5;
+
+        StoreItem<bool, true, ItemFlag::calibrations, journal::hash("Run Selftest")> run_selftest;
         */
 
     // This was replaced by 2 separate items for network and hw_config
     StoreItem<bool, false, journal::hash("Printer setup done")> printer_setup_done;
+
+    static inline constexpr bool fsensor_enabled_v2_default {
+#if PRINTER_IS_PRUSA_MINI() || PRINTER_IS_PRUSA_MK3_5()
+        true // MINI and 3.5 do not require any calibration
+#else
+        false
+#endif
+    };
+    StoreItem<bool, fsensor_enabled_v2_default, journal::hash("FSensor Enabled V2")> fsensor_enabled_v2;
 };
 
 } // namespace config_store_ns

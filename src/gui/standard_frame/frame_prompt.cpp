@@ -17,7 +17,7 @@ static constexpr std::array layout_with_footer = stdext::array_concat(layout_no_
 static_assert(layout_no_footer.size() + 1 == layout_with_footer.size(), "Layout without footer should be exactly one item (the footer) smaller than layout with footer");
 } // namespace
 
-FramePrompt::FramePrompt(window_t *parent, FSMAndPhase fsm_phase, const string_view_utf8 &txt_title, const string_view_utf8 &txt_info, Align_t info_alignment)
+FramePrompt::FramePrompt(window_frame_t *parent, FSMAndPhase fsm_phase, const string_view_utf8 &txt_title, const string_view_utf8 &txt_info, Align_t info_alignment)
     : title(parent, {}, is_multiline::yes, is_closed_on_click_t::no, txt_title)
     , info(parent, {}, is_multiline::yes, is_closed_on_click_t::no, txt_info)
     , radio(parent, {}, fsm_phase) //
@@ -30,7 +30,7 @@ FramePrompt::FramePrompt(window_t *parent, FSMAndPhase fsm_phase, const string_v
     info.set_font(Font::small);
 #endif
 
-    static_cast<window_frame_t *>(parent)->CaptureNormalWindow(radio);
+    parent->CaptureNormalWindow(radio);
 
     std::array<window_t *, layout_no_footer.size()> windows_no_footer { &title, &info, &radio };
     layout_vertical_stack(parent->GetRect(), windows_no_footer, layout_no_footer);
@@ -42,7 +42,7 @@ FramePrompt::FramePrompt(window_frame_t *parent, FSMAndPhase fsm_phase, std::opt
     // Extracting information: Phase -> corresponding error code -> message
     const auto err_code = error_code_mapper(fsm_phase);
     if (!err_code.has_value()) {
-        BUDDY_UNREACHABLE(); // Some phases do not have corresponding error codes - they should not be called with this constructor
+        bsod_unreachable(); // Some phases do not have corresponding error codes - they should not be called with this constructor
     }
 
     const auto err = find_error(err_code.value());

@@ -5,7 +5,7 @@
 bool AsyncJobExecutionControl::with_synchronized(const stdext::inplace_function<void()> &f) {
     std::lock_guard mutex_guard(executor.mutex);
 
-    if (executor.synchronized_data.current_job_discarded) {
+    if (is_discarded()) {
         return false;
     }
 
@@ -15,5 +15,5 @@ bool AsyncJobExecutionControl::with_synchronized(const stdext::inplace_function<
 
 bool AsyncJobExecutionControl::is_discarded() {
     // The result is informative, so we don't need to use mutex here.
-    return executor.synchronized_data.current_job_discarded;
+    return !executor.synchronized_data.current_job;
 }

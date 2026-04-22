@@ -4,18 +4,18 @@
 #include "marlin_client.hpp"
 #include "WindowMenuSpin.hpp"
 #include "window_msgbox.hpp"
-#include <filament_sensors_handler.hpp>
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include <mmu2/fail_bucket.hpp>
 
 #if HAS_SELFTEST()
     #include "ScreenSelftest.hpp"
 #endif
 
-#include "screen_menu_mmu_preload_to_mmu.hpp"
 #include "screen_menu_mmu_load_test_filament.hpp"
 #include "screen_menu_mmu_eject_filament.hpp"
 #include "screen_menu_mmu_cut_filament.hpp"
 #include "screen_menu_mmu_load_to_nozzle.hpp"
+#include "screen/screen_menu_mmu_preload_all.hpp"
 #include "screen_menu_filament_changeall.hpp"
 
 #include <config_store/store_instance.hpp>
@@ -25,27 +25,15 @@
 
 /**********************************************************************************************/
 // MI_MMU_LOAD_FILAMENT
-MI_MMU_PRELOAD_ADVANCED::MI_MMU_PRELOAD_ADVANCED()
+MI_MMU_PRELOAD::MI_MMU_PRELOAD()
     : IWindowMenuItem(_(label), nullptr,
         // enable the PreLoad menu only if there is no filament already loaded
         FSensors_instance().WhereIsFilament() == MMU2::FilamentState::AT_FSENSOR ? is_enabled_t::no : is_enabled_t::yes,
         is_hidden_t::no,
         expands_t::yes) {
 }
-void MI_MMU_PRELOAD_ADVANCED::click(IWindowMenu & /*window_menu*/) {
-    Screens::Access()->Open(ScreenFactory::Screen<ScreenChangeAllFilaments>);
-}
-
-/**********************************************************************************************/
-// MI_MMU_PRELOAD
-MI_MMU_PRELOAD::MI_MMU_PRELOAD()
-    : IWindowMenuItem(_(label), nullptr,
-        FSensors_instance().WhereIsFilament() == MMU2::FilamentState::AT_FSENSOR ? is_enabled_t::no : is_enabled_t::yes,
-        is_hidden_t::no,
-        expands_t::yes) {
-}
 void MI_MMU_PRELOAD::click(IWindowMenu & /*window_menu*/) {
-    Screens::Access()->Open(ScreenFactory::Screen<ScreenMenuMMUPreloadToMMU>);
+    Screens::Access()->Open(ScreenFactory::Screen<ScreenChangeAllFilaments>);
 }
 
 /**********************************************************************************************/
@@ -103,10 +91,9 @@ void MI_MMU_ISSUE_GCODE::click(IWindowMenu & /*window_menu*/) {
 }
 
 /**********************************************************************************************/
-// MI_MMU_ISSUE_GCODE_SLOT
-MI_MMU_ISSUE_GCODE_SLOT::MI_MMU_ISSUE_GCODE_SLOT(uint8_t slot_i, const char *label_prefix, const char *gcode_fmt)
+// MI_MMU_ITEM_WITH_SLOT
+MI_MMU_ITEM_WITH_SLOT::MI_MMU_ITEM_WITH_SLOT(uint8_t slot_i, const char *label_prefix)
     : IWindowMenuItem({})
-    , gcode_fmt_(gcode_fmt)
     , slot_i_(slot_i) {
 
 #pragma GCC diagnostic push
@@ -118,24 +105,47 @@ MI_MMU_ISSUE_GCODE_SLOT::MI_MMU_ISSUE_GCODE_SLOT(uint8_t slot_i, const char *lab
 #pragma GCC diagnostic pop
 }
 
-void MI_MMU_ISSUE_GCODE_SLOT::click(IWindowMenu &) {
+/**********************************************************************************************/
+// MI_MMU_ISSUE_GCODE_SLOT_FMT
+MI_MMU_ISSUE_GCODE_SLOT_FMT::MI_MMU_ISSUE_GCODE_SLOT_FMT(uint8_t slot_i, const char *label_prefix, const char *gcode_fmt)
+    : MI_MMU_ITEM_WITH_SLOT(slot_i, label_prefix)
+    , gcode_fmt_(gcode_fmt) {
+}
+
+void MI_MMU_ISSUE_GCODE_SLOT_FMT::click(IWindowMenu &) {
     std::array<char, MAX_CMD_SIZE> gcode;
     snprintf(gcode.data(), gcode.size(), gcode_fmt_, slot_i_);
     gui_try_gcode_with_msg(gcode.data());
 }
 
 /**********************************************************************************************/
+// MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT
+MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT::MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT(uint8_t slot_i, const char *label_prefix)
+    : MI_MMU_ITEM_WITH_SLOT(slot_i, label_prefix) {}
+
+void MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT::click(IWindowMenu &) {
+    std::array<char, MAX_CMD_SIZE> gcode;
+    FilamentType f = config_store().get_filament_type(slot_i_);
+
+    if (f == FilamentType::none) {
+        // if, for some reason, no filament type is known on a specific slot, we shall omit the S parameter from the M701 gcode
+        // Also, un-preloaded filament slots shall be grayed-out to prevent the user from getting into these edge-cases
+        snprintf(gcode.data(), gcode.size(), "M701 W2 P%i", slot_i_);
+    } else {
+        snprintf(gcode.data(), gcode.size(), "M701 S\"%s\" W2 P%i", f.parameters().name.data(), slot_i_);
+    }
+
+    gui_try_gcode_with_msg(gcode.data());
+}
+
+/**********************************************************************************************/
 // MI_MMU_PRELOAD_ALL
 MI_MMU_PRELOAD_ALL::MI_MMU_PRELOAD_ALL()
-    : IWindowMenuItem(_(label), nullptr, is_enabled_t::yes, is_hidden_t::no) {
+    : IWindowMenuItem(_(label), nullptr, is_enabled_t::yes, is_hidden_t::no, expands_t::yes) {
 }
 
 void MI_MMU_PRELOAD_ALL::click(IWindowMenu & /*window_menu*/) {
-    for (uint8_t i = 0; i < 5; ++i) {
-        char gcode[] = "M704 Px";
-        gcode[sizeof(gcode) - 2] = i + '0';
-        marlin_client::gcode(gcode);
-    }
+    Screens::Access()->Open(ScreenFactory::Screen<ScreenMenuMMUPreloadAll>);
 }
 
 /**********************************************************************************************/
@@ -156,48 +166,33 @@ void MI_MMU_LOAD_TEST_ALL::click(IWindowMenu & /*window_menu*/) {
  * @brief Flips the value of the MMU Rework toggle.
  *
  * Displays a dialog warning the user about the FS behavior changing with this
- * switch. Then it flips (enables if disabled and vice versa) the value of
- * is_mmu_rework, invalidates FS calibration (since with MMU rework the
- * calibrated values are no longer valid) and runs FS calibration.
- *
- * @param flip_mmu_at_the_end If true, will also enables or disables MMU in
- *                            accordance with the MMU Rework value.
+ * switch. Then it sets the value of is_mmu_rework and runs FS calibration.
  */
-static bool flip_mmu_rework([[maybe_unused]] bool flip_mmu_at_the_end) {
+static bool set_mmu_rework(bool set) {
+    if (config_store().is_mmu_rework.get() == set) {
+        return true;
+    }
+
     if (MsgBoxWarning(_("This will change the behavior of the filament sensor. Do you want to continue?"), { Response::Continue, Response::Abort, Response::_none, Response::_none }) != Response::Continue) {
         return false;
     }
 
-    const bool set_mmu_rework = !config_store().is_mmu_rework.get();
-
     // When enabling MMU rework, force set footer items
     // BFW-5219
-    if (set_mmu_rework) {
+    if (set) {
         StatusFooter::SetSlotInit(3, footer::Item::f_sensor);
         StatusFooter::SetSlotInit(4, footer::Item::finda);
     }
 
-    config_store().is_mmu_rework.set(set_mmu_rework);
+    config_store().is_mmu_rework.set(set);
 
-    // The FS is not calibrated on MK3.5
 #if HAS_SELFTEST() && !PRINTER_IS_PRUSA_MK3_5()
-    const auto fsstate = GetExtruderFSensor(0)->get_state();
-    GetExtruderFSensor(0)->SetInvalidateCalibrationFlag();
+    // Invalidate the extruder fsensor calibration
+    FilamentSensorCalibrator::Storage storage;
+    GetExtruderFSensor(0)->create_calibrator(storage)->finish();
 
-    if (fsstate != FilamentSensorState::NotCalibrated && fsstate != FilamentSensorState::Disabled
-        // Do not open selftest during ScreenPrinterSetup, it would screw things up (and the screen can be opened during the selftest)
-        && !Screens::Access()->IsScreenOpened<ScreenPrinterSetup>() //
-    ) {
-        // opens the screen in advance before the screen will be opened by the selftest
-        // this prevents the user to click something before the selftest screen would open
-        Screens::Access()->Open(ScreenFactory::Screen<ScreenSelftest>);
-
-        if (flip_mmu_at_the_end) {
-            marlin_client::test_start(stmFSensor_flip_mmu_at_the_end);
-        } else {
-            marlin_client::test_start(stmFSensor);
-        }
-    }
+    // And start the calibration right away
+    marlin_client::gcode("M1981");
 #endif
 
     return true;
@@ -209,30 +204,18 @@ MI_MMU_ENABLE::MI_MMU_ENABLE()
     : WI_ICON_SWITCH_OFF_ON_t(config_store().mmu2_enabled.get(), _(label), nullptr, is_enabled_t::yes, is_hidden_t::no) {
 }
 
-void MI_MMU_ENABLE::OnChange(size_t old_index) {
-    if (!value()) {
-        // Disale MMU
-        marlin_client::gcode("M709 S0");
+void MI_MMU_ENABLE::OnChange([[maybe_unused]] size_t old_index) {
+    if (value() && !config_store().is_mmu_rework.get() && !set_mmu_rework(true)) {
+        set_value(false);
+        return;
 
-    } else if (!config_store().is_mmu_rework.get()) {
-        // if we are enabling MMU and the MMU Rework option is not enabled, enable it
-        flip_mmu_rework(true);
-
-#if PRINTER_IS_PRUSA_MK3_5()
-        // On other printers flip_mmu_rework executes FS Calibration, which then enables MMU
-        // There is no FS Calibration on MK3.5, so we turn on MMU here instead
-        marlin_client::gcode("M709 S1");
-#endif
-    } else {
-        // logical_sensors.extruder is not synchronized, but in this case it it OK
-        if (!is_fsensor_working_state(FSensors_instance().sensor_state(LogicalFilamentSensor::extruder))) {
-            MsgBoxWarning(_("Can't enable MMU: calibrate and enable the printer's filament sensor first."), Responses_Ok);
-            set_value(old_index > 0);
-            return;
-        }
-
-        marlin_client::gcode("M709 S1");
+    } else if (value() && !FSensors_instance().is_working(LogicalFilamentSensor::extruder)) {
+        MsgBoxWarning(_("Can't enable MMU: calibrate and enable the printer's filament sensor first."), Responses_Ok);
+        set_value(false);
+        return;
     }
+
+    marlin_client::gcode(value() ? "M709 S1" : "M709 S0");
 }
 
 void MI_MMU_ENABLE::Loop() {
@@ -301,7 +284,7 @@ void MI_MMU_NEXTRUDER_REWORK::build_item_text(int index, const std::span<char> &
 }
 
 bool MI_MMU_NEXTRUDER_REWORK::on_item_selected([[maybe_unused]] int old_index, int new_index) {
-    if (!flip_mmu_rework(new_index == 0)) {
+    if (!set_mmu_rework(new_index == 1)) {
         return false;
     }
 

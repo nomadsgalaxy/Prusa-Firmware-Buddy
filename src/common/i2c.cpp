@@ -5,25 +5,32 @@
 #include <array>
 #include "HAL/HAL.h"
 #include <feature/precise_stepping/precise_stepping.hpp>
+#include <device/peripherals.h>
 
 #define MAX_RETRIES 20
 
 namespace i2c {
-
 namespace {
-    std::array<osStaticMutexDef_t, 3> i2c_mutexes;
+    constinit const std::array i2c_handles = {
+#if HAS_I2CN(1)
+        &hi2c1,
+#endif
+#if HAS_I2CN(2)
+        &hi2c2,
+#endif
+#if HAS_I2CN(3)
+        &hi2c3,
+#endif
+    };
+
+    // Array of static mutexes, one per I2C channel
+    std::array<osStaticMutexDef_t, i2c_handles.size()> i2c_mutexes {};
 } // namespace
 
-static int get_i2c_no(I2C_HandleTypeDef &hi2c) {
-    if (&hi2c == &hi2c1) {
-        return 1;
-    } else if (&hi2c == &hi2c2) {
-        return 2;
-    } else if (&hi2c == &hi2c3) {
-        return 3;
-    } else {
-        return -1;
-    }
+static osStaticMutexDef_t *get_i2c_mutex(I2C_HandleTypeDef &hi2c) {
+    size_t idx = stdext::index_of(i2c_handles, &hi2c);
+    assert(idx < i2c_handles.size());
+    return &i2c_mutexes[idx];
 }
 
 void ChannelMutex::static_init() {
@@ -35,9 +42,7 @@ void ChannelMutex::static_init() {
 }
 
 osMutexId ChannelMutex::get_handle(I2C_HandleTypeDef &hi2c) {
-    const auto i = get_i2c_no(hi2c) - 1;
-    assert(i >= 0);
-    return reinterpret_cast<osMutexId>(&i2c_mutexes[i]);
+    return reinterpret_cast<osMutexId>(get_i2c_mutex(hi2c));
 }
 
 ChannelMutex::ChannelMutex(I2C_HandleTypeDef &hi2c)

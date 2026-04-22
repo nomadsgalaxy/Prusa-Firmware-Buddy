@@ -1,6 +1,8 @@
 #include <catch2/catch.hpp>
 #include <cstdlib>
 
+#include <test_utils/formatters.hpp>
+
 #include <utils/progress_mapper.hpp>
 
 enum class TestState {
@@ -14,16 +16,6 @@ enum class TestState {
 
 std::ostream &operator<<(std::ostream &out, const ProgressSpan &span) {
     out << "{" << int(span.min) << " - " << int(span.max) << "}";
-    return out;
-}
-
-template <typename T>
-std::ostream &operator<<(std::ostream &out, const std::optional<T> &opt) {
-    if (opt) {
-        out << *opt;
-    } else {
-        out << "(nullopt)";
-    }
     return out;
 }
 

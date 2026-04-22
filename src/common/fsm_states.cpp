@@ -1,5 +1,6 @@
 #include <common/fsm_states.hpp>
 
+#include <option/has_esp.h>
 #include <option/has_phase_stepping_calibration.h>
 #include <option/has_input_shaper_calibration.h>
 #include <option/has_door_sensor_calibration.h>
@@ -23,6 +24,7 @@ static constexpr uint32_t score(ClientFSM fsm_type) {
 #if HAS_SELFTEST()
     case ClientFSM::Selftest:
     case ClientFSM::FansSelftest:
+    case ClientFSM::SelftestFSensors:
 #endif
 #if HAS_GEARBOX_ALIGNMENT()
     case ClientFSM::GearboxAlignment:
@@ -45,15 +47,14 @@ static constexpr uint32_t score(ClientFSM fsm_type) {
 #if HAS_MANUAL_BELT_TUNING()
     case ClientFSM::ManualBeltTuning:
 #endif
+#if HAS_ESP()
     case ClientFSM::NetworkSetup:
+#endif
 #if HAS_PHASE_STEPPING_CALIBRATION()
     case ClientFSM::PhaseSteppingCalibration:
 #endif
 #if HAS_INPUT_SHAPER_CALIBRATION()
     case ClientFSM::InputShaperCalibration:
-#endif
-#if HAS_BELT_TUNING()
-    case ClientFSM::BeltTuning:
 #endif
 #if HAS_LOADCELL()
     case ClientFSM::NozzleCleaningFailed:

@@ -4,8 +4,9 @@
 #include <device/peripherals_uart.hpp>
 #include <hw/buffered_serial.hpp>
 #include <option/buddy_enable_wui.h>
+#include <option/has_esp.h>
 
-#if BUDDY_ENABLE_WUI()
+#if HAS_ESP() && BUDDY_ENABLE_WUI()
     #include "espif.h"
 #endif
 
@@ -30,7 +31,7 @@ TRACED_ISR(DMA1_Stream4_IRQHandler, HAL_DMA_IRQHandler, SPI_HANDLE_FOR(lcd).hdma
 TRACED_ISR(USART2_IRQHandler, HAL_UART_IRQHandler_with_idle, &uart_handle_for_tmc, uart_for_tmc_idle_isr);
 TRACED_ISR(DMA1_Stream5_IRQHandler, HAL_DMA_IRQHandler, uart_handle_for_tmc.hdmarx);
 
-#if BUDDY_ENABLE_WUI()
+#if HAS_ESP() && BUDDY_ENABLE_WUI()
 
 // UART for ESP network interface card
 TRACED_ISR(USART6_IRQHandler, HAL_UART_IRQHandler_with_idle, &uart_handle_for_esp, espif_receive_data);

@@ -20,10 +20,6 @@ SPI_HandleTypeDef hspi2;
 //
 // TIM_HandleTypeDef htim14; used as time source by HAL
 
-static void Error_Handler() {
-    bsod("peripherals");
-}
-
 void hw_gpio_init(void) {
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
@@ -67,58 +63,58 @@ void hw_adc1_init(void) {
     hadc1.Init.OversamplingMode = DISABLE;
     hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_HIGH;
     if (HAL_ADC_Init(&hadc1) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Regular Channel
     sConfig.Channel = ADC_CHANNEL_1;
     sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Regular Channel
     sConfig.Channel = ADC_CHANNEL_2;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Regular Channel
     sConfig.Channel = ADC_CHANNEL_4;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Regular Channel
     sConfig.Channel = ADC_CHANNEL_5;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Regular Channel
     sConfig.Channel = ADC_CHANNEL_7;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Regular Channel
     sConfig.Channel = ADC_CHANNEL_8;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Regular Channel
     sConfig.Channel = ADC_CHANNEL_10;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Regular Channel
     sConfig.Channel = ADC_CHANNEL_11;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Internal Temperature Sensor
     sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Internal Reference
     sConfig.Channel = ADC_CHANNEL_VREFINT;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     HAL_NVIC_DisableIRQ(DMA1_Channel1_IRQn); // Disable ADC DMA IRQ. This IRQ is not used. Save CPU usage.
@@ -140,6 +136,6 @@ void hw_spi2_init(void) {
     hspi2.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
     hspi2.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
     if (HAL_SPI_Init(&hspi2) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }

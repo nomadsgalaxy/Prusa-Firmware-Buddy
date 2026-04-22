@@ -26,15 +26,8 @@ if(HAS_ACCELEROMETER)
 endif()
 
 if(BOARD_IS_MASTER_BOARD)
-  if((PRINTER STREQUAL "MK4")
-     OR (PRINTER STREQUAL "iX")
-     OR (PRINTER STREQUAL "COREONE")
-     )
-    add_subdirectory(mk4_ix_coreone)
-  endif()
-
-  if(PRINTER STREQUAL "MK3.5")
-    add_subdirectory(mk3.5)
+  if(BOARD STREQUAL "XBUDDY")
+    add_subdirectory(xbuddy)
   endif()
 
   if(PRINTER STREQUAL "XL")

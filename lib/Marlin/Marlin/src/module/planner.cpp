@@ -164,12 +164,16 @@ void Planner::apply_settings(const user_planner_settings_t &settings, const bool
   static constexpr planner_settings_t standard_limits = {
     .max_acceleration_mm_per_s2 = HWLIMIT_NORMAL_MAX_ACCELERATION,
     .max_feedrate_mm_s = HWLIMIT_NORMAL_MAX_FEEDRATE,
+    #if HAS_CLASSIC_JERK
     .max_jerk = HWLIMIT_NORMAL_JERK,
+    #endif
   };
   static constexpr planner_settings_t stealth_limits = {
     .max_acceleration_mm_per_s2 = HWLIMIT_STEALTH_MAX_ACCELERATION,
     .max_feedrate_mm_s = HWLIMIT_STEALTH_MAX_FEEDRATE,
+    #if HAS_CLASSIC_JERK
     .max_jerk = HWLIMIT_STEALTH_JERK,
+    #endif
   };
   const auto &limits = stealth_mode_ ? stealth_limits : standard_limits;
 
@@ -196,7 +200,9 @@ void Planner::apply_settings(const user_planner_settings_t &settings, const bool
   if (!no_limits) {
     apply_limit(&planner_settings_t::max_feedrate_mm_s);
     apply_limit(&planner_settings_t::max_acceleration_mm_per_s2);
+    #if HAS_CLASSIC_JERK
     apply_limit(&planner_settings_t::max_jerk);
+    #endif
   }
 
   refresh_acceleration_rates();
@@ -1144,12 +1150,7 @@ float Planner::get_axis_position_mm(const AxisEnum axis) {
 
 
 bool Planner::busy() {
-  return !draining_buffer && (
-    processing()
-      #if ENABLED(EXTERNAL_CLOSED_LOOP_CONTROLLER)
-        || (READ(CLOSED_LOOP_ENABLE_PIN) && !READ(CLOSED_LOOP_MOVE_COMPLETE_PIN))
-      #endif
-    );
+  return !draining_buffer && processing();
 }
 
 /**
@@ -1180,6 +1181,7 @@ void Planner::synchronize() {
 bool Planner::_buffer_msteps(const xyze_long_t &target, const xyze_pos_t &target_float
   , feedRate_t fr_mm_s, const uint8_t extruder, const PlannerHints &hints
 ) {
+  assert(fr_mm_s > 0);
 
   // Wait for the next available block
   uint8_t next_buffer_head;
@@ -1228,6 +1230,8 @@ bool Planner::_populate_block(block_t * const block,
   const abce_long_t &target, const xyze_pos_t &target_float
   , feedRate_t fr_mm_s, const uint8_t extruder, const PlannerHints &hints
 ) {
+  assert(fr_mm_s > 0);
+  
   const int32_t da = target.a - position.a,
                 db = target.b - position.b,
                 dc = target.c - position.c;
@@ -1324,7 +1328,7 @@ bool Planner::_populate_block(block_t * const block,
   block->mstep_event_count = _MAX(block->msteps.a, block->msteps.b, block->msteps.c, e_msteps);
 
   // Always calculate the block length if we are going to keep it
-  if (block->mstep_event_count >= MIN_MSTEPS_PER_SEGMENT || block->flag.raw_block) {
+  if (block->mstep_event_count >= MIN_MSTEPS_PER_SEGMENT || hints.raw_block) {
     if (block->msteps.a || block->msteps.b || block->msteps.c) {
       block->millimeters = SQRT(sq(delta_mm.x) + sq(delta_mm.y) + sq(delta_mm.z));
     } else {
@@ -1803,16 +1807,29 @@ bool Planner::_populate_block(block_t * const block,
 
           vmax_junction_sqr = (junction_acceleration * junction_deviation_mm * sin_theta_d2) / (1.0f - sin_theta_d2);
           #if ENABLED(JD_SMALL_SEGMENT_HANDLING)
-            if (block->millimeters < 1) {
+            // For small moves with >135° junction (octagon) find speed for approximate arc
+            if (block->millimeters < 1 && junction_cos_theta < -0.7071067812f) {
+              // Fast acos(-t) approximation (max. error +-0.033rad = 1.89°)
+              // Based on MinMax polynomial published by W. Randolph Franklin, see
+              // https://wrf.ecse.rpi.edu/Research/Short_Notes/arcsin/onlyelem.html
+              //  acos( t) = pi / 2 - asin(x)
+              //  acos(-t) = pi - acos(t) ... pi / 2 + asin(x)
 
-              // Fast acos approximation, minus the error bar to be safe
-              const float junction_theta = (RADIANS(-40) * sq(junction_cos_theta) - RADIANS(50)) * junction_cos_theta + RADIANS(90) - 0.18f;
+              const float neg = junction_cos_theta < 0 ? -1 : 1,
+                          t = neg * junction_cos_theta,
+                          asinx =       0.032843707f
+                                + t * (-1.451838349f
+                                + t * ( 29.66153956f
+                                + t * (-131.1123477f
+                                + t * ( 262.8130562f
+                                + t * (-242.7199627f
+                                + t * ( 84.31466202f ) ))))),
+                          junction_theta = RADIANS(90) + neg * asinx; // acos(-t)
 
-              // If angle is greater than 135 degrees (octagon), find speed for approximate arc
-              if (junction_theta > RADIANS(135)) {
-                const float limit_sqr = block->millimeters / (RADIANS(180) - junction_theta) * junction_acceleration;
-                NOMORE(vmax_junction_sqr, limit_sqr);
-              }
+              // NOTE: junction_theta bottoms out at 0.033 which avoids divide by 0.
+
+              const float limit_sqr = (block->millimeters * junction_acceleration) / junction_theta;
+              NOMORE(vmax_junction_sqr, limit_sqr);
             }
           #endif //JD_SMALL_SEGMENT_HANDLING
 
@@ -2366,6 +2383,7 @@ bool Planner::buffer_segment(const abce_pos_t &abce
   , const uint8_t extruder/*=active_extruder*/
   , const PlannerHints &hints/*=PlannerHints()*/
 ) {
+  assert(fr_mm_s > 0);
 
 #if defined(Z_CEILING_CLEARANCE) != HAS_CEILING_CLEARANCE()
   #error Z_CEILING_CLEARANCE must be defined only if HAS_CEILING_CLEARANCE()

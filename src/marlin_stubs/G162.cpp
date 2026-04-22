@@ -10,7 +10,7 @@
 #include "client_response.hpp"
 #include "printers.h"
 #include <marlin_server.hpp>
-#include <RAII.hpp>
+#include <raii/auto_restore.hpp>
 #include <utils/progress.hpp>
 
 #include <option/has_loadcell.h>
@@ -43,8 +43,13 @@ void selftest::calib_Z([[maybe_unused]] bool move_down_after) {
         return; // This can happen only during print, homing recovery should follow
     }
 
+    // mark test as failed (so it will be failed after reset - disconnected cables can cause rsod)
+    auto result = config_store().selftest_result.get();
+    result.zalign = TestResult_Failed;
+    config_store().selftest_result.set(result);
+
     // Move the nozzle up and away from the bed
-    do_homing_move(Z_AXIS, Z_CALIB_EXTRA_HIGHT, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z), false, false);
+    do_homing_move(Z_AXIS, Z_CALIB_EXTRA_HIGHT, HOMING_FEEDRATE_INVERTED_Z, false, false);
     current_position.z = 0;
     sync_plan_position();
     current_position.x = X_MIN_POS + 2;
@@ -61,7 +66,7 @@ void selftest::calib_Z([[maybe_unused]] bool move_down_after) {
 
     // Home the axis
     endstops.enable(true); // Stall endstops need to be enabled manually as in G28
-    if (!homeaxis(Z_AXIS, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z), false, nullptr, true, z_probe)) {
+    if (!homeaxis(Z_AXIS, HOMING_FEEDRATE_INVERTED_Z, false, nullptr, true, z_probe)) {
         fatal_error(ErrCode::ERR_ELECTRO_HOMING_ERROR_Z);
     }
     endstops.not_homing();
@@ -96,14 +101,14 @@ static void safe_move_down() {
 
     AutoRestore _se(soft_endstops_enabled, false);
     TemporaryGlobalEndstopsState _ess(true);
-    CallbackHookGuard cb { marlin_server::idle_hook_point,
+    Subscriber cb { marlin_server::idle_publisher,
         [&]() {
             // FSMAndPhase(ClientFSM::Load_unload, pause.getPhaseIndex())
             ProgressPercent progress = ProgressSpan { 0, 100 }.map(to_normalized_progress(current_position.z, target_Z, marlin_vars().native_pos[MARLIN_VAR_INDEX_Z]));
             marlin_server::fsm_change(FSMAndPhase(ClientFSM::Selftest, GetPhaseIndex(PhasesSelftest::CalibZ)), { progress });
         } };
 
-    if (do_homing_move(AxisEnum::Z_AXIS, target_Z - current_position.z, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z))) {
+    if (do_homing_move(AxisEnum::Z_AXIS, target_Z - current_position.z, HOMING_FEEDRATE_INVERTED_Z)) {
         // endstop triggered, raise the nozzle
         current_position.z = Z_MIN_POS;
         sync_plan_position();
@@ -117,6 +122,11 @@ static void safe_move_down() {
 }
 
 void selftest::calib_Z(bool move_down_after) {
+    // mark test as failed (so it will be failed after reset)
+    auto result = config_store().selftest_result.get();
+    result.zalign = TestResult_Failed;
+    config_store().selftest_result.set(result);
+
     // backup original acceleration/feedrates and reset defaults for calibration
     static constexpr float def_feedrate[] = DEFAULT_MAX_FEEDRATE;
     static constexpr float def_accel[] = DEFAULT_MAX_ACCELERATION;
@@ -128,7 +138,7 @@ void selftest::calib_Z(bool move_down_after) {
     // Z axis lift
     marlin_server::fsm_change(PhasesSelftest::CalibZ);
     endstops.enable(true); // Stall endstops need to be enabled manually as in G28
-    if (!homeaxis(Z_AXIS, MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z), true)) {
+    if (!homeaxis(Z_AXIS, HOMING_FEEDRATE_INVERTED_Z, true)) {
         fatal_error(ErrCode::ERR_ELECTRO_HOMING_ERROR_Z);
     }
     endstops.not_homing();

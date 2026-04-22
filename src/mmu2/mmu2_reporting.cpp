@@ -13,26 +13,30 @@
 #include <logging/log.hpp>
 #include <config_store/store_instance.hpp>
 #include <odometer.hpp>
-#include "gui/dialogs/DialogLoadUnload.hpp"
+#include <filament_to_load.hpp>
 
 LOG_COMPONENT_REF(MMU2);
 
 namespace MMU2 {
 
 void CheckErrorScreenUserInput() {
-    if (!DialogLoadUnload::is_mmu2_error_screen_running()) {
-        return;
-    }
-
-    // A temporary workaround:
+    // A "temporary" workaround:
     // Save a button if any - we cannot poll the FSM infrastructure for buttons (responses)
-    // because each GetResponse is a destructive read (behaves more like a pop from a stack).
+    // because each get_response_from_phase is a destructive read (behaves more like a pop from a stack).
     // For the same reason this piece of code cannot be refactored into a direct call of SetButtonResponse
     // - after extracting one valid button, any repeated calls to ReportErrorHook would overwrite it with a "none" button
     //
     // The only problem with this location is the fact, that the ReportErrorHook is called roughly once per second, which may introduce some GUI lag.
     // However, on the 8-bit, the solution is the same, so probably not a big deal...
-    Response rsp = Fsm::Instance().GetResponse();
+
+    const bool is_err_active = marlin_vars().peek_fsm_states([](const fsm::States &states) {
+        return states.is_active(ClientFSM::Load_unload) && states[ClientFSM::Load_unload]->GetPhase() == std::to_underlying(PhasesLoadUnload::MMU_ERRWaitingForUser);
+    });
+    if (!is_err_active) {
+        return;
+    }
+
+    const Response rsp = marlin_server::get_response_from_phase(PhasesLoadUnload::MMU_ERRWaitingForUser);
     if (rsp != Response::_none) {
         SetButtonResponse(ResponseToButtonOperations(rsp));
     }
@@ -188,6 +192,12 @@ bool TuneMenuEntered() {
 
 void tuneIdlerStallguardThreshold() {
     // @@TODO
+}
+
+void UpdateCurrentFilamentType(uint8_t slot) {
+    if (slot < EXTRUDERS) {
+        filament::set_type_to_load(config_store().get_filament_type(slot));
+    } // ignore out-of-bounds slot indices (uknown filament types)
 }
 
 } // namespace MMU2

@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include "netif_settings.h"
 
+#include <option/has_esp.h>
+
 ////////////////////////////////////////////////////////////////////////////
 /// @brief Possible states of the network device
 ///
@@ -39,10 +41,15 @@ typedef enum {
     NETDEV_STATIC
 } netdev_ip_obtained_t;
 
-#define NETDEV_ETH_ID   0UL
-#define NETDEV_ESP_ID   1UL
+#define NETDEV_ETH_ID 0UL
+#if HAS_ESP()
+    #define NETDEV_ESP_ID 1UL
+    #define NETDEV_COUNT  2UL
+#else
+    #define NETDEV_COUNT 1UL
+#endif
+
 #define NETDEV_NODEV_ID 2UL
-#define NETDEV_COUNT    NETDEV_NODEV_ID
 
 #define create_evt_eth(dev, flag, value) (((dev) << 28 | (flag) << 16) | (value))
 
@@ -165,6 +172,7 @@ bool netdev_get_MAC_address(uint32_t, uint8_t[6]);
 /// @return If it was successful.
 bool netdev_load_ini_to_eeprom();
 
+#if HAS_ESP()
 /// Load esp ini file to both runtime and eeprom configuration.
 ///
 /// @return If it was successful.
@@ -174,6 +182,7 @@ bool netdev_load_esp_credentials_eeprom();
 ///
 /// @return ap_entry_t
 ap_entry_t netdev_read_esp_credentials_eeprom();
+#endif
 
 #ifdef __cplusplus
 }

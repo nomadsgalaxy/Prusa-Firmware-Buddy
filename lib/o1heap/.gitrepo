@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:pavel-kirienko/o1heap.git
+	branch = 2.1.1
+	commit = aa3c253923db36eee7d73a4a5e30884a5fe7a6eb
+	parent = 9a5ad89669a69dcd23ab3878bf23b9348a6a712c
+	method = merge
+	cmdver = 0.4.9

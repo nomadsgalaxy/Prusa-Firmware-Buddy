@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:OpenCyphal/public_regulated_data_types.git
+	branch = master
+	commit = f9f67906cc0ca5d7c1b429924852f6b28f313cbf
+	parent = fc0e75fe552caf14aa0b926eaadf00173b79b01c
+	method = merge
+	cmdver = 0.4.5

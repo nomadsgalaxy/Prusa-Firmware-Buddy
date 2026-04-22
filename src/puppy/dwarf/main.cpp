@@ -43,10 +43,6 @@ extern "C" void startup_task_entry([[maybe_unused]] void const *argument) {
     osThreadTerminate(osThreadGetId());
 }
 
-void system_core_error_handler() {
-    bsod("system_core_error_handler");
-}
-
 extern "C" void vApplicationStackOverflowHook([[maybe_unused]] TaskHandle_t xTask, [[maybe_unused]] char *pcTaskName) {
     bsod("vApplicationStackOverflowHook");
 }

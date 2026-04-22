@@ -1,6 +1,6 @@
 target_include_directories(firmware PRIVATE . include)
 
-target_link_libraries(firmware PRIVATE buddy_utils)
+target_link_libraries(firmware PRIVATE buddy_utils bsod)
 
 if(BOARD IN_LIST BUDDY_BOARDS)
   target_sources(
@@ -15,6 +15,7 @@ if(BOARD IN_LIST BUDDY_BOARDS)
             crc32.cpp
             crc32_zlib.cpp
             data_exchange.cpp
+            directory.cpp
             error_code_mangle.cpp
             ExtInterruptHandler.cpp
             filament.cpp
@@ -24,12 +25,11 @@ if(BOARD IN_LIST BUDDY_BOARDS)
             filepath_operation.cpp
             footer_def.cpp
             footer_eeprom.cpp
-            fsm_network_setup.cpp
             fsm_states.cpp
             general_response.cpp
+            hardware_rng.cpp
             hardware_serial.cpp
             heap.cpp
-            homing_reporter.cpp
             hwio_pindef_check.cpp
             i2c.cpp
             ini_handler.cpp
@@ -57,6 +57,7 @@ if(BOARD IN_LIST BUDDY_BOARDS)
             print_utils.cpp
             printer_model.cpp
             probe_analysis.cpp
+            random_common.cpp
             random_hw.cpp
             ring_allocator.cpp
             rw_mutex.cpp
@@ -83,6 +84,7 @@ if(BOARD IN_LIST BUDDY_BOARDS)
             wdt.cpp
     )
   add_subdirectory(async_job)
+  target_link_libraries(firmware PRIVATE raii)
 
   if(BOARD STREQUAL "XLBUDDY")
     target_sources(firmware PRIVATE hwio_XLBuddy.cpp)
@@ -93,15 +95,21 @@ if(BOARD IN_LIST BUDDY_BOARDS)
   if(HAS_SHEET_PROFILES)
     target_sources(firmware PRIVATE SteelSheets.cpp)
   endif()
+  if(HAS_ESP)
+    target_sources(firmware PRIVATE fsm_network_setup.cpp)
+  endif()
+  if(HAS_E2EE_SUPPORT)
+    add_subdirectory(e2ee)
+  endif()
 elseif(BOARD STREQUAL "DWARF")
   target_sources(
     firmware
     PRIVATE adc.cpp
             heap.cpp
-            homing_reporter.cpp
             marlin_log_component.cpp
             otp.cpp
             Pin.cpp
+            random_common.cpp
             random_sw.cpp
             safe_state.cpp
     )
@@ -120,7 +128,6 @@ elseif(BOARD STREQUAL "XL_DEV_KIT_XLB")
             ExtInterruptHandler.cpp
             fsm_states.cpp
             heap.cpp
-            homing_reporter.cpp
             hwio_XLBuddy.cpp # todo: replace
             i2c.cpp
             marlin_client.cpp
@@ -136,6 +143,7 @@ elseif(BOARD STREQUAL "XL_DEV_KIT_XLB")
             Pin.cpp
             print_utils.cpp
             probe_analysis.cpp
+            random_common.cpp
             random_sw.cpp
             safe_state.cpp
             serial_printing.cpp
@@ -160,20 +168,7 @@ if(HAS_POWER_PANIC)
 endif()
 
 if(FILAMENT_SENSOR)
-  target_sources(
-    firmware PRIVATE filament_sensor.cpp filament_sensors_handler.cpp thread_measurement.cpp
-    )
-  if(FILAMENT_SENSOR STREQUAL "ADC")
-    target_sources(firmware PRIVATE filament_sensor_adc.cpp filament_sensor_adc_eval.cpp)
-  else()
-    target_sources(firmware PRIVATE filament_sensor_photoelectric.cpp)
-  endif()
-  if(HAS_MMU2)
-    target_sources(firmware PRIVATE filament_sensor_mmu.cpp)
-  endif()
-  if(HAS_XBUDDY_EXTENSION)
-    target_sources(firmware PRIVATE filament_sensor_xbuddy_extension.cpp)
-  endif()
+  target_sources(firmware PRIVATE thread_measurement.cpp)
 endif()
 
 if(HAS_LOADCELL)
@@ -184,22 +179,6 @@ if(HAS_LOADCELL_HX717)
 endif()
 if(HAS_LOADCELL AND HAS_LOADCELL_HX717)
   target_sources(firmware PRIVATE hx717mux.cpp)
-endif()
-
-if(BOARD_IS_MASTER_BOARD)
-  if(PRINTER STREQUAL "iX")
-    target_sources(
-      firmware PRIVATE filament_sensor_ix_side.cpp filament_sensors_handler_default.cpp
-      )
-  elseif(PRINTER STREQUAL "XL")
-    target_sources(
-      firmware PRIVATE filament_sensors_handler_XL.cpp filament_sensors_handler_XL_remap.cpp
-      )
-  elseif(PRINTER STREQUAL "XL_DEV_KIT")
-    target_sources(firmware PRIVATE filament_sensors_handler_XL_DEV_KIT.cpp)
-  else()
-    target_sources(firmware PRIVATE filament_sensors_handler_default.cpp)
-  endif()
 endif()
 
 if(GUI)

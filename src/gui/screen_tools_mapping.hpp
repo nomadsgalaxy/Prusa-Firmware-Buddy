@@ -4,7 +4,7 @@
 #include <i18n.h>
 #include <window_text.hpp>
 #include <client_response.hpp>
-#include <window_progress.hpp>
+#include <window_colored_rect.hpp>
 #include <radio_button.hpp>
 #include <i_window_menu_item.hpp>
 #include <window_line_connector.hpp>
@@ -79,8 +79,8 @@ private:
 
     window_text_t left_header;
     window_text_t right_header;
-    window_numberless_progress_t left_line;
-    window_numberless_progress_t right_line;
+    WindowColoredRect left_line;
+    WindowColoredRect right_line;
 
     window_line_connector middle_connector;
 

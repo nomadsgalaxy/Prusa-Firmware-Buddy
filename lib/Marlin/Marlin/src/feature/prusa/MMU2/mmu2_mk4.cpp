@@ -46,6 +46,9 @@ METRIC_DEF(metric_unloadDistanceFSOff, "mmu_unl_fs_trg_dist", METRIC_VALUE_FLOAT
 #endif
 
 namespace {
+
+static constexpr float maximumAllowedExtruderMove = 189.9f; // we cannot plan anything longer than 190mm, stay on the safe side
+
 template <class T>
 class Timer {
 public:
@@ -563,12 +566,25 @@ bool MMU2::ToolChangeCommonOnce(uint8_t slot) {
             Disable_E0(); // it may seem counterintuitive to disable the E-motor, but it gets enabled in the planner whenever the E-motor is to move
             tool_change_extruder = slot;
 
+            allowPrematureFinish = true;
+
+            // The idea here is to activate the MMU earlier than the printer is actually ready to unload the filament,
+            // because engaging of the MMU's Idler takes ~1 second.
+            // Thefore the MMU prepares the Idler into a close intermediate position and waits for printer's fsensor to turn off.
+            // Once the FS is off, the MMU engages the Idler fully (which is much faster than engaging from the parking position),
+            // pulls the filament out and pushes a new one in.
+            // If the FS doesn't turn off within 4 seconds, the MMU reports an error.
+            // Therefore we issue the MMU command ToolChange at this spot - even before the filament is freed from the drive gear.
+            // Also, this is the only reason why MMU FW 3.0.3 is incompatible with 3.0.4 - it's an important change of the unload process.
+            // But - we save a significant amount of time per toolchange -> shorter print times.
+            logic.ToolChange(slot);
+
             // The gcode is expected to do ramming which ends with the filament
             // tip still in extruder gears. Rotate the extruder some more to
             // get the filament (including a potential string) completely out
             // after we've blocked the runout.
             if (extruder != MMU2_NO_TOOL) {
-                extruder_move(MMU2_RETRY_UNLOAD_FINISH_LENGTH, MMU2_RETRY_UNLOAD_FINISH_FEED_RATE);
+                extruder_move(MMU2_RETRY_UNLOAD_FINISH_LENGTH, logic.PulleySlowFeedRate());
 
                 // Monitor the fsensor - detect the current E-motor stepper position when fsensor turns off.
                 // That switch has some ideal (or expected) distance,
@@ -588,8 +604,8 @@ bool MMU2::ToolChangeCommonOnce(uint8_t slot) {
                 metric_record_float(&metric_unloadDistanceFSOff, unloadEPosOnFSOff);
 #endif
             }
-            logic.ToolChange(slot); // let the MMU pull the filament out and push a new one in
             if (manage_response(true, true)) {
+                allowPrematureFinish = false;
                 if (planner_draining()) {
                     // Power panic. Give up fast.
                     return false;
@@ -614,7 +630,15 @@ bool MMU2::ToolChangeCommonOnce(uint8_t slot) {
             unloadEPosOnFSOff = firstUnloadEPosOnFSOff.value_or(nominalEMotorFSOffReg);
             return true; // success
         } else { // Prepare a retry attempt
-            UnloadInner(PreUnloadPolicy::ExtraRelieveFilament);
+            loadFilamentStarted = false;
+
+            while (!manage_response(true, true)) {
+                // Must wait for the MMU to finish its operation
+                // - the PrematureFinish-exit from manage_response brought a nasty edge case
+                // - but since this is "just" error recovery, it can wait a bit longer
+            }
+
+            UnloadInner(PreUnloadPolicy::ExtraRelieveHotFilament);
             if (retries == 2 && cutter_enabled()) {
                 CutFilamentInner(slot); // try cutting filament tip at the last attempt
             }
@@ -624,6 +648,8 @@ bool MMU2::ToolChangeCommonOnce(uint8_t slot) {
 }
 
 void MMU2::ToolChangeCommon(uint8_t slot) {
+    UpdateCurrentFilamentType(slot);
+    SaveResumePos();
     while (!ToolChangeCommonOnce(slot)) { // while not successfully fed into extruder's PTFE tube
         if (planner_draining()) {
             return; // power panic happening, pretend the G-code finished ok
@@ -770,6 +796,7 @@ bool MMU2::set_filament_type(uint8_t /*slot*/, uint8_t /*type*/) {
 
 void MMU2::UnloadObeyAutoRetracted() {
     CommandInProgressGuard cipg(CommandInProgress::UnloadFilament, commandInProgressManager);
+    SaveResumePos();
     if (!marlin_is_retracted()) {
         // if not already auto-retracted, do the ramming ourself
         WaitForHotendTargetTempBeep();
@@ -783,6 +810,7 @@ void MMU2::UnloadObeyAutoRetracted() {
 }
 
 void MMU2::UnloadInner(PreUnloadPolicy preUnloadPolicy) {
+    UpdateCurrentFilamentType(extruder); // this is probably the only place where we need to rely on the "extruder" variable matching the currently unloaded slot
     FSensorBlockRunout blockRunout;
     BlockEStallDetection blockEStallDetection;
 
@@ -790,6 +818,17 @@ void MMU2::UnloadInner(PreUnloadPolicy preUnloadPolicy) {
     case PreUnloadPolicy::Ramming:
         filament_ramming();
         break;
+    case PreUnloadPolicy::ExtraRelieveHotFilament:
+#ifdef USE_TRY_LOAD
+        // try-load printers' ExtraRelieveHotFilament move was always the same as RelieveFilament
+#else
+        // BFW-7473: Assume the filament somehow made it into the melt zone (we have no reliable way of knowing),
+        // but the E-motor skipped during the move.
+        // Therefore, the relieve move must be extra slow in order to allow the filament tip to cool down
+        // and not get wound up on the drive gear -> hence the slow feedrate
+        extruder_move(-60.F, 10.F);
+#endif
+        [[fallthrough]]; // The rest of the relieve move will be done in the following RelieveFilament branch of this switch at a faster pace
     case PreUnloadPolicy::RelieveFilament:
         extruder_move(
 #ifdef USE_TRY_LOAD
@@ -799,19 +838,6 @@ void MMU2::UnloadInner(PreUnloadPolicy preUnloadPolicy) {
             // But E-stall detection is not symmetrical - it needs to retract way more (because the filament may still be somewhere in the nozzle)
             // Theoretically, we should be able to retract the same distance as the failed load (when the E-motor skipped) + some extra margin
             -120.F,
-#endif
-            60.F);
-        planner_synchronize();
-        break;
-    case PreUnloadPolicy::ExtraRelieveFilament:
-        extruder_move(
-#ifdef USE_TRY_LOAD
-            // try-loads are symmetrical
-            -40.F,
-#else
-            // But E-stall detection is not symmetrical - it needs to retract way more (because the filament may still be somewhere in the nozzle)
-            // Theoretically, we should be able to retract the same distance as the failed load (when the E-motor skipped) + some extra margin
-            -180.F,
 #endif
             60.F);
         planner_synchronize();
@@ -865,6 +891,7 @@ bool MMU2::cut_filament(uint8_t slot, bool enableFullScreenMsg /*= true*/) {
         return false;
     }
 
+    UpdateCurrentFilamentType(slot);
     if (enableFullScreenMsg) {
         FullScreenMsgCut(slot);
     }
@@ -904,9 +931,11 @@ bool MMU2::load_filament(uint8_t slot) {
         return false;
     }
 
+    UpdateCurrentFilamentType(slot);
     FullScreenMsgLoad(slot);
     {
         CommandInProgressGuard cipg(CommandInProgress::LoadFilament, commandInProgressManager);
+        SaveResumePos();
         for (;;) {
             Disable_E0();
             logic.LoadFilament(slot);
@@ -954,6 +983,7 @@ bool MMU2::eject_filament(uint8_t slot, bool enableFullScreenMsg /* = true */) {
         return false;
     }
 
+    UpdateCurrentFilamentType(slot);
     if (enableFullScreenMsg) {
         FullScreenMsgEject(slot);
     }
@@ -963,6 +993,7 @@ bool MMU2::eject_filament(uint8_t slot, bool enableFullScreenMsg /* = true */) {
         }
 
         CommandInProgressGuard cipg(CommandInProgress::EjectFilament, commandInProgressManager);
+        SaveResumePos();
         for (;;) {
             Disable_E0();
             logic.EjectFilament(slot);
@@ -1013,7 +1044,6 @@ void MMU2::SaveAndPark(bool move_axes) {
 
         if (move_axes) {
             mmu_print_saved |= SavedState::ParkExtruder;
-            resume_position = planner_current_position(); // save current pos
 
             // lift Z
             move_raise_z(MMU_ERR_Z_PAUSE_LIFT);
@@ -1024,6 +1054,11 @@ void MMU2::SaveAndPark(bool move_axes) {
             }
         }
     }
+}
+
+void MMU2::SaveResumePos() {
+    resume_position = planner_current_position(); // save current pos
+    mmu_print_saved = SavedState::None;
 }
 
 void MMU2::ResumeHotendTemp() {
@@ -1147,7 +1182,8 @@ void MMU2::CheckUserInput() {
 /// But - in case of an error, the command is not yet finished, but we must react accordingly - move the printhead elsewhere, stop heating, eat a cat or so.
 /// That's what's being done here...
 bool MMU2::manage_response(const bool move_axes, const bool turn_off_nozzle) {
-    mmu_print_saved = SavedState::None;
+    // multiple calls to manage_response may occur sequentially due to premature finish optimization
+    // -> must no reset the pause state and resume position unless the command really finished ok
 
     MARLIN_KEEPALIVE_STATE_IN_PROCESS;
 
@@ -1196,6 +1232,8 @@ bool MMU2::manage_response(const bool move_axes, const bool turn_off_nozzle) {
                 // error screen to appear once more so the user can hit 'Retry' button manually.
                 logic.ResetRetryAttempts(); // Reset the retry counter.
             }
+            [[fallthrough]];
+        case PrematureFinish:
             planner_synchronize();
             return true;
         case Interrupted:
@@ -1247,7 +1285,9 @@ StepStatus MMU2::LogicStep(bool reportErrors) {
         [[fallthrough]]; // let Finished be reported the same way like Processing
 
     case Processing:
-        OnMMUProgressMsg(logic.Progress());
+        if (OnMMUProgressMsg(logic.Progress())) {
+            return PrematureFinish;
+        }
         break;
 
     case ButtonPushed:
@@ -1424,13 +1464,13 @@ void MMU2::ReportProgress(ProgressCode pc) {
     LogEchoEvent_P(_O(ProgressCodeToText(pc)));
 }
 
-void MMU2::OnMMUProgressMsg(ProgressCode pc) {
+bool MMU2::OnMMUProgressMsg(ProgressCode pc) {
     if (pc == lastProgressCode) {
         if (pc != ProgressCode::ERRWaitingForUser) { // not sure if this condition is necessary
-            OnMMUProgressMsgSame(pc);
+            return OnMMUProgressMsgSame(pc);
         }
 
-        return;
+        return false;
     }
 
     // some change in progress code
@@ -1450,11 +1490,12 @@ void MMU2::OnMMUProgressMsg(ProgressCode pc) {
         }
 
     } else if (pc != ProgressCode::ERRWaitingForUser) { // avoid reporting errors as progress codes
-        OnMMUProgressMsgChanged(pc);
+        return OnMMUProgressMsgChanged(pc);
     }
+    return false;
 }
 
-void MMU2::OnMMUProgressMsgChanged(ProgressCode pc) {
+bool MMU2::OnMMUProgressMsgChanged(ProgressCode pc) {
     ReportProgress(pc);
     switch (pc) {
     case ProgressCode::UnloadingToFinda:
@@ -1473,20 +1514,33 @@ void MMU2::OnMMUProgressMsgChanged(ProgressCode pc) {
         break;
     case ProgressCode::FeedingToFSensor:
         // prepare for the movement of the E-motor
-        planner_synchronize();
+        // make sure we start at the same position every time - better for debugging.
+        // GCode is not affected, it does it's own G92 E0 after the MMU toolchange
+        marlin_resetE();
+        extruder_move(maximumAllowedExtruderMove, logic.PulleySlowFeedRate()); // start the extuder
         loadFilamentStarted = true;
+        break;
+    case ProgressCode::DisengagingIdler: // only happens after the fsensor triggered correctly -> safe to kill the E-moves
+        if (loadFilamentStarted) {
+            loadFilamentStarted = false;
+            // make sure we kill the moves in case we lost some packets on the communication
+            // which should have been processed in OnMMUProgressMsgSame
+            planner_abort_queued_moves();
+            return allowPrematureFinish; // exit manage_response prematurely
+        }
         break;
     default:
         // do nothing yet
         break;
     }
+    return false;
 }
 
 void __attribute__((noinline)) MMU2::HelpUnloadToFinda() {
     extruder_move(-MMU2_RETRY_UNLOAD_TO_FINDA_LENGTH, MMU2_RETRY_UNLOAD_TO_FINDA_FEED_RATE);
 }
 
-void MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
+bool MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
     switch (pc) {
     case ProgressCode::UnloadingToFinda:
         if (unloadFilamentStarted && !planner_any_moves()) { // Only plan a move if there is no move ongoing
@@ -1520,11 +1574,12 @@ void MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
 #endif
                     extruder_move(logic.ExtraLoadDistance() + 2 - loadingSpeedCompensation, logic.PulleySlowFeedRate());
                 }
+                return allowPrematureFinish; // let the ExtraLoadDistance move finish and then bail out prematurely
                 break;
             case FilamentState::NOT_PRESENT:
                 // fsensor not triggered, continue moving extruder
                 if (!planner_any_moves()) { // Only plan a move if there is no move ongoing
-                    extruder_move(189.9f, logic.PulleySlowFeedRate()); // we cannot plan anything longer than 200mm, but that's probably good enough
+                    extruder_move(maximumAllowedExtruderMove, logic.PulleySlowFeedRate()); // start the extruder
                 }
                 break;
             case FilamentState::UNAVAILABLE:
@@ -1541,6 +1596,7 @@ void MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
         // do nothing yet
         break;
     }
+    return false;
 }
 
 } // namespace MMU2

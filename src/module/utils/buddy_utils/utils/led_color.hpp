@@ -1,0 +1,65 @@
+#pragma once
+
+#include <cstdint>
+
+namespace leds {
+
+struct ColorHSV {
+    float h = 0;
+    float s = 0;
+    float v = 0;
+};
+
+/// Represents color of an LED
+struct ColorRGBW {
+    union {
+        uint32_t data;
+        struct {
+            // DO NOT CHANGE ORDER !!!
+            // BFW-4994 this should probably be done better
+            uint8_t b;
+            uint8_t r;
+            uint8_t g;
+            uint8_t w; // only if supported
+        };
+    };
+
+    constexpr ColorRGBW(uint32_t data_ = 0)
+        : data(data_) {}
+
+    constexpr ColorRGBW(uint8_t r_, uint8_t g_, uint8_t b_)
+        : b(b_)
+        , r(r_)
+        , g(g_)
+        , w(0) {}
+
+    constexpr ColorRGBW(uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+        : b(b)
+        , r(r)
+        , g(g)
+        , w(w) {}
+
+    static ColorRGBW from_hsv(ColorHSV hsv);
+
+    bool operator==(const ColorRGBW &other) const {
+        return data == other.data;
+    }
+
+    bool operator!=(const ColorRGBW &other) const {
+        return !(*this == other);
+    }
+
+    ColorRGBW operator*(double e) const {
+        return ColorRGBW { static_cast<uint8_t>(r * e), static_cast<uint8_t>(g * e), static_cast<uint8_t>(b * e) };
+    }
+
+    ColorRGBW fade(float brightness) const;
+
+    ColorRGBW clamp(uint8_t max_level) const;
+
+    ColorRGBW cross_fade(const ColorRGBW &c2, float ratio) const;
+
+    ColorRGBW blend(const ColorRGBW &c2, float ratio) const;
+};
+
+} // namespace leds

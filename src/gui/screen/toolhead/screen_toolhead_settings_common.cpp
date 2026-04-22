@@ -38,7 +38,7 @@ void MI_TOOLHEAD_SPECIFIC_SPIN::OnClick() {
 // MI_TOOLHEAD_SPECIFIC_TOGGLE
 // ============================================
 void MI_TOOLHEAD_SPECIFIC_TOGGLE::update() {
-    set_value(read_value().transform(Tristate::from_bool).value_or(Tristate::other), false);
+    set_value(Tristate::from_optional(read_value()), false);
 }
 void MI_TOOLHEAD_SPECIFIC_TOGGLE::toggled(Tristate) {
     if (value() == Tristate::other) {
@@ -46,7 +46,7 @@ void MI_TOOLHEAD_SPECIFIC_TOGGLE::toggled(Tristate) {
     }
 
     if (msgbox_confirm_change(toolhead(), user_already_confirmed_changes_)) {
-        store_value(value());
+        store_value(value() == true);
     } else {
         update();
     }

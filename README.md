@@ -109,16 +109,9 @@ With the XL, the situation gets a bit more complex. The firmware of XLBuddy cont
 See /ProjectOptions.cmake for more information about those cache variables.
 
 #### Running tests
+See the detailed testing guide in our [comprehensive testing guide].
 
-```bash
-mkdir build-tests
-cd build-tests
-cmake .. -DBOARD=BUDDY
-make tests
-ctest .
-```
-
-The simplest way to debug (step through) a test is to specify CMAKE_BUILD_TYPE when configuring `cmake -DCMAKE_BUILD_TYPE=Debug ..` , build it with `make tests` as previously stated and then run the test with `gdb <path to test binary>` e.g. `gdb tests/unit/configuration_store/eeprom_unit_tests`.
+[comprehensive testing guide]: tests/unit/README.md
 
 ## Flashing Custom Firmware
 

@@ -1,6 +1,7 @@
 add_library(
   freertos OBJECT
   binary_semaphore.cpp
+  chrono.cpp
   counting_semaphore.cpp
   critical_section.cpp
   mutex.cpp

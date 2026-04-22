@@ -33,10 +33,6 @@ GcodeSuite gcode;
 #include "../module/motion.h"
 #include "../module/planner.h"
 
-#if ENABLED(PRINTCOUNTER)
-  #include "../module/printcounter.h"
-#endif
-
 #if ENABLED(HOST_PROMPT_SUPPORT)
   #include "../feature/host_actions.h"
 #endif
@@ -70,6 +66,7 @@ GcodeSuite gcode;
 #include <option/has_phase_stepping.h>
 #include <option/has_phase_stepping_calibration.h>
 #include <marlin_vars.hpp>
+#include <utils/serial_logging_disabler.hpp>
 #include <feature/safety_timer/safety_timer.hpp>
 
 // Relative motion mode for each logical axis
@@ -92,14 +89,10 @@ PrinterGCodeCompatibilityReport GcodeSuite::compatibility;
   GcodeSuite::WorkspacePlane GcodeSuite::workspace_plane = PLANE_XY;
 #endif
 
-#if ENABLED(CNC_COORDINATE_SYSTEMS)
-  int8_t GcodeSuite::active_coordinate_system = -1; // machine space
-  xyz_pos_t GcodeSuite::coordinate_system[MAX_COORDINATE_SYSTEMS];
-#endif
-
 int8_t GcodeSuite::get_target_extruder_from_option_value(std::optional<uint8_t> extruder, const bool is_physical) {
+  uint8_t e = active_extruder;
   if (extruder.has_value()) {
-    uint8_t e = *extruder;
+    e = *extruder;
 
     if(!is_physical) {
     #if ENABLED(PRUSA_TOOL_MAPPING)
@@ -108,21 +101,21 @@ int8_t GcodeSuite::get_target_extruder_from_option_value(std::optional<uint8_t> 
       e = mapped == ToolMapper::NO_TOOL_MAPPED ? -1 : mapped;
     #endif
     }
+  }
 
-    static_assert(EXTRUDERS <= INT8_MAX, "We need to return int8_t");
-    bool valid_extruder = (e < EXTRUDERS);
-    #if ENABLED(PRUSA_TOOLCHANGER)
-      valid_extruder = valid_extruder && prusa_toolchanger.is_tool_enabled(e);
-    #endif
-    if (valid_extruder) return e;
-
+  static_assert(EXTRUDERS <= INT8_MAX, "We need to return int8_t");
+  bool valid_extruder = (e < EXTRUDERS);
+#if ENABLED(PRUSA_TOOLCHANGER)
+  valid_extruder = valid_extruder && prusa_toolchanger.is_tool_enabled(e);
+#endif
+  if (valid_extruder) {
+    return e;
+  } else {
     SERIAL_ECHO_START();
     SERIAL_CHAR('M'); SERIAL_ECHO(parser.codenum);
     SERIAL_ECHOLNPAIR(" " MSG_INVALID_EXTRUDER " ", int(e));
     return -1;
   }
-
-  return active_extruder;
 }
 
 /**
@@ -194,11 +187,6 @@ void GcodeSuite::get_destination_from_command() {
 
   if (parser.linearval('F') > 0)
     feedrate_mm_s = parser.value_feedrate();
-
-  #if ENABLED(PRINTCOUNTER)
-    if (!DEBUGGING(DRYRUN) && !skip_move)
-      print_job_timer.incFilamentUsed(destination.e - current_position.e);
-  #endif
 }
 
 /**
@@ -240,13 +228,6 @@ void GcodeSuite::dwell(millis_t time) {
 
 #endif // HAS_LEVELING && G29_RETRY_AND_RECOVER
 
-//
-// Placeholders for non-migrated codes
-//
-#if ENABLED(M100_FREE_MEMORY_WATCHER)
-  extern void M100_dump_routine(PGM_P const title, char *start, char *end);
-#endif
-
 /**
  * Process the parsed command and dispatch it to its handler
  */
@@ -269,13 +250,13 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
     case 'G': switch (parser.codenum) {
 
       case 0: case 1: G0_G1(                                      // G0: Fast Move, G1: Linear Move
-                        #if IS_SCARA || defined(G0_FEEDRATE)
+                        #if defined(G0_FEEDRATE)
                           parser.codenum == 0
                         #endif
                       );
                       break;
 
-      #if ENABLED(ARC_SUPPORT) && DISABLED(SCARA)
+      #if ENABLED(ARC_SUPPORT)
         case 2: case 3: G2_G3(parser.codenum == 2); break;        // G2: CW ARC, G3: CCW ARC
       #endif
 
@@ -291,12 +272,7 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 19: G19(); break;                                    // G19: Select Plane YZ
       #endif
 
-      #if ENABLED(INCH_MODE_SUPPORT)
-        case 20: G20(); break;                                    // G20: Inch Mode
-        case 21: G21(); break;                                    // G21: MM Mode
-      #else
         case 21: NOOP; break;                                     // No error on unknown G21
-      #endif
 
         case 27: G27(); break;                                    // G27: Nozzle Park
 
@@ -320,10 +296,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         #endif
       #endif
 
-      #if ENABLED(DELTA_AUTO_CALIBRATION)
-        case 33: G33(); break;                                    // G33: Delta Auto-Calibration
-      #endif
-
       #if ENABLED(Z_STEPPER_AUTO_ALIGN)
         case 34: G34(); break;                                    // G34: Z Stepper automatic alignment using probe
       #endif
@@ -338,20 +310,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
             #endif
           )) G38(parser.subcode);                                 // G38.4, G38.5: Probe away from target
           break;
-      #endif
-
-      #if ENABLED(CNC_COORDINATE_SYSTEMS)
-        case 53: G53(); break;
-        case 54: G54(); break;
-        case 55: G55(); break;
-        case 56: G56(); break;
-        case 57: G57(); break;
-        case 58: G58(); break;
-        case 59: G59(); break;
-      #endif
-
-      #if ENABLED(ADVANCED_HOMING)                                //G65: Advanced Homing/measurement cycle
-        case 65: G65(); break;
       #endif
 
       #if ENABLED(GCODE_MOTION_MODES) || HAS_GCODE_COMPATIBILITY()
@@ -401,10 +359,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 9: M9(); break;                                      // M9: Coolant OFF
       #endif
 
-      #if ENABLED(EXTERNAL_CLOSED_LOOP_CONTROLLER)
-        case 12: M12(); break;                                    // M12: Synchronize and optionally force a CLC set
-      #endif
-
       #if ENABLED(EXPECTED_PRINTER_CHECK)
         case 16: M16(); break;                                    // M16: Expected printer check
       #endif
@@ -436,19 +390,10 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
       #endif // SDCARD_GCODES
 
       case 31: M31(); break;                                      // M31: Report time since the start of SD print or last M109
-      case 42: M42(); break;                                      // M42: Change pin state
       case 46: M46(); break;                                      // M46: Report ip4 address
-
-      #if ENABLED(PINS_DEBUGGING)
-        case 43: M43(); break;                                    // M43: Read pin state
-      #endif
 
       #if ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST)
         case 48: M48(); break;                                    // M48: Z probe repeatability test
-      #endif
-
-      #if ENABLED(LCD_SET_PROGRESS_MANUALLY)
-        case 73: M73(); break;                                    // M73: Set progress percentage (for display on LCD)
       #endif
 
       #if ENABLED(M73_PRUSA)
@@ -460,14 +405,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
       case 75: M75(); break;                                      // M75: Start print timer
       case 76: M76(); break;                                      // M76: Pause print timer
       case 77: M77(); break;                                      // M77: Stop print timer
-
-      #if ENABLED(PRINTCOUNTER)
-        case 78: M78(); break;                                    // M78: Show print statistics
-      #endif
-
-      #if ENABLED(M100_FREE_MEMORY_WATCHER)
-        case 100: M100(); break;                                  // M100: Free Memory Report
-      #endif
 
       #if EXTRUDERS
         case 104: M104(); break;                                  // M104: Set hot end temperature
@@ -508,28 +445,9 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 190: M190(); break;                                  // M190: Wait for bed temperature to reach target
       #endif
 
-      #if HAS_HEATED_CHAMBER
-        case 141: M141(); break;                                  // M141: Set chamber temperature
-        case 191: M191(); break;                                  // M191: Wait for chamber temperature to reach target
-      #endif
-
       #if ENABLED(AUTO_REPORT_TEMPERATURES) && HAS_TEMP_SENSOR
         case 155: M155(); break;                                  // M155: Set temperature auto-report interval
       #endif
-
-      #if ENABLED(BARICUDA)
-        // PWM for HEATER_1_PIN
-        #if HAS_HEATER_1
-          case 126: M126(); break;                                // M126: valve open
-          case 127: M127(); break;                                // M127: valve closed
-        #endif
-
-        // PWM for HEATER_2_PIN
-        #if HAS_HEATER_2
-          case 128: M128(); break;                                // M128: valve open
-          case 129: M129(); break;                                // M129: valve closed
-        #endif
-      #endif // BARICUDA
 
       #if HAS_POWER_SWITCH
         case 80: M80(); break;                                    // M80: Turn on Power Supply
@@ -553,10 +471,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 142: M142(); break;
       #endif
 
-      #if ENABLED(TEMPERATURE_UNITS_SUPPORT)
-        case 149: M149(); break;                                  // M149: Set temperature units
-      #endif
-
       #if DISABLED(NO_VOLUMETRICS)
         case 200: M200(); break;                                  // M200: Set filament diameter, E to cubic units
       #endif
@@ -575,12 +489,8 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 206: M206(); break;                                  // M206: Set home offsets
       #endif
 
-      #if ENABLED(DELTA)
-        case 665: M665(); break;                                  // M665: Set delta configurations
-      #endif
-
-      #if ANY(DELTA, X_DUAL_ENDSTOPS, Y_DUAL_ENDSTOPS, Z_DUAL_ENDSTOPS)
-        case 666: M666(); break;                                  // M666: Set delta or dual endstop adjustment
+      #if ANY(X_DUAL_ENDSTOPS, Y_DUAL_ENDSTOPS, Z_DUAL_ENDSTOPS)
+        case 666: M666(); break;                                  // M666: Set dual endstop adjustment
       #endif
 
       #if HAS_SOFTWARE_ENDSTOPS
@@ -601,8 +511,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 221: M221(); break;                                  // M221: Set Flow Percentage
       #endif
 
-      case 226: M226(); break;                                    // M226: Wait until a pin reaches a state
-
       #if HAS_SERVOS
         case 280: M280(); break;                                  // M280: Set servo position absolute
         #if ENABLED(EDITABLE_SERVO_ANGLES)
@@ -612,10 +520,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
 
       #if ENABLED(BABYSTEPPING)
         case 290: M290(); break;                                  // M290: Babystepping
-      #endif
-
-      #if HAS_BUZZER
-        case 300: M300(); break;                                  // M300: Play beep tone
       #endif
 
       #if ENABLED(PIDTEMP)
@@ -630,10 +534,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 240: M240(); break;                                  // M240: Trigger a camera
       #endif
 
-      #if HAS_LCD_CONTRAST
-        case 250: M250(); break;                                  // M250: Set LCD contrast
-      #endif
-
       #if HAS_I2C_EXPANDER()
         case 260: M260(); break;                                  // M260: Send data to an i2c slave
         case 261: M261(); break;                                  // M261: Request data from an i2c slave
@@ -645,14 +545,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
 
       #if HAS_PID_HEATING && ENABLED(PID_AUTOTUNE)
         case 303: M303(); break;                                  // M303: PID autotune
-      #endif
-
-      #if ENABLED(MORGAN_SCARA)
-        case 360: if (M360()) return; break;                      // M360: SCARA Theta pos1
-        case 361: if (M361()) return; break;                      // M361: SCARA Theta pos2
-        case 362: if (M362()) return; break;                      // M362: SCARA Psi pos1
-        case 363: if (M363()) return; break;                      // M363: SCARA Psi pos2
-        case 364: if (M364()) return; break;                      // M364: SCARA Psi pos3 (90 deg to Theta)
       #endif
 
       #if EITHER(EXT_SOLENOID, MANUAL_SOLENOID_CONTROL)
@@ -747,12 +639,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 7219: M7219(); break;                                // M7219: Set LEDs, columns, and rows
       #endif
 
-      #if ENABLED(GCODE_MACROS)
-        case 810: case 811: case 812: case 813: case 814:
-        case 815: case 816: case 817: case 818: case 819:
-        M810_819(); break;                                        // M810-M819: Define/execute G-code macro
-      #endif
-
       // Linear Advance / Pressure Advance compatibility
       case 900: M900(); break;                                    // M900: Set advance K factor.
 
@@ -800,10 +686,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 867: M867(); break;                                  // M867: Toggle error correction
         case 868: M868(); break;                                  // M868: Set error correction threshold
         case 869: M869(); break;                                  // M869: Report axis error
-      #endif
-
-      #if ENABLED(MAGNETIC_PARKING_EXTRUDER)
-        case 951: M951(); break;                                  // M951: Set Magnetic Parking Extruder parameters
       #endif
 
       #if HAS_LOCAL_ACCELEROMETER() || HAS_REMOTE_ACCELEROMETER()
@@ -861,10 +743,6 @@ void GcodeSuite::process_next_command() {
   if (DEBUGGING(ECHO)) {
     SERIAL_ECHO_START();
     SERIAL_ECHOLN(current_command);
-    #if ENABLED(M100_FREE_MEMORY_DUMPER)
-      SERIAL_ECHOPAIR("slot:", queue.index_r);
-      M100_dump_routine(PSTR("   Command Queue:"), queue.command_buffer, queue.command_buffer + sizeof(queue.command_buffer));
-    #endif
   }
 
   // Parse the next command in the queue
@@ -919,6 +797,9 @@ void GcodeSuite::process_subcommands_now(char * gcode) {
    * while the machine is not accepting commands.
    */
   void GcodeSuite::host_keepalive() {
+    // Do not log keeaplive messages, only print to serial
+    SerialLoggingDisabler sld;
+
     const millis_t ms = millis();
     static millis_t next_busy_signal_ms = 0;
     if (!suspend_auto_report && host_keepalive_interval && busy_state != NOT_BUSY) {

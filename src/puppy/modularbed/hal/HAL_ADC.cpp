@@ -1,10 +1,10 @@
 #include "PuppyConfig.hpp"
 #include "hal/HAL_ADC.hpp"
 #include "hal/HAL_System.hpp"
-#include "hal/HAL_Common.hpp"
 
 #include "stm32g0xx_hal.h"
 #include <cstring>
+#include <bsod/bsod.h>
 
 #define ADC_INSTANCE            ADC1
 #define ADC_COMMON_INSTANCE     ADC1_COMMON
@@ -40,7 +40,7 @@ bool Init() {
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
     PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_PLLADC;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     // Peripheral clock enable

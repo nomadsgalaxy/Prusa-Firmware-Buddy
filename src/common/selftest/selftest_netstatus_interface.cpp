@@ -5,6 +5,7 @@
 #include "netdev.h"
 #include "selftest_log.hpp"
 #include <config_store/store_instance.hpp>
+#include <option/has_esp.h>
 
 LOG_COMPONENT_REF(Selftest);
 
@@ -42,16 +43,19 @@ static const char *to_string(netdev_status_t status) {
 
 namespace selftest {
 void phaseNetStatus() {
-    netdev_status_t eth = netdev_get_status(NETDEV_ETH_ID);
-    netdev_status_t wifi = netdev_get_status(NETDEV_ESP_ID);
-
     SelftestResult eeres = config_store().selftest_result.get();
-    eeres.eth = convert(eth);
-    eeres.wifi = convert(wifi);
-    config_store().selftest_result.set(eeres);
 
+    netdev_status_t eth = netdev_get_status(NETDEV_ETH_ID);
+    eeres.eth = convert(eth);
     log_info(Selftest, "Eth %s", to_string(eth));
+
+#if HAS_ESP()
+    netdev_status_t wifi = netdev_get_status(NETDEV_ESP_ID);
+    eeres.wifi = convert(wifi);
     log_info(Selftest, "Wifi %s", to_string(wifi));
+#endif
+
+    config_store().selftest_result.set(eeres);
 }
 
 } // namespace selftest

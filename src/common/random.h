@@ -1,10 +1,10 @@
+/// @file
+/// The implementation is in random_(sw/hw).cpp, depending on whether the target wants to use the HW RNG or not
 #pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <limits.h>
-
-// THe implementation is in random_(sw/hw).cpp, depending on whether the target wants to use the HW RNG or not
 
 #ifdef __cplusplus
     #define RAND_DECL extern "C"

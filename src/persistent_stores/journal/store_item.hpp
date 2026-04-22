@@ -1,23 +1,14 @@
 #pragma once
-#include <stdint.h>
-#include <span>
-#include <exception>
-#include "concepts.hpp"
-#include "include/dwarf_errors.hpp"
+
 #include <common/array_extensions.hpp>
-#include <freertos/mutex.hpp>
-#include "FreeRTOS.h"
+#include <FreeRTOS.h>
+
+#include "concepts.hpp"
 
 #pragma GCC push_options
 #pragma GCC optimize("Os")
 
 namespace journal {
-
-/// Flags for annotating store items
-using ItemFlags = uint16_t;
-
-template <typename DataT>
-concept StoreItemDataC = std::equality_comparable<DataT> && std::default_initializable<DataT> && std::is_trivially_copyable_v<DataT>;
 
 template <StoreItemDataC DataT, auto backend, bool ram_only>
 struct JournalItemBase {
@@ -62,12 +53,12 @@ public:
         return data.data();
     }
 
-    inline void init(const std::span<uint8_t> &)
+    inline void init(const std::span<const uint8_t> &)
         requires(ram_only)
     {
     }
 
-    void init(const std::span<uint8_t> &raw_data)
+    void init(const std::span<const uint8_t> &raw_data)
         requires(!ram_only)
     {
         if (raw_data.size() != sizeof(value_type)) {
@@ -135,6 +126,12 @@ public:
         static_assert(sizeof(JournalItem) == sizeof(DataT));
     }
 
+    inline void check_init(uint16_t id, const std::span<const uint8_t> &data) {
+        if (hashed_id == id) {
+            this->init(data);
+        }
+    }
+
     /// Sets the config to the provided value \p in
     /// \returns true if the set value was different from the previous one
     inline void set(Base::DataArg in) {
@@ -188,176 +185,6 @@ public:
         if (!(flags & exclude_flags)) {
             Base::ram_dump(hashed_id, default_val);
         }
-    }
-};
-
-struct JournalItemArrayBase {
-};
-
-/// Array of journal items
-/// \p item_count determines the array size. It can be increased in time, possibly even decreased
-/// \p max_item_count determines the maximum item_count the item can ever have. This is only used for hash collision checking. It can never be decreased, but it can be increased (granted that it does not cause hash collisions)
-/// The journal_hashes_generator python script looks for the next argument after journal::hash for the hash range size - so \p max_item_count must be directly after \p hashed_id
-template <StoreItemDataC DataT, auto default_val, ItemFlags flags_, auto backend, uint16_t hashed_id, uint8_t max_item_count, uint8_t item_count>
-struct JournalItemArray : public JournalItemArrayBase {
-private:
-    using DefaultVal = std::remove_cvref_t<decltype(default_val)>;
-    using ItemArray = std::array<DataT, item_count>;
-    ItemArray data_array;
-
-public:
-    using BackendT = std::remove_cvref_t<std::invoke_result_t<decltype(backend)>>;
-    using value_type = DataT;
-    static constexpr size_t data_size { sizeof(DataT) };
-    static_assert(journal::BackendC<BackendT>); // BackendT type needs to fulfill this concept. Can be moved to signature with newer clangd, causes too many errors now (constrained auto)
-    static_assert(data_size < BackendT::MAX_ITEM_SIZE, "Item is too large");
-    static_assert(max_item_count >= item_count);
-    static_assert(std::is_same_v<DefaultVal, std::array<DataT, item_count>> || std::is_same_v<DefaultVal, DataT>);
-    static_assert(item_count > 0);
-
-    using DataArg = JournalItemBase<DataT, backend, false>::DataArg;
-
-    static constexpr uint16_t hashed_id_first { hashed_id };
-    static constexpr uint16_t hashed_id_last { hashed_id + item_count - 1 };
-    static constexpr ItemFlags flags { flags_ }; // All items have flag 1 (for easier filtering)
-
-    static constexpr DataT get_default_val(uint8_t index) {
-        if constexpr (is_std_array_v<DefaultVal>) {
-            return default_val[index];
-        } else {
-            return default_val;
-        }
-    }
-
-    consteval JournalItemArray()
-        requires(sizeof(JournalItemArray) == sizeof(ItemArray)) // Current implementation of journal relies heavily on this
-    {
-        if constexpr (is_std_array_v<DefaultVal>) {
-            data_array = default_val;
-        } else {
-            data_array.fill(default_val);
-        }
-    }
-
-    JournalItemArray(const JournalItemArray &other) = delete;
-    JournalItemArray &operator=(const JournalItemArray &other) = delete;
-
-    /// Sets the config to the provided value \p in
-    /// \returns true if the set value was different from the previous one
-    void set(uint8_t index, DataArg in) {
-        if (index >= item_count) {
-            std::terminate();
-        }
-        if (data_array[index] == in) {
-            return;
-        }
-        auto l = backend().lock();
-
-        data_array[index] = in;
-        do_save(index);
-    }
-
-    void set_all(DataArg in) {
-        auto l = backend().lock();
-        for (size_t i = 0; i < item_count; i++) {
-            if (data_array[i] == in) {
-                continue;
-            }
-            data_array[i] = in;
-            do_save(i);
-        }
-    }
-
-    void set_all(ItemArray &in) {
-        auto l = backend().lock();
-        for (size_t i = 0; i < item_count; i++) {
-            if (data_array[i] == in[i]) {
-                continue;
-            }
-            data_array[i] = in[i];
-            do_save(i);
-        }
-    }
-    /// Sets the item to f(old_value).
-    /// This is done under the lock, so the operation is atomic
-    inline void transform(uint8_t index, std::invocable<DataArg> auto f) {
-        if (index >= item_count) {
-            std::terminate();
-        }
-        auto l = backend().lock();
-        const auto old_value = this->data_array[index];
-        const auto new_value = f(old_value);
-        if (new_value != old_value) {
-            this->data_array = new_value;
-            this->do_save(index);
-        }
-    }
-
-    /// Sets the item to f(old_value).
-    /// This is done under the lock, so the operation is atomic
-    inline void transform_all(std::invocable<DataArg> auto f) {
-        auto l = backend().lock();
-        for (uint8_t i = 0; i < item_count; i++) {
-            const auto old_value = this->data_array[i];
-            const auto new_value = f(old_value);
-            if (new_value != old_value) {
-                this->data_array = new_value;
-                this->do_save(i);
-            }
-        }
-    }
-
-    /// Sets the config item to its default value.
-    /// \returns the default value
-    inline void set_to_default(uint8_t index) {
-        set(index, get_default_val(index));
-    }
-
-    /// Sets the config item to its default value.
-    /// \returns the default value
-    inline void set_all_to_default() {
-        set_all(default_val);
-    }
-
-    DataT get(uint8_t index) {
-        if (index >= item_count) {
-            std::terminate();
-        }
-
-        if (xPortIsInsideInterrupt()) {
-            return data_array[index];
-        }
-
-        auto l = backend().lock();
-        return data_array[index];
-    }
-
-    void init(uint8_t index, const std::span<uint8_t> &raw_data) {
-        if ((raw_data.size() != sizeof(value_type)) || (index >= item_count)) {
-            std::terminate();
-        }
-
-        memcpy(&(data_array[index]), raw_data.data(), sizeof(value_type));
-    }
-
-    void ram_dump(ItemFlags exclude_flags) {
-        if (flags & exclude_flags) {
-            return;
-        }
-
-        for (uint8_t i = 0; i < item_count; i++) {
-            if (data_array[i] != get_default_val(i)) {
-                do_save(i);
-            }
-        }
-    }
-
-private:
-    void do_save(uint8_t index) {
-        if (index >= item_count) {
-            std::terminate();
-        }
-        backend().save(hashed_id_first + index, { reinterpret_cast<const uint8_t *>(&(data_array[index])), sizeof(DataT) });
     }
 };
 

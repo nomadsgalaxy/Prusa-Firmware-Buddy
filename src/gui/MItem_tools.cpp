@@ -12,9 +12,9 @@
 #include "i18n.h"
 #include "ScreenHandler.hpp"
 #include "bsod.h"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "liveadjust_z.hpp"
-#include "filament_sensor.hpp"
+#include <feature/filament_sensor/filament_sensor.hpp>
 #include <buddy/main.h>
 #include "Pin.hpp"
 #include "hwio_pindef.h"
@@ -33,10 +33,10 @@
 #include <feature/prusa/e-stall_detector.h>
 #include <option/bootloader.h>
 #include <option/filament_sensor.h>
-#include <option/has_phase_stepping_toggle.h>
 #include <option/has_side_leds.h>
 #include <option/has_coldpull.h>
-#include <RAII.hpp>
+#include <option/has_auto_retract.h>
+#include <raii/auto_restore.hpp>
 #include <time.h>
 #include <footer_items_heaters.hpp>
 #include <footer_line.hpp>
@@ -76,6 +76,11 @@
 #ifdef HAS_TMC_WAVETABLE
     #include <feature/tmc_util.h>
 #endif
+
+#include <option/has_e2ee_support.h>
+#if HAS_E2EE_SUPPORT()
+    #include <e2ee/e2ee.hpp>
+#endif // HAS_E2EE_SUPPORT()
 
 namespace {
 void MsgBoxNonBlockInfo(const string_view_utf8 &txt) {
@@ -245,6 +250,18 @@ void MI_DISABLE_STEP::click(IWindowMenu & /*window_menu*/) {
     marlin_client::gcode("M18");
 #endif
 }
+
+/*****************************************************************************/
+// MI_ENTER_DFU
+#ifdef BUDDY_ENABLE_DFU_ENTRY
+MI_ENTER_DFU::MI_ENTER_DFU()
+    : IWindowMenuItem(_(label), nullptr, is_enabled_t::yes, is_hidden_t::dev) {
+}
+
+void MI_ENTER_DFU::click(IWindowMenu &) {
+    sys_dfu_request_and_reset();
+}
+#endif
 
 /*****************************************************************************/
 // MI_SAVE_DUMP
@@ -553,25 +570,6 @@ MI_INFO_SIDE_FILL_SENSOR::MI_INFO_SIDE_FILL_SENSOR()
     set_is_hidden(GetSideFSensor(marlin_vars().active_extruder.get()) == nullptr);
 }
 
-/*****************************************************************************/
-// MI_INFO_PRINT_FAN
-
-MI_INFO_PRINT_FAN::MI_INFO_PRINT_FAN()
-    : WI_FAN_LABEL_t(_("Print Fan"),
-        [](auto) { return FanPWMAndRPM {
-                       .pwm = marlin_vars().print_fan_speed,
-                       .rpm = marlin_vars().active_hotend().print_fan_rpm,
-                   }; } //
-    ) {}
-
-MI_INFO_HBR_FAN::MI_INFO_HBR_FAN()
-    : WI_FAN_LABEL_t(PRINTER_IS_PRUSA_MK3_5() ? _("Hotend Fan") : _("Heatbreak Fan"),
-        [](auto) { return FanPWMAndRPM {
-                       .pwm = static_cast<uint8_t>(sensor_data().hbrFan.load()),
-                       .rpm = marlin_vars().active_hotend().heatbreak_fan_rpm,
-                   }; } //
-    ) {}
-
 MI_ODOMETER_DIST::MI_ODOMETER_DIST(const string_view_utf8 &label, const img::Resource *icon, is_enabled_t enabled, is_hidden_t hidden, float initVal)
     : WI_FORMATABLE_LABEL_t<float>(label, icon, enabled, hidden, initVal, [&](const std::span<char> &buffer) {
         float value_m = value() / 1000; // change the unit from mm to m
@@ -606,19 +604,24 @@ MI_ODOMETER_TIME::MI_ODOMETER_TIME()
     }) {}
 
 #if BOARD_IS_XBUDDY()
+MI_INFO_BED_VOLTAGE::MI_INFO_BED_VOLTAGE()
+    : MenuItemAutoUpdatingLabel(_("Bed Voltage"), "%.1f V",
+        [](auto) { return sensor_data().bed_voltage.load(); } //
+    ) {}
+
 MI_INFO_HEATER_VOLTAGE::MI_INFO_HEATER_VOLTAGE()
     : MenuItemAutoUpdatingLabel(_("Heater Voltage"), "%.1f V",
-        [](auto) { return sensor_data().heaterVoltage.load(); } //
+        [](auto) { return sensor_data().heater_voltage.load(); } //
     ) {}
 
 MI_INFO_HEATER_CURRENT::MI_INFO_HEATER_CURRENT()
     : MenuItemAutoUpdatingLabel(_("Heater Current"), "%.1f A",
-        [](auto) { return sensor_data().heaterCurrent.load(); } //
+        [](auto) { return sensor_data().heater_current.load(); } //
     ) {}
 
 MI_INFO_INPUT_CURRENT::MI_INFO_INPUT_CURRENT()
     : MenuItemAutoUpdatingLabel(_("Input Current"), "%.1f A",
-        [](auto) { return sensor_data().inputCurrent.load(); } //
+        [](auto) { return sensor_data().input_current.load(); } //
     ) {}
 
 MI_INFO_MMU_CURRENT::MI_INFO_MMU_CURRENT()
@@ -643,11 +646,6 @@ MI_INFO_BUDDY_5V_CURRENT::MI_INFO_BUDDY_5V_CURRENT()
         [](auto) { return sensor_data().buddy5VCurrent.load(); } //
     ) {}
 #endif
-
-MI_INFO_INPUT_VOLTAGE::MI_INFO_INPUT_VOLTAGE()
-    : MenuItemAutoUpdatingLabel(_("Input Voltage"), "%.1f V",
-        [](auto) { return sensor_data().inputVoltage.load(); } //
-    ) {}
 
 MI_INFO_BOARD_TEMP::MI_INFO_BOARD_TEMP()
     : MenuItemAutoUpdatingLabel(_("Board Temperature"), standard_print_format::temp_c,
@@ -723,45 +721,6 @@ void MI_SET_READY::click([[maybe_unused]] IWindowMenu &window_menu) {
         set_enabled(false);
     }
 }
-
-#if HAS_PHASE_STEPPING_TOGGLE()
-MI_PHASE_STEPPING_TOGGLE::MI_PHASE_STEPPING_TOGGLE()
-    : WI_ICON_SWITCH_OFF_ON_t(0, _(label), nullptr, is_enabled_t::yes, is_hidden_t::no) {
-    bool phstep_enabled = config_store().get_phase_stepping_enabled();
-    set_value(phstep_enabled);
-}
-
-void MI_PHASE_STEPPING_TOGGLE::OnChange([[maybe_unused]] size_t old_index) {
-    if (event_in_progress) {
-        return;
-    }
-
-    if (value() && (config_store().selftest_result_phase_stepping.get() != TestResult_Passed)) {
-    #if PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE()
-        if (MsgBoxQuestion(_("Turn on Phase stepping uncalibrated?"), Responses_YesNo) == Response::No) {
-            AutoRestore ar(event_in_progress, true);
-            set_value(old_index);
-            return;
-        }
-    #else
-        AutoRestore ar(event_in_progress, true);
-        MsgBoxWarning(_("Phase stepping not ready: perform calibration first."), Responses_Ok);
-        set_value(old_index);
-        return;
-    #endif
-    }
-
-    if (value()) {
-        marlin_client::gcode("M970 X1 Y1"); // turn phase stepping on
-    } else {
-        marlin_client::gcode("M970 X0 Y0"); // turn phase stepping off
-    }
-
-    // we need to wait until the action actually takes place so that when returning
-    // to the menu (if any) the new state is already reflected
-    window_dlg_wait_t::wait_for_gcodes_to_finish();
-}
-#endif
 
 #if HAS_COLDPULL()
 MI_COLD_PULL::MI_COLD_PULL()
@@ -904,7 +863,7 @@ MI_TOOL_LEDS_ENABLE::MI_TOOL_LEDS_ENABLE()
     : WI_ICON_SWITCH_OFF_ON_t(config_store().tool_leds_enabled.get(), _(label), nullptr, is_enabled_t::yes, prusa_toolchanger.is_toolchanger_enabled() ? is_hidden_t::no : is_hidden_t::yes) {
 }
 void MI_TOOL_LEDS_ENABLE::OnChange(size_t old_index) {
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         prusa_toolchanger.getTool(e).set_cheese_led(!old_index ? 0xff : 0x00, 0x00);
     }
     config_store().tool_leds_enabled.set(!old_index);

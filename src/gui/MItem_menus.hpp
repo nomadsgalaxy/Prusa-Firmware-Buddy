@@ -12,9 +12,12 @@
 #include <option/has_translations.h>
 #include <option/has_chamber_filtration_api.h>
 #include <option/has_mmu2.h>
+#include <option/has_e2ee_support.h>
 #include <option/has_leds_menu.h>
 #include <img_resources.hpp>
 #include <ScreenFactory.hpp>
+
+#include <option/has_esp.h>
 
 class MI_SCREEN_BASE : public IWindowMenuItem {
 protected:
@@ -33,7 +36,6 @@ struct MI_SCREEN_CTOR {
     // Implemented in the cpp file
     static ScreenFactory::Creator::Func get();
 };
-
 /// Usage:
 /// - Add here: using MI_XXX = MI_SCREEN<N_("Lavbel"), class ScreenClass>;
 /// - Include the relevant screen header in the cpp
@@ -56,6 +58,9 @@ using MI_REORDER_FILAMENTS
 
 using MI_FILAMENTS_VISIBILITY
     = MI_SCREEN<N_("Enable Filaments"), class ScreenFilamentsVisibility>;
+
+using MI_FAN_INFO
+    = MI_SCREEN<N_("Fan Info"), class ScreenMenuFanInfo>;
 
 using MI_VERSION_INFO
     = MI_SCREEN<N_("Version Info"), class ScreenMenuVersionInfo>;
@@ -81,8 +86,10 @@ using MI_METRICS_SETTINGS
 using MI_ETH_SETTINGS
     = MI_SCREEN<N_("Ethernet"), class ScreenMenuEthernetSettings, &img::lan_16x16>;
 
+#if HAS_ESP()
 using MI_WIFI_SETTINGS
     = MI_SCREEN<N_("Wi-Fi"), class ScreenMenuWifiSettings, &img::wifi_16x16>;
+#endif
 
 using MI_MESSAGES
     = MI_SCREEN<N_("Message History"), class screen_messages_data_t>;
@@ -214,4 +221,9 @@ public:
     MI_HW_MMU();
     void click(IWindowMenu &) override;
 };
+#endif
+
+#if HAS_E2EE_SUPPORT()
+using MI_E2EE
+    = MI_SCREEN<N_("Encryption"), class ScreenMenuE2ee, nullptr, is_hidden_t::dev>;
 #endif

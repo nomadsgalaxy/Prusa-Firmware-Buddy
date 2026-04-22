@@ -73,7 +73,7 @@ EResult verify_block_checksum(FILE& file, const FileHeader& file_header, const B
 }
 
 static uint16_t checksum_types_count()    { return 1 + (uint16_t)EChecksumType::CRC32; }
-static uint16_t block_types_count()       { return 1 + (uint16_t)EBlockType::Thumbnail; }
+static uint16_t block_types_count()       { return 1 + (uint16_t)EBlockType::EncryptedBlock; }
 static uint16_t compression_types_count() { return 1 + (uint16_t)ECompressionType::Heatshrink_12_4; }
 
 Checksum::Checksum(EChecksumType type)
@@ -421,8 +421,74 @@ BGCODE_CORE_EXPORT EResult is_valid_binary_gcode(FILE& file, bool check_contents
             return EResult::InvalidBlockType;
         }
 
+        bool encrypted = false;
+        EBlockType gcode_block_type;
+        res = skip_block(file, file_header, block_header);
+        if (res != EResult::Success) {
+            // restore file position
+            fseek(&file, curr_pos, SEEK_SET);
+            // propagate error
+            return res;
+        }
+        res = read_next_block_header(file, file_header, block_header, cs_buffer, cs_buffer_size);
+        if (res != EResult::Success) {
+            // restore file position
+            fseek(&file, curr_pos, SEEK_SET);
+            // propagate error
+            return res;
+        }
+        if ((EBlockType)block_header.type == EBlockType::IdentityBlock) {
+            encrypted = true;
+            gcode_block_type = EBlockType::EncryptedBlock;
+        } else if ((EBlockType)block_header.type == EBlockType::GCode) {
+            encrypted = false;
+            gcode_block_type = EBlockType::GCode;
+        } else {
+            // restore file position
+            fseek(&file, curr_pos, SEEK_SET);
+            return EResult::InvalidBlockType;
+        }
+
+        if (encrypted) {
+            res = skip_block(file, file_header, block_header);
+            if (res != EResult::Success) {
+                // restore file position
+                fseek(&file, curr_pos, SEEK_SET);
+                // propagate error
+                return res;
+            }
+            res = read_next_block_header(file, file_header, block_header, cs_buffer, cs_buffer_size);
+            if (res != EResult::Success) {
+                // restore file position
+                fseek(&file, curr_pos, SEEK_SET);
+                // propagate error
+                return res;
+            }
+            while ((EBlockType)block_header.type == EBlockType::KeyBlock) {
+                res = skip_block(file, file_header, block_header);
+                if (res != EResult::Success) {
+                    // restore file position
+                    fseek(&file, curr_pos, SEEK_SET);
+                    // propagate error
+                    return res;
+                }
+                res = read_next_block_header(file, file_header, block_header, cs_buffer, cs_buffer_size);
+                if (res != EResult::Success) {
+                    // restore file position
+                    fseek(&file, curr_pos, SEEK_SET);
+                    // propagate error
+                    return res;
+                }
+            }
+        }
+
         // read gcode block headers
-        do {
+        while (!feof(&file)) {
+            if ((EBlockType)block_header.type != gcode_block_type) {
+                // restore file position
+                fseek(&file, curr_pos, SEEK_SET);
+                return EResult::InvalidBlockType;
+            }
             res = skip_block(file, file_header, block_header);
             if (res != EResult::Success) {
                 // restore file position
@@ -439,12 +505,7 @@ BGCODE_CORE_EXPORT EResult is_valid_binary_gcode(FILE& file, bool check_contents
                 // propagate error
                 return res;
             }
-            if ((EBlockType)block_header.type != EBlockType::GCode) {
-                // restore file position
-                fseek(&file, curr_pos, SEEK_SET);
-                return EResult::InvalidBlockType;
-            }
-        } while (!feof(&file));
+        }
     }
 
     fseek(&file, curr_pos, SEEK_SET);
@@ -520,6 +581,9 @@ BGCODE_CORE_EXPORT size_t block_parameters_size(EBlockType type)
     case EBlockType::PrinterMetadata: { return sizeof(uint16_t); } /* encoding_type */
     case EBlockType::PrintMetadata:   { return sizeof(uint16_t); } /* encoding_type */
     case EBlockType::Thumbnail:       { return sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t); } /* format, width, height */
+    case EBlockType::IdentityBlock:   { return sizeof(uint16_t) + sizeof(uint8_t); } /* signing cypher + identity flags */
+    case EBlockType::KeyBlock:        { return sizeof(uint16_t); } /* signing and encryption algorithm */
+    case EBlockType::EncryptedBlock:  { return sizeof(uint16_t) + sizeof(uint8_t); } /* used encryption, last block flag */
     }
     return 0;
 }

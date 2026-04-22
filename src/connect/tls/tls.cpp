@@ -9,6 +9,7 @@
 #include <common/heap.h>
 #include <common/conserve_cpu.hpp>
 #include <common/http/proxy.hpp>
+#include <raii/deleter.hpp>
 
 #include <lwip/mem.h>
 
@@ -114,12 +115,6 @@ std::optional<Error> tls::connection(const char *connection_host, uint16_t conne
     }
 
     mbedtls_ssl_conf_rng(&ssl_config, mbedtls_ctr_drbg_random, &ctxs.drbg_context);
-    class FreeDeleter {
-    public:
-        void operator()(void *p) {
-            free(p);
-        }
-    };
     unique_ptr<void, FreeDeleter> der_buffer;
     if (custom_cert) {
         // Note that mbedtls offers the parse_path / parse_file variants, but

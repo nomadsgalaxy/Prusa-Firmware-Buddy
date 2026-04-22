@@ -24,6 +24,7 @@ inline constexpr PhaseResponses Responses_YesRetry             = { Response::Yes
 inline constexpr PhaseResponses Responses_RetryCancel          = { Response::Retry,    Response::Cancel, Response::_none,       Response::_none };
 inline constexpr PhaseResponses Responses_Disable              = { Response::Disable,  Response::_none,  Response::_none,       Response::_none };
 inline constexpr PhaseResponses Responses_INVALID              = { Response::_last,    Response::_last,  Response::_last,       Response::_last };
+inline constexpr PhaseResponses Responses_ContinueAbort        = { Response::Continue, Response::Abort,  Response::_none,       Response::_none };
 
 // clang-format on
 /*****************************************************************************/
@@ -75,6 +76,13 @@ class MsgBoxIconned : public MsgBoxBase {
 
 public:
     MsgBoxIconned(Rect16 rect, const PhaseResponses &resp, size_t def_btn, const PhaseTexts *labels,
+        const string_view_utf8 &txt, is_multiline multiline, const img::Resource *icon_res,
+        is_closed_on_click_t close = is_closed_on_click_t::yes);
+
+    /**
+     * @brief ctor for specified icon position (left of the text on LARGE display and above the text on MINI display)
+     */
+    MsgBoxIconned(Rect16 rect, const point_ui16_t icon_point, const PhaseResponses &resp, size_t def_btn, const PhaseTexts *labels,
         const string_view_utf8 &txt, is_multiline multiline, const img::Resource *icon_res,
         is_closed_on_click_t close = is_closed_on_click_t::yes);
 

@@ -32,15 +32,15 @@
 #include <option/has_gui.h>
 #include <option/has_local_bed.h>
 
+#if PRINTER_IS_PRUSA_iX() && HAS_XBUDDY_EXTENSION()
+    #include <feature/xbuddy_extension/xbuddy_extension.hpp>
+#endif
+
 #include <Pin.hpp>
 #include <cmath>
 
 #if ENABLED(PRUSA_TOOLCHANGER)
     #include "../../lib/Marlin/Marlin/src/module/prusa/toolchanger.h"
-#endif
-
-#if (BOARD_IS_XBUDDY())
-    #include "hw_configuration.hpp"
 #endif
 
 namespace {
@@ -59,17 +59,6 @@ enum {
 };
 
 } // end anonymous namespace
-
-#if PRINTER_IS_PRUSA_iX()
-static_assert(std::clamp(MAX_HEATBREAK_TURBINE_POWER, 0, 100) == MAX_HEATBREAK_TURBINE_POWER);
-static_assert(std::clamp(MIN_HEATBREAK_TURBINE_POWER, 0, 100) == MIN_HEATBREAK_TURBINE_POWER);
-
-static_assert(MAX_HEATBREAK_TURBINE_POWER > MIN_HEATBREAK_TURBINE_POWER);
-
-// bottom PWM threshold for the turbine to spin
-// values below it will be equated to 0
-static constexpr int _pwm_turbine_min_threshold = static_cast<int>(static_cast<int>(TIM3_default_Period) * (MIN_HEATBREAK_TURBINE_POWER / 100.0));
-#endif
 
 static const TIM_OC_InitTypeDef sConfigOC_default = {
     TIM_OCMODE_PWM1, // OCMode
@@ -198,12 +187,6 @@ void hwio_update_1ms(void) {
     }
 }
 
-#if (BOARD_IS_XBUDDY() && HAS_TEMP_HEATBREAK)
-extern "C" uint8_t hwio_get_loveboard_bomid() {
-    return buddy::hw::Configuration::Instance().get_love_board().bomID;
-}
-#endif
-
 //--------------------------------------
 // Arduino digital/analog read/write error handler
 
@@ -331,35 +314,6 @@ static void analogWrite_HEATER_0(int new_value) {
     }
 }
 
-#if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE())
-static void analogWrite_FAN_1(int new_value) {
-    static int old_value = 0;
-    if (old_value != new_value) {
-        static_assert(TIM1_default_Period == _pwm_analogWrite_max);
-        hwio_pwm_set_val(&htim1, TIM_CHANNEL_1, new_value);
-        old_value = new_value;
-    }
-}
-#endif
-
-#if PRINTER_IS_PRUSA_iX()
-static void analogWrite_TURBINE(int new_value) {
-    static int old_value = 0;
-    if (old_value != new_value) {
-        const int32_t pwm_max = static_cast<int>(std::round(static_cast<int>(TIM3_default_Period) * (MAX_HEATBREAK_TURBINE_POWER / 100.0)));
-        uint32_t pulse = (new_value * pwm_max) / _pwm_analogWrite_max;
-        if (pulse < _pwm_turbine_min_threshold) {
-            // if below minimum threshold, set turbine PWM to 0
-            pulse = 0;
-        }
-        // inverting the PWM value for the iX turbine
-        pulse = _pwm_analogWrite_max - pulse;
-        hwio_pwm_set_val(&htim3, TIM_CHANNEL_3, pulse);
-        old_value = new_value;
-    }
-}
-#endif
-
 /**
  * @brief Write digital pin to be used from Marlin
  *
@@ -381,15 +335,11 @@ void digitalWrite(uint32_t marlinPin, uint32_t ulVal) {
         analogWrite_HEATER_0(ulVal ? _pwm_analogWrite_max : 0);
         return;
     case MARLIN_PIN(FAN1):
-#if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE())
-        analogWrite_FAN_1(ulVal ? 80 : 0);
-#elif PRINTER_IS_PRUSA_MK3_5()
+#if PRINTER_IS_PRUSA_MK3_5()
         // PWM value of 80 roughly translates to 4k RPM, further testing my find better value, thus far this seems precise enough plus it is the value used by MINI which uses the same fans
         Fans::heat_break(0).set_pwm(ulVal ? (config_store().has_alt_fans.get() ? 80 : _pwm_analogWrite_max) : 0);
-#elif (PRINTER_IS_PRUSA_XL() || PRINTER_IS_PRUSA_MINI())
-        Fans::heat_break(0).set_pwm(ulVal ? 80 : 0);
 #else
-    #error
+        Fans::heat_break(0).set_pwm(ulVal ? 80 : 0);
 #endif
         return;
     case MARLIN_PIN(FAN):
@@ -447,9 +397,6 @@ void analogWrite(uint32_t ulPin, uint32_t ulValue) {
         switch (ulPin) {
         case MARLIN_PIN(FAN1):
             Fans::heat_break(0).set_pwm(ulValue);
-#if PRINTER_IS_PRUSA_iX()
-            analogWrite_TURBINE(ulValue);
-#endif
             return;
         case MARLIN_PIN(FAN):
             Fans::print(0).set_pwm(ulValue);

@@ -4,7 +4,7 @@
 #include <string.h>
 #include <window_msgbox.hpp>
 #include <printers.h>
-#include <RAII.hpp>
+#include <raii/auto_restore.hpp>
 #include <ScreenHandler.hpp>
 #include <screen_menu_filament_changeall.hpp>
 #include <img_resources.hpp>
@@ -13,7 +13,7 @@
 #include "mmu2_toolchanger_common.hpp"
 #include <tools_mapping.hpp>
 #include <print_utils.hpp>
-#include <filament_sensors_handler.hpp>
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include <buddy/unreachable.hpp>
 
 namespace {
@@ -119,7 +119,7 @@ void set_idle(window_text_t &item, window_colored_rect *color) {
 
 void set_selected(window_text_t &item, window_colored_rect *color) {
     item.SetTextColor(COLOR_WHITE);
-    item.SetBackColor(COLOR_ORANGE);
+    item.SetBackColor(COLOR_BRAND);
     if (color) {
         color->set_parent_color(COLOR_BLACK);
     }
@@ -275,7 +275,7 @@ bool all_nozzles_same(GCodeInfo &gcode_info) {
         return nozzle_diameter_distance <= 0.001f;
     };
     // check gcodes
-    EXTRUDER_LOOP() {
+    for (int8_t e = 0; e < EXTRUDERS; e++) {
         if (!gcode_info.get_extruder_info(e).used()) {
             continue;
         }
@@ -297,7 +297,7 @@ bool all_nozzles_same(GCodeInfo &gcode_info) {
     }
 
     // check physicals
-    EXTRUDER_LOOP() {
+    for (int8_t e = 0; e < EXTRUDERS; e++) {
         if (!is_tool_enabled(e)) {
             continue;
         }
@@ -322,8 +322,8 @@ ToolsMappingBody::ToolsMappingBody(window_t *parent, GCodeInfo &gcode_info)
           _("MMU filament")
 #endif
               )
-    , left_line(parent, left_line_rect, COLOR_ORANGE, COLOR_GRAY)
-    , right_line(parent, right_line_rect, COLOR_ORANGE, COLOR_GRAY)
+    , left_line(parent, left_line_rect, COLOR_BRAND)
+    , right_line(parent, right_line_rect, COLOR_BRAND)
     , middle_connector(parent, middle_connectors_rect)
     , left_gcode_texts(make_left_gcode_text(std::make_index_sequence<max_item_rows>(), parent, left_gcode_label_buffers, gcode_info, drawing_nozzles))
     , right_phys_texts(make_right_phys_text(std::make_index_sequence<max_item_rows>(), parent, right_phys_label_buffers, drawing_nozzles))
@@ -553,16 +553,16 @@ void ToolsMappingBody::go_left() {
     // if all gcode tools are reasonably mapped, go to done state to allow one-click-through
     if (are_all_gcode_tools_mapped()) {
         bottom_radio.Change(responses_with_print);
-        left_line.SetProgressPercent(0.f);
-        right_line.SetProgressPercent(0.f);
+        left_line.SetBackColor(COLOR_GRAY);
+        right_line.SetBackColor(COLOR_GRAY);
         current_idx = gcode.UsedExtrudersCount() + print_response_idx;
         set_radio_idx(bottom_radio, print_response_idx);
         state = State::done;
     } else {
         // go to left
         bottom_radio.Change(responses_no_print);
-        left_line.SetProgressPercent(100.f);
-        right_line.SetProgressPercent(0.f);
+        left_line.SetBackColor(COLOR_BRAND);
+        right_line.SetBackColor(COLOR_GRAY);
         auto idx = std::distance(std::begin(left_gcode_idx_to_real), std::find(std::begin(left_gcode_idx_to_real), std::begin(left_gcode_idx_to_real) + gcode.UsedExtrudersCount(), last_left_real));
         assert(idx >= 0 && idx < gcode.UsedExtrudersCount());
         current_idx = idx;
@@ -580,8 +580,8 @@ void ToolsMappingBody::go_left() {
 
 void ToolsMappingBody::go_right() {
     bottom_radio.Change(responses_no_print);
-    left_line.SetProgressPercent(0.f);
-    right_line.SetProgressPercent(100.f);
+    left_line.SetBackColor(COLOR_GRAY);
+    right_line.SetBackColor(COLOR_BRAND);
     if (auto real_physical = mapper.to_physical(last_left_real);
         real_physical == ToolMapper::NO_TOOL_MAPPED) {
         // if left has nothing assigned on the right
@@ -677,9 +677,7 @@ void ToolsMappingBody::update_bottom_guide() {
     static constexpr const char *unassigned_gcodes_pre_translated = N_("Unassigned G-Code filament(s)");
     static constexpr const char *unloaded_tools_pre_translated = N_("Assigned tool(s) without filament");
     static constexpr const char *mismatched_nozzles_pre_translated = N_("Mismatching nozzle diameters");
-#if not HAS_MMU2()
     static constexpr const char *mismatched_filaments_pre_translated = N_("Mismatching filament types");
-#endif
 
     string_view_utf8 strview;
 
@@ -700,11 +698,8 @@ void ToolsMappingBody::update_bottom_guide() {
         print_alert_part_of_guide(unloaded_tools_pre_translated, unloaded_tools_icon);
     } else if (num_mismatched_nozzles > 0) {
         print_alert_part_of_guide(mismatched_nozzles_pre_translated, mismatched_nozzles_icon);
-#if not HAS_MMU2()
     } else if (num_mismatched_filaments > 0) {
-        // disabled for MMU upon request from Content
         print_alert_part_of_guide(mismatched_filaments_pre_translated, mismatched_filaments_icon);
-#endif
     } else {
         bottom_icon.Hide();
         bottom_icon.Invalidate();
@@ -777,7 +772,7 @@ void ToolsMappingBody::update_shown_state_after_scroll(uint8_t previous_idx) {
 
 void ToolsMappingBody::update_dwarf_lights() {
 #if PRINTER_IS_PRUSA_XL()
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         prusa_toolchanger.getTool(e).set_cheese_led(0, 0); // disable all
     }
 
@@ -831,10 +826,8 @@ void ToolsMappingBody::update_icons() {
             right_phys_icons[real_physical].SetRes(unloaded_tools_icon);
         } else if (validity.mismatched_nozzles.test(real_physical)) {
             right_phys_icons[real_physical].SetRes(mismatched_nozzles_icon);
-#if not HAS_MMU2()
         } else if (validity.mismatched_filaments.test(real_physical)) {
             right_phys_icons[real_physical].SetRes(mismatched_filaments_icon);
-#endif
         } else {
             right_phys_icons[real_physical].SetRes(nullptr);
         }
@@ -1187,14 +1180,12 @@ void ToolsMappingBody::windowEvent([[maybe_unused]] window_t *sender, GUI_event_
             if (num_unloaded_tools > 0) {
                 disable_fs = true;
                 warning_text = _("There are printing tools with no filament loaded, this could ruin the print.\nDisable filament sensor and print anyway?");
-#if not HAS_MMU2()
             } else if (num_mismatched_filaments > 0) {
                 // Hide warning about mismatching filament types for MMU prints
                 // - it is yet to be decided how shall we set filament types and work with them in the FW.
                 // Contrary to the XL, the MMU is rarely used to switch among different filament types
                 // in the same print due to filament mixing in the melt zone.
                 warning_text = _("Detected mismatching loaded filament types, this could ruin the print.\nPrint anyway?");
-#endif
             } else if (num_mismatched_nozzles > 0) {
                 warning_text = _("Detected mismatching nozzle diameters, this could ruin the print.\nPrint anyway?");
             }

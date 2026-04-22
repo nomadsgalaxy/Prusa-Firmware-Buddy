@@ -1,0 +1,17 @@
+#pragma once
+
+#include <option/has_xbuddy_extension.h>
+
+#undef HAS_XBUDDY_EXTENSION
+#define HAS_XBUDDY_EXTENSION() 1
+
+#undef HAS_XBUDDY_EXTENSION_VARIANT_STANDARD
+#define HAS_XBUDDY_EXTENSION_VARIANT_STANDARD() 1
+
+#undef PRINTER_IS_PRUSA_COREONE
+#define PRINTER_IS_PRUSA_COREONE() 1
+
+#undef PRINTER_IS_PRUSA_COREONEL
+#define PRINTER_IS_PRUSA_COREONEL() 0
+
+#include <bsod/bsod.h>

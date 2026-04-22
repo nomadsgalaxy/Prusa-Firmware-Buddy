@@ -28,8 +28,8 @@ static constexpr DynamicIndexMapping<index_mapping_items> index_mapping;
 
 static constexpr IWindowMenuItem::ColorScheme moved_filament_color_scheme {
     .text = {
-        .focused = COLOR_ORANGE,
-        .unfocused = COLOR_ORANGE,
+        .focused = COLOR_BRAND,
+        .unfocused = COLOR_BRAND,
     },
 };
 

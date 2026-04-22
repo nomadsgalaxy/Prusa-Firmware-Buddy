@@ -7,8 +7,9 @@
 #include <option/has_mmu2.h>
 #include <option/has_puppies.h>
 #include <printers.h>
+#include <option/has_esp.h>
 
-#if BUDDY_ENABLE_WUI()
+#if HAS_ESP() && BUDDY_ENABLE_WUI()
     #include "espif.h"
 #endif
 
@@ -76,7 +77,7 @@ BARE_ISR(DMA2_Stream7_IRQHandler, HAL_DMA_IRQHandler, uart_handle_for_mmu.hdmatx
 
 #endif
 
-#if BUDDY_ENABLE_WUI()
+#if HAS_ESP() && BUDDY_ENABLE_WUI()
 
 // UART for ESP network interface card
 TRACED_ISR(UART8_IRQHandler, HAL_UART_IRQHandler_with_idle, &uart_handle_for_esp, espif_receive_data);

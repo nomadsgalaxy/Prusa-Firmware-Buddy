@@ -6,7 +6,7 @@
 #include "gcode/gcode.h"
 #include "common/printer_model.hpp"
 #include <gcode_info.hpp>
-#include <scope_guard.hpp>
+#include <raii/scope_guard.hpp>
 #include <module/planner.h>
 #include <option/has_gcode_compatibility.h>
 
@@ -43,12 +43,15 @@ static void setup_gcode_compatibility(const PrinterModelInfo *gcode_printer) {
         }
 
         if (const auto &t = params.chamber_min_temperature; t.has_value() && chamber().current_temperature() < *t) {
-        #if PRINTER_IS_PRUSA_COREONE()
+        #if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
             ScopeGuard restore_bed_temp = [temp = thermalManager.degTargetBed()] {
                 thermalManager.setTargetBed(temp);
             };
 
-            // C1 does heating using the bed -> set the bed temp to a decently high value
+            // C1/C1L does heating using the bed -> set the bed temp to a decently high value
+            //
+            // C1L runs an additional fan under the bed to distribute the heat.
+            // But that's part of the M141 wait for heating thing below.
             thermalManager.setTargetBed(100);
 
             // Home so that we can set the bed to correct postion

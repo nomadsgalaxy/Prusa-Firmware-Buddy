@@ -8,18 +8,16 @@
 #include "WindowItemFanLabel.hpp"
 #include "config.h"
 #include <buddy/door_sensor.hpp>
-#include <common/filament_sensor.hpp>
-#include <common/filament_sensor_states.hpp>
+#include <feature/filament_sensor/filament_sensor.hpp>
+#include <feature/filament_sensor/filament_sensor_states.hpp>
 #include <utility_extensions.hpp>
 #include <option/has_door_sensor.h>
 #include <option/has_dwarf.h>
 #include <option/has_filament_sensors_menu.h>
 #include <option/has_coldpull.h>
 #include <option/has_leds.h>
-#include <option/has_phase_stepping_toggle.h>
 #include <option/has_side_leds.h>
 #include <option/buddy_enable_connect.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_auto_retract.h>
 #include <meta_utils.hpp>
 #include <gui/menu_item/menu_item_gcode_action.hpp>
@@ -291,16 +289,6 @@ public:
     MI_INFO_SIDE_FILL_SENSOR();
 };
 
-class MI_INFO_PRINT_FAN : public WI_FAN_LABEL_t {
-public:
-    MI_INFO_PRINT_FAN();
-};
-
-class MI_INFO_HBR_FAN : public WI_FAN_LABEL_t {
-public:
-    MI_INFO_HBR_FAN();
-};
-
 class MI_PRINT_PROGRESS_TIME : public WiSpin {
 
 public:
@@ -378,6 +366,12 @@ public:
 };
 
 #if BOARD_IS_XBUDDY()
+
+class MI_INFO_BED_VOLTAGE : public MenuItemAutoUpdatingLabel<float> {
+public:
+    MI_INFO_BED_VOLTAGE();
+};
+
 class MI_INFO_HEATER_VOLTAGE : public MenuItemAutoUpdatingLabel<float> {
 public:
     MI_INFO_HEATER_VOLTAGE();
@@ -415,11 +409,6 @@ public:
     MI_INFO_BUDDY_5V_CURRENT();
 };
 #endif
-
-class MI_INFO_INPUT_VOLTAGE : public MenuItemAutoUpdatingLabel<float> {
-public:
-    MI_INFO_INPUT_VOLTAGE();
-};
 
 class MI_INFO_BOARD_TEMP : public MenuItemAutoUpdatingLabel<float> {
 public:
@@ -469,21 +458,6 @@ public:
 protected:
     virtual void click(IWindowMenu &window_menu) override;
 };
-
-#if HAS_PHASE_STEPPING_TOGGLE()
-
-class MI_PHASE_STEPPING_TOGGLE : public WI_ICON_SWITCH_OFF_ON_t {
-    static constexpr const char *label = "Phase Stepping";
-    bool event_in_progress { false };
-
-public:
-    MI_PHASE_STEPPING_TOGGLE();
-
-protected:
-    void OnChange(size_t old_index) override;
-};
-
-#endif
 
 /******************************************************************/
 #if HAS_COLDPULL()
@@ -547,7 +521,7 @@ public:
 class MI_SIDE_LEDS_MAX_BRIGTHNESS : public WiSpin {
 
     static constexpr const char *const label =
-    #if PRINTER_IS_PRUSA_COREONE()
+    #if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
         N_("Chamber Lights");
     #else
         N_("RGB Side Strip");
@@ -575,7 +549,7 @@ public:
 
 class MI_SIDE_LEDS_DIMMING_ENABLE : public MenuItemSwitch {
     static constexpr const char *const label =
-    #if PRINTER_IS_PRUSA_COREONE()
+    #if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
         N_("Chamber Dimming");
     #else
         N_("RGB Side Strip Dimming");
@@ -629,10 +603,6 @@ public:
 protected:
     virtual void click(IWindowMenu &window_menu) override;
 };
-#endif
-
-#if HAS_BELT_TUNING()
-using MI_BELT_TUNING = WithConstructorArgs<MenuItemGcodeAction, N_("Belt Tuning"), "M960 W"_tstr>;
 #endif
 
 #if HAS_MANUAL_BELT_TUNING()

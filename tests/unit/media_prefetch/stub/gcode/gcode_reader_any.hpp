@@ -5,6 +5,11 @@
 #include <cstdint>
 #include <stddef.h>
 
+#include <option/has_e2ee_support.h>
+#if HAS_E2EE_SUPPORT()
+    #include <e2ee/identity_check_levels.hpp>
+#endif
+
 #include "gcode_reader_result.hpp"
 
 class StubGcodeProviderBase;
@@ -34,7 +39,12 @@ public:
     using Result_t = GCodeReaderResult;
 
     AnyGcodeFormatReader() = default;
-    AnyGcodeFormatReader(const char *filename);
+    AnyGcodeFormatReader(const char *filename, bool allow_decryption = false
+#if HAS_E2EE_SUPPORT()
+        ,
+        e2ee::IdentityCheckLevel identity_check_lvl = e2ee::IdentityCheckLevel::AnyIdentity
+#endif
+    );
     AnyGcodeFormatReader(const AnyGcodeFormatReader &) = delete;
     AnyGcodeFormatReader &operator=(AnyGcodeFormatReader &&);
     ~AnyGcodeFormatReader();
@@ -55,6 +65,11 @@ public:
     uint32_t get_gcode_stream_size_estimate() const { return 0; }
 
     void update_validity(const char *) {}
+
+    virtual bool valid_for_print(bool);
+
+    bool has_error() { return false; }
+    virtual const char *error_str() const { return nullptr; }
 
 private:
     StubGcodeProviderBase *provider = nullptr;

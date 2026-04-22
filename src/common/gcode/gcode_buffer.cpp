@@ -33,6 +33,17 @@ GcodeBuffer::String GcodeBuffer::String::get_string() {
     return String(end, end);
 }
 
+bool GcodeBuffer::String::skip_prefix(const char *prefix) {
+    const size_t len = strlen(prefix);
+
+    if (strncmp(c_str(), prefix, len) == 0) {
+        skip(len);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool GcodeBuffer::String::skip_gcode(const char *gcode_str) {
     for (auto it = begin;; ++it, ++gcode_str) {
         if (*gcode_str == '\0') {

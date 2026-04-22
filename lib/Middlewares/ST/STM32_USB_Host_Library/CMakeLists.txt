@@ -15,6 +15,6 @@ add_library(
 
 target_include_directories(USBHost PUBLIC Core/Inc Class/MSC/Inc)
 
-target_link_libraries(USBHost PUBLIC STM32_USBHost_Config)
+target_link_libraries(USBHost PRIVATE STM32_USBHost_Config)
 
 add_library(STM32::USBHost ALIAS USBHost)

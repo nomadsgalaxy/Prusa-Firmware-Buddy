@@ -13,7 +13,7 @@
 #include "status_footer.hpp"
 
 class SelftestFrameCalibZ : public SelftestFrameNamed {
-    window_wizard_progress_t progress; // used just to draw line
+    window_wizard_line_t line;
 
     window_icon_hourglass_t animation;
 

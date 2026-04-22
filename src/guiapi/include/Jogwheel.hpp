@@ -141,6 +141,8 @@ private:
     bool type1; //!< jogwheel is type1 = true or type2 = false
     bool spin_accelerator; //!< turns up spin accelerator feature
     freertos::Queue<BtnState_t, 32> queue;
+
+    uint8_t signals_filter { 0xff }; // Initialize to an invalid signal value to filter out the first received signal
 };
 
 extern Jogwheel jogwheel; // Jogwheel static instance

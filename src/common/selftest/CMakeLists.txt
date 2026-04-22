@@ -1,3 +1,5 @@
+add_subdirectory(fsensor)
+
 target_include_directories(Marlin_Config INTERFACE include_${PRINTER})
 
 target_sources(
@@ -27,10 +29,6 @@ endif()
 
 if(PRINTER STREQUAL "MINI" OR PRINTER STREQUAL "MK3.5")
   target_sources(firmware PRIVATE selftest_firstlayer.cpp selftest_firstlayer_interface.cpp)
-endif()
-
-if(FILAMENT_SENSOR STREQUAL ADC)
-  target_sources(firmware PRIVATE selftest_fsensor.cpp selftest_fsensor_interface.cpp)
 endif()
 
 if(HAS_DWARF)

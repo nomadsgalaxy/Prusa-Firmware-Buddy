@@ -15,8 +15,6 @@ class Fsm {
 public:
     void Loop();
 
-    Response GetResponse() const;
-
     bool Activate();
     bool Deactivate();
     bool IsActive() const;

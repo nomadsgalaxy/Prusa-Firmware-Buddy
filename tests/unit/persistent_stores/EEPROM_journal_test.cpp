@@ -160,7 +160,7 @@ TEST_CASE("journal::EEPROM::Test item loading") {
 
     size_t num_of_items = 0;
 
-    const auto load_fnc = [&num_of_items](uint16_t id, std::span<uint8_t> buffer) {
+    const auto load_fnc = [&num_of_items](uint16_t id, const std::span<const uint8_t> &buffer) {
         REQUIRE(id == num_of_items);
         num_of_items++;
         REQUIRE(buffer.size() == 10);

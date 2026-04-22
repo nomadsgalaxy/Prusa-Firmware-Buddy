@@ -4,13 +4,16 @@ if(BOARD STREQUAL "XLBUDDY")
 elseif((BOARD STREQUAL "XBUDDY") AND (PRINTER STREQUAL "MK3.5"))
   target_sources(firmware PRIVATE CFanCtl3Wire.cpp CFanCtlCommon.cpp mk3.5/fanctl_instances.cpp)
 elseif((BOARD STREQUAL "XBUDDY") AND (PRINTER STREQUAL "iX"))
-  target_sources(firmware PRIVATE CFanCtl3Wire.cpp CFanCtlCommon.cpp ix/fanctl_instances.cpp)
+  target_sources(
+    firmware PRIVATE CFanCtl3Wire.cpp CFanCtlCommon.cpp fan_ctl_ix_turbine.cpp
+                     ix/fanctl_instances.cpp
+    )
+  target_link_libraries(firmware PUBLIC xbuddy_extension)
 elseif(BOARD STREQUAL "XBUDDY")
   target_sources(
     firmware PRIVATE CFanCtl3Wire.cpp CFanCtlCommon.cpp xbuddy/CFanCtl3WireDynamic.cpp
                      xbuddy/fanctl_instances.cpp
     )
-  target_include_directories(BuddyHeaders INTERFACE xbudy)
 elseif(BOARD IN_LIST BUDDY_BOARDS)
   target_sources(firmware PRIVATE buddy/fanctl_instances.cpp CFanCtl3Wire.cpp CFanCtlCommon.cpp)
 elseif(BOARD STREQUAL "DWARF")

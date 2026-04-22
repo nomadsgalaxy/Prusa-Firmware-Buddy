@@ -143,6 +143,12 @@ public:
         quick_stopped = true;
     }
 
+    /**
+     * @brief Know if it is safe to move in X and Y.
+     * @return true if X and Y are homed
+     */
+    [[nodiscard]] bool can_move_safely(AxisHomeLevel required_level = AxisHomeLevel::full);
+
 private:
     PrecrashData precrash_data = {}; ///< Remember wanted toolchange result in case of a crash
     std::atomic<bool> block_tool_check = false; ///< When true, block loop() with automatic toolchange and toolfall detection
@@ -161,12 +167,6 @@ private:
      * @return true if powerpanic happened and toolchange has to quit immediately
      */
     [[nodiscard]] bool check_emergency_stop();
-
-    /**
-     * @brief Know if it is safe to move in X and Y.
-     * @return true if X and Y are homed
-     */
-    [[nodiscard]] bool can_move_safely();
 
     /**
      * @brief Pickup tool.

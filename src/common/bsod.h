@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <bsod/bsod.h>
+
 #include <stdint.h>
 #if not defined(UNITTESTS)
     #include "error_codes.hpp"
@@ -17,11 +19,6 @@ enum class ErrCode;
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
-
-#define bsod(fmt, ...) _bsod(fmt, __FILE_NAME__, __LINE__, ##__VA_ARGS__)
-
-void __attribute__((noreturn, format(__printf__, 1, 4)))
-_bsod(const char *fmt, const char *file_name, int line_number, ...); // with file name and line number
 
 /** Fatal error that causes redscreen
  * @param error - error message, that will be displayed as error description (MAX length 107 chars)

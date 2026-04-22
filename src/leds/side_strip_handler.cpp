@@ -1,5 +1,5 @@
 #include "leds/side_strip_handler.hpp"
-#include "leds/simple_transition_controller.hpp"
+#include <led_animation_controller/simple_transition_controller.hpp>
 #include "marlin_server.hpp"
 
 namespace leds {

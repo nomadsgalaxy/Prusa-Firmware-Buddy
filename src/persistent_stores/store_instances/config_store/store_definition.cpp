@@ -20,20 +20,17 @@ namespace config_store_ns {
 static_assert((sizeof(CurrentStore) + aggregate_arity<CurrentStore>() * sizeof(journal::Backend::ItemHeader)) < (BANK_SIZE / 100) * 75, "EEPROM bank is almost full");
 static_assert(journal::has_unique_items<config_store_ns::CurrentStore>(), "Just added items are causing collisions with reserved backend IDs");
 static_assert(aggregate_arity<config_store_ns::CurrentStore>() > 10, "Config store sanity check failed");
-static_assert([] {
-    uint16_t problematic_item = 0;
-    CurrentStore s {};
-    visit_all_struct_fields(s, [&problematic_item]<typename T>(T &) {
-        if constexpr ((T::flags & ~(ItemFlag::dev_items | ItemFlag::common_misconfigurations)) == 0) {
-            if constexpr (std::is_base_of_v<journal::JournalItemArrayBase, T>) {
-                problematic_item = T::hashed_id_first;
-            } else {
-                problematic_item = T::hashed_id;
+static_assert(
+    ![] {
+        bool is_problem = false;
+        CurrentStore s {};
+        visit_all_struct_fields(s, [&is_problem]<typename T>(T &) {
+            if constexpr ((T::flags & ~(ItemFlag::dev_items | ItemFlag::common_misconfigurations)) == 0) {
+                is_problem = true;
             }
-        }
-    });
-    return problematic_item;
-}() == 0,
+        });
+        return is_problem; //
+    }(),
     "All items must have a flag set (not counting dev_items/common_misconfigurations)");
 #endif
 
@@ -45,10 +42,6 @@ void CurrentStore::perform_config_check() {
     // So this is a place to instead set them to something for new installations
     if (is_first_run || force_default_hw_config.get()) {
         force_default_hw_config.set(false);
-
-#if HAS_TOUCH()
-        touch_enabled.set(true);
-#endif
 
 #if PRINTER_IS_PRUSA_MK4()
         static_assert(extended_printer_type_model[1] == PrinterModel::mk4s);
@@ -166,63 +159,6 @@ void CurrentStore::perform_config_migrations() {
     // Don't confuse this with the config_store migrations.
     // - config_store migrations are migrations on store item level (when the item structure changes and so on). They do not have access to the whole config_store/printer state.
     // - migrations here are for the higher abstraction level
-}
-
-footer::Item CurrentStore::get_footer_setting([[maybe_unused]] uint8_t index) {
-    switch (index) {
-    case 0:
-        return footer_setting_0.get();
-#if FOOTER_ITEMS_PER_LINE__ > 1
-    case 1:
-        return footer_setting_1.get();
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 2
-    case 2:
-        return footer_setting_2.get();
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 3
-    case 3:
-        return footer_setting_3.get();
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 4
-    case 4:
-        return footer_setting_4.get();
-#endif
-    default:
-        assert(false && "invalid index");
-        return footer::Item::none;
-    }
-}
-
-void CurrentStore::set_footer_setting(uint8_t index, footer::Item value) {
-    switch (index) {
-    case 0:
-        footer_setting_0.set(value);
-        break;
-#if FOOTER_ITEMS_PER_LINE__ > 1
-    case 1:
-        footer_setting_1.set(value);
-        break;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 2
-    case 2:
-        footer_setting_2.set(value);
-        break;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 3
-    case 3:
-        footer_setting_3.set(value);
-        break;
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 4
-    case 4:
-        footer_setting_4.set(value);
-        break;
-#endif
-    default:
-        assert(false && "invalid index");
-        return;
-    }
 }
 
 int32_t CurrentStore::get_extruder_fs_ref_nins_value([[maybe_unused]] uint8_t index) {

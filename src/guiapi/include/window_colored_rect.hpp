@@ -20,3 +20,11 @@ private:
     uint8_t border_thickness { 1 }; // how thick is the encircling border, 0 for none
     Color parent_color { COLOR_BLACK }; // Needed for rounded mode to draw the background properly
 };
+
+class WindowColoredRect : public window_t {
+public:
+    WindowColoredRect(window_t *parent, Rect16 rect, Color color)
+        : window_t { parent, rect } {
+        SetBackColor(color);
+    }
+};

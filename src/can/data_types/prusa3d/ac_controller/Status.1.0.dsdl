@@ -1,0 +1,71 @@
+# Status should group all the interesting bits of information about the ac_controller
+
+# Bed
+prusa3d.common.TargetTemperature.1.0 bed_target_temp
+prusa3d.unit.Celsius.1.0 bed_temp
+
+# Power output to the bed [0 - 1]
+prusa3d.unit.Pwm.1.0 bed_pwm
+
+# Chamber
+prusa3d.common.TargetTemperature.1.0 chamber_target_temp
+# Chamber temperature is measured by hub
+
+# Power output to the chamber [0 - 1]
+prusa3d.unit.Pwm.1.0 chamber_pwm
+
+# Power supply
+prusa3d.common.FanState.1.0 psu_fan_state # The fan is not linked to psu_temp, keeping legacy name
+prusa3d.unit.Celsius.1.0 psu_temp
+
+prusa3d.common.FanState.1.0 triac_fan_state # The fan is not linked to triac_temp, keeping legacy name
+prusa3d.unit.Celsius.1.0 triac_temp
+
+# External fans
+prusa3d.common.FanState.1.0 external_fan0_state
+prusa3d.common.FanState.1.0 external_fan1_state
+
+# Board state
+prusa3d.unit.Celsius.1.0 board_temp
+prusa3d.unit.Celsius.1.0 mcu_temp
+uavcan.si.unit.voltage.Scalar.1.0 supply_voltage
+
+# Other sensors
+prusa3d.common.leds.Config.1.0 rgb_led_strip
+
+# AcController specific faults, see prusa3d.common.SharedFault.1.0 for shared faults
+uint32 FAULT_RCD_TRIPPED = 0
+uint32 FAULT_POWERPANIC = 1 # Detected powerpanic on AC
+uint32 FAULT_OVERHEAT = 2
+uint32 FAULT_PSU_FAN_NOK = 3
+uint32 FAULT_PSU_NTC_DISCONNECT = 4
+uint32 FAULT_PSU_NTC_SHORT = 5
+uint32 FAULT_BED_NTC_DISCONNECT = 6
+uint32 FAULT_BED_NTC_SHORT = 7
+uint32 FAULT_TRIAC_NTC_DISCONNECT = 8
+uint32 FAULT_TRIAC_NTC_SHORT = 9
+uint32 FAULT_BED_FAN0_NOK = 10
+uint32 FAULT_BED_FAN1_NOK = 11
+uint32 FAULT_TRIAC_FAN_NOK = 12
+uint32 FAULT_GRID_NOK = 13 # Frequency or voltage in the grid are out of range
+uint32 FAULT_BED_LOAD_NOK = 14 # Bed load is out of spec
+uint32 FAULT_CHAMBER_LOAD_NOK = 15 # Chamber load is out of spec
+uint32 FAULT_PSU_NOK = 16 # PSU is out of spec (AC side or low voltage side)
+uint32 FAULT_BED_RUNAWAY = 17 # Bed thermal model runaway
+prusa3d.common.SharedFault.1.0 faults # Contains specific FAULT_*XX* above and shared faults
+
+bool time_sync_precise # Time synchronization is precise
+
+bool powerpanic_pin # State of the powerpanic pin
+
+bool chamber_can_heat # True if we have chamber heater installed
+
+# AC power
+uavcan.si.unit.voltage.Scalar.1.0 ac_voltage
+uavcan.si.unit.frequency.Scalar.1.0 ac_frequency
+uavcan.si.unit.power.Scalar.1.0 bed_power
+uavcan.si.unit.power.Scalar.1.0 chamber_power
+uavcan.si.unit.power.Scalar.1.0 psu_power
+
+@sealed
+@assert _offset_.max <= (63+61)*8  # two packets

@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <tuple>
 #include <memory>
+#include <buddy/bootstrap_state.hpp>
 #include "cmsis_os.h"
 #include "crc32.h"
 #include "bsod.h"
@@ -29,7 +30,7 @@ LOG_COMPONENT_REF(Bootloader);
 #define fatal_error(msg) bsod(msg)
 
 using Version = buddy::bootloader::Version;
-using UpdateStage = buddy::bootloader::UpdateStage;
+using buddy::BootstrapStage;
 
 constexpr size_t bootloader_sector_get_size(int sector) {
     return buddy::bootloader::bootloader_sector_sizes[sector];
@@ -248,7 +249,7 @@ bool buddy::bootloader::preboot_needs_update() {
     return needs_update({ 2, 0, 1 });
 }
 
-void buddy::bootloader::update(ProgressHook progress) {
+void buddy::bootloader::update() {
     auto calc_percent_done = [](int bootstrap_percent, int update_percent) {
         return (int)(bootstrap_percent * 0.75 + update_percent * 0.25);
     };
@@ -256,17 +257,7 @@ void buddy::bootloader::update(ProgressHook progress) {
     // get bootloader.bin to the internal flash
     bool needs_bootstrap = buddy::resources::has_resources(buddy::resources::revision::bootloader) == false;
     if (needs_bootstrap) {
-        buddy::resources::bootstrap(buddy::resources::revision::bootloader, [&](int percent_done, buddy::resources::BootstrapStage stage) {
-            switch (stage) {
-            case buddy::resources::BootstrapStage::LookingForBbf:
-                progress(0, UpdateStage::LookingForBbf);
-                break;
-            case buddy::resources::BootstrapStage::PreparingBootstrap:
-            case buddy::resources::BootstrapStage::CopyingFiles:
-                progress(calc_percent_done(percent_done, 0), buddy::bootloader::UpdateStage::PreparingUpdate);
-                break;
-            }
-        });
+        buddy::resources::bootstrap(buddy::resources::revision::bootloader);
     }
 
     unique_file_ptr bootloader_bin(fopen("/internal/res/bootloader.bin", "rb"));
@@ -275,13 +266,13 @@ void buddy::bootloader::update(ProgressHook progress) {
         fatal_error("bootloader.bin failed to open");
     }
 
-    progress(calc_percent_done(100, 0), buddy::bootloader::UpdateStage::PreparingUpdate);
+    bootstrap_state_set(calc_percent_done(100, 0), BootstrapStage::preparing_update);
 
     // update the bootloader in FLASH
     int last_reported_percent_done = -1;
     copy_bootloader_to_flash(bootloader_bin.get(), [&](int percent_done) {
         if (percent_done != last_reported_percent_done) {
-            progress(calc_percent_done(100, percent_done), buddy::bootloader::UpdateStage::Updating);
+            bootstrap_state_set(calc_percent_done(100, percent_done), BootstrapStage::updating);
             last_reported_percent_done = percent_done;
         }
     });

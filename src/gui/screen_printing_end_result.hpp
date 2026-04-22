@@ -1,6 +1,7 @@
 #pragma once
 
 #include <window.hpp>
+#include <window_frame.hpp>
 #include <window_text.hpp>
 #include <window_icon.hpp>
 #include <window_print_progress.hpp>

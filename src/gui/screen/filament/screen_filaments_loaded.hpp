@@ -30,7 +30,7 @@ private:
     bool should_open_submenu_;
     FilamentType filament_type_;
 
-    std::array<char, 32> label_buffer_;
+    std::array<char, 48> label_buffer_;
 };
 
 template <typename>

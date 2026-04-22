@@ -228,11 +228,9 @@ namespace puppies {
          * bootloader to finish fingerprint computation.
          *
          * @param data result data
-         * @param offset get only a chunk starting at offset
-         * @param size get only a chunk of size bytes
          * @return status_t
          */
-        status_t get_fingerprint(fingerprint_t &fingerprint, uint8_t offset = 0, uint8_t size = sizeof(fingerprint_t));
+        status_t get_fingerprint(fingerprint_t &fingerprint);
 
         /**
          * @brief Set currently used address (see Address)

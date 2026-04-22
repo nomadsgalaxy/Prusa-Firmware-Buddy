@@ -25,7 +25,7 @@
 #include <Marlin/src/gcode/gcode.h>
 #include <Marlin/src/module/motion.h>
 #include <common/gcode/gcode_parser.hpp>
-#include <common/filament_sensors_handler.hpp>
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include <common/mapi/parking.hpp>
 
 /** \addtogroup G-Codes

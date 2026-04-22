@@ -21,8 +21,6 @@
  */
 #pragma once
 
-#include "../core/boards.h"
-
 /**
  * Include pins definitions
  *
@@ -37,22 +35,14 @@
 
 #define MAX_EXTRUDERS 6
 
-#if MB(BUDDY_2209_02)
-  #if BOARD_IS_BUDDY() || BOARD_IS_XBUDDY()
-    #include "stm32/pins_BUDDY_2209_02.h"       // STM32F4                                env:STM32F4
-  #else
-    #error "Unknown PRINTER_TYPE"
-  #endif
+#if BOARD_IS_BUDDY() || BOARD_IS_XBUDDY()
+  #include "stm32/pins_BUDDY_2209_02.h"
 #elif BOARD_IS_XLBUDDY()
-  #if PRINTER_IS_PRUSA_XL()
-    #include "stm32/pins_XLBUDDY.h"       // STM32F4                                env:STM32F4
-  #else
-    #error "Unknown PRINTER_TYPE"
-  #endif
+  #include "stm32/pins_XLBUDDY.h"
 #elif BOARD_IS_DWARF()
-    #include "stm32/pins_DWARF.h"
+  #include "stm32/pins_DWARF.h"
 #else
-  #error "Unknown MOTHERBOARD value set in Configuration.h"
+  #error
 #endif
 
 // Define certain undefined pins
@@ -232,16 +222,6 @@
   #define FAN2_PIN -1
 #endif
 
-#ifndef FANMUX0_PIN
-  #define FANMUX0_PIN -1
-#endif
-#ifndef FANMUX1_PIN
-  #define FANMUX1_PIN -1
-#endif
-#ifndef FANMUX2_PIN
-  #define FANMUX2_PIN -1
-#endif
-
 #ifndef HEATER_0_PIN
   #define HEATER_0_PIN -1
 #endif
@@ -280,9 +260,6 @@
   #define TEMP_5_PIN -1
 #endif
 
-#ifndef LED_PIN
-  #define LED_PIN -1
-#endif
 #if DISABLED(PSU_CONTROL) || !defined(PS_ON_PIN)
   #undef PS_ON_PIN
   #define PS_ON_PIN -1
@@ -446,7 +423,7 @@
 #define _EPIN(p,q) __EPIN(p,q)
 
 // The X2 axis, if any, should be the next open extruder port
-#if EITHER(DUAL_X_CARRIAGE, X_DUAL_STEPPER_DRIVERS)
+#if ENABLED(X_DUAL_STEPPER_DRIVERS)
   #ifndef X2_STEP_PIN
     #define X2_STEP_PIN   _EPIN(E_STEPPERS, STEP)
     #define X2_DIR_PIN    _EPIN(E_STEPPERS, DIR)

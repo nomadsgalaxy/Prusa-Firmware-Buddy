@@ -20,6 +20,11 @@ int get_motor_steps(AxisEnum motor);
 int32_t pos_to_phase(AxisEnum axis, float position);
 
 /**
+ * Compute the position of a given motor phase
+ **/
+float phase_to_pos(AxisEnum axis, int32_t phase);
+
+/**
  * Given position, compute step equivalent
  **/
 int32_t pos_to_steps(AxisEnum axis, float position);

@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <cassert>
 
 /**
  * @brief Used to discern whether template parameter is std::array<..., ...> or not

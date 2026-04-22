@@ -7,13 +7,6 @@
 #include "bbf.hpp"
 #include <common/mutable_path.hpp>
 
-class DIRDeleter {
-public:
-    void operator()(DIR *dir) {
-        closedir(dir);
-    }
-};
-
 class ScopedFileSystemLittlefsBBF {
 private:
     int device;

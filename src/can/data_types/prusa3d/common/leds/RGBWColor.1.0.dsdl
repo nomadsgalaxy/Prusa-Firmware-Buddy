@@ -1,0 +1,12 @@
+# RGBW Color definition with separate red, green, blue, white channels
+# Each channel value ranges from 0 to 255 (8-bit)
+
+uint8 red   # Red channel intensity (0-255)
+uint8 green # Green channel intensity (0-255)
+uint8 blue  # Blue channel intensity (0-255)
+uint8 white # White channel intensity (0-255)
+
+uint8 MIN_CHANNEL = 0   # Minimum channel value (off)
+uint8 MAX_CHANNEL = 255 # Maximum channel value (full intensity)
+
+@sealed

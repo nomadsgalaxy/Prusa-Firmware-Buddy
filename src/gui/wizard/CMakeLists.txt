@@ -22,16 +22,9 @@ target_sources(
   )
 
 if(NOT (${PRINTER} STREQUAL "MINI"))
-  target_sources(
-    firmware PRIVATE selftest_frame_fsensor.cpp selftest_frame_loadcell.cpp
-                     selftest_result_fsensor.cpp selftest_result_loadcell.cpp
-    )
+  target_sources(firmware PRIVATE selftest_frame_loadcell.cpp selftest_result_loadcell.cpp)
 endif()
 
 if(${PRINTER} STREQUAL "XL")
   target_sources(firmware PRIVATE selftest_frame_dock.cpp selftest_frame_tool_offsets.cpp)
-endif()
-
-if(HAS_BELT_TUNING)
-  target_sources(firmware PRIVATE screen_belt_tuning_wizard.cpp)
 endif()

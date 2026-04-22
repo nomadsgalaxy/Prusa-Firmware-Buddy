@@ -18,6 +18,8 @@ public:
 
     bool is_idle() const;
 
+    bool is_buffering() const;
+
     void load_gcode(const char *filename, const char *fallback = nullptr);
 
     std::expected<char *, BufferState> get_result();

@@ -17,7 +17,6 @@ target_sources(
           frame_calibration_common.cpp
           frame_qr_layout.cpp
           gcode_description.cpp
-          gui_bootstrap_screen.cpp
           gui_media_events.cpp
           gui_time.cpp
           guimain.cpp
@@ -40,10 +39,8 @@ target_sources(
           pseudo_screen_callback.cpp
           qoi_decoder.cpp
           qr.cpp
-          screen_blue_error.cpp
-          screen_bsod.cpp
+          screen_error.cpp
           screen_filebrowser.cpp
-          screen_hardfault.cpp
           screen_help_fw_update.cpp
           screen_home.cpp
           screen_menu.cpp
@@ -51,6 +48,7 @@ target_sources(
           screen_menu_enclosure.cpp
           screen_menu_error_test.cpp
           screen_menu_fail_stat.cpp
+          screen_menu_fan_info.cpp
           screen_menu_filament.cpp
           screen_menu_footer_settings.cpp
           screen_menu_hardware.cpp
@@ -74,17 +72,12 @@ target_sources(
           screen_menu_user_interface.cpp
           screen_messages.cpp
           screen_move_z.cpp
-          screen_network_setup.cpp
           screen_print_preview.cpp
           screen_printer_setup.cpp
           screen_printing.cpp
           screen_printing_end_result.cpp
           screen_prusa_link.cpp
-          screen_qr_error.cpp
-          screen_reset_error.cpp
           screen_splash.cpp
-          screen_stack_overflow.cpp
-          screen_watchdog.cpp
           ScreenFactory.cpp
           ScreenHandler.cpp
           ScreenPrintingModel.cpp
@@ -161,13 +154,8 @@ if(HAS_MMU2)
             screen_menu_mmu_eject_filament.cpp
             screen_menu_mmu_load_test_filament.cpp
             screen_menu_mmu_load_to_nozzle.cpp
-            screen_menu_mmu_preload_to_mmu.cpp
             screen_tools_mapping.cpp
     )
-endif()
-
-if(PRINTER STREQUAL "MK4" OR PRINTER STREQUAL "MK3.5")
-  target_sources(firmware PRIVATE screen_fatal_warning.cpp)
 endif()
 
 if(PRINTER STREQUAL "MINI")
@@ -207,9 +195,16 @@ endif()
 if(HAS_PHASE_STEPPING_CALIBRATION)
   target_sources(firmware PRIVATE screen_phase_stepping_calibration.cpp)
 endif()
+if(HAS_E2EE_SUPPORT)
+  target_sources(firmware PRIVATE screen_menu_e2ee.cpp)
+endif()
 
 if(CONNECT)
   target_sources(firmware PRIVATE screen_menu_connect.cpp)
+endif()
+
+if(HAS_ESP)
+  target_sources(firmware PRIVATE screen_network_setup.cpp)
 endif()
 
 if(HAS_INPUT_SHAPER_CALIBRATION)

@@ -65,11 +65,6 @@
  */
 
 /**
- * Marlin uses the Bresenham algorithm. For a detailed explanation of theory and
- * method see https://www.cs.helsinki.fi/group/goa/mallinnus/lines/bresenh.html
- */
-
-/**
  * Jerk controlled movements planner added Apr 2018 by Eduardo José Tagle.
  * Equations based on Synthethos TinyG2 sources, but the fixed-point
  * implementation is new, as we are running the ISR with a variable period.
@@ -176,6 +171,7 @@ float Stepper::segment_progress() {
 }
 
 bool Stepper::is_axis_inverted(AxisEnum axis) {
+    assert(PreciseStepping::inverted_dirs_set);
     return !(PreciseStepping::inverted_dirs & (STEP_EVENT_FLAG_X_DIR << axis));
 }
 
@@ -228,7 +224,7 @@ void Stepper::init() {
     if (!X_ENABLE_ON) {
         X_ENABLE_WRITE(HIGH);
     }
-    #if EITHER(DUAL_X_CARRIAGE, X_DUAL_STEPPER_DRIVERS) && HAS_X2_ENABLE
+    #if ENABLED(X_DUAL_STEPPER_DRIVERS) && HAS_X2_ENABLE
     X2_ENABLE_INIT;
     if (!X_ENABLE_ON) {
         X2_ENABLE_WRITE(HIGH);
@@ -317,7 +313,7 @@ void Stepper::init() {
 
 // Init Step Pins
 #if HAS_X_STEP
-    #if EITHER(X_DUAL_STEPPER_DRIVERS, DUAL_X_CARRIAGE)
+    #if ENABLED(X_DUAL_STEPPER_DRIVERS)
     X2_STEP_INIT;
     X2_STEP_WRITE(INVERT_X_STEP_PIN);
     #endif
@@ -432,12 +428,12 @@ void Stepper::report_positions() {
     // to avoid locking the step ISR
     const xyz_long_t pos = count_position;
 
-#if CORE_IS_XY || CORE_IS_XZ || ENABLED(DELTA) || IS_SCARA
+#if CORE_IS_XY || CORE_IS_XZ
     SERIAL_ECHOPAIR(MSG_COUNT_A, pos.x, " B:", pos.y);
 #else
     SERIAL_ECHOPAIR(MSG_COUNT_X, pos.x, " Y:", pos.y);
 #endif
-#if CORE_IS_XZ || CORE_IS_YZ || ENABLED(DELTA)
+#if CORE_IS_XZ || CORE_IS_YZ
     SERIAL_ECHOLNPAIR(" C:", pos.z);
 #else
     SERIAL_ECHOLNPAIR(" Z:", pos.z);
@@ -454,11 +450,7 @@ void Stepper::report_positions() {
         #define STEP_PULSE_CYCLES 0
     #endif
 
-    #if ENABLED(DELTA)
-        #define CYCLES_EATEN_BABYSTEP (2 * 15)
-    #else
-        #define CYCLES_EATEN_BABYSTEP 0
-    #endif
+    #define CYCLES_EATEN_BABYSTEP 0
     #define EXTRA_CYCLES_BABYSTEP (STEP_PULSE_CYCLES - (CYCLES_EATEN_BABYSTEP))
 
     #define _ENABLE(AXIS)            enable_##AXIS()
@@ -475,8 +467,6 @@ void Stepper::report_positions() {
         #define _SAVE_START NOOP
         #if EXTRA_CYCLES_BABYSTEP > 0
             #define _PULSE_WAIT delay_ns_precise<EXTRA_CYCLES_BABYSTEP * NANOSECONDS_PER_CYCLE>()
-        #elif ENABLED(DELTA)
-            #define _PULSE_WAIT delay_us_precise<2>()
         #elif STEP_PULSE_CYCLES > 0
             #define _PULSE_WAIT NOOP
         #else
@@ -546,49 +536,8 @@ void Stepper::babystep(const AxisEnum axis, const bool direction) {
         BABYSTEP_AXIS(Y, BABYSTEP_INVERT_Z, direction);
         BABYSTEP_AXIS(Z, BABYSTEP_INVERT_Z, direction ^ (CORESIGN(1) < 0));
 
-    #elif DISABLED(DELTA)
+    #else
         BABYSTEP_AXIS(Z, BABYSTEP_INVERT_Z, direction);
-
-    #else // DELTA
-
-        const bool z_direction = direction ^ BABYSTEP_INVERT_Z;
-
-        enable_XY();
-        enable_Z();
-
-        #if MINIMUM_STEPPER_PRE_DIR_DELAY > 0
-        delay_ns_precise<MINIMUM_STEPPER_PRE_DIR_DELAY>();
-        #endif
-
-        const uint8_t old_x_dir_pin = X_DIR_READ(),
-                      old_y_dir_pin = Y_DIR_READ(),
-                      old_z_dir_pin = Z_DIR_READ();
-
-        X_DIR_WRITE(INVERT_X_DIR ^ z_direction);
-        Y_DIR_WRITE(INVERT_Y_DIR ^ z_direction);
-        Z_DIR_WRITE(INVERT_Z_DIR ^ z_direction);
-
-        #if MINIMUM_STEPPER_POST_DIR_DELAY > 0
-        delay_ns_precise<MINIMUM_STEPPER_POST_DIR_DELAY>();
-        #endif
-
-        _SAVE_START;
-
-        X_STEP_WRITE(!INVERT_X_STEP_PIN);
-        Y_STEP_WRITE(!INVERT_Y_STEP_PIN);
-        Z_STEP_WRITE(!INVERT_Z_STEP_PIN);
-
-        _PULSE_WAIT;
-
-        X_STEP_WRITE(INVERT_X_STEP_PIN);
-        Y_STEP_WRITE(INVERT_Y_STEP_PIN);
-        Z_STEP_WRITE(INVERT_Z_STEP_PIN);
-
-        // Restore direction bits
-        X_DIR_WRITE(old_x_dir_pin);
-        Y_DIR_WRITE(old_y_dir_pin);
-        Z_DIR_WRITE(old_z_dir_pin);
-
     #endif
 
     } break;

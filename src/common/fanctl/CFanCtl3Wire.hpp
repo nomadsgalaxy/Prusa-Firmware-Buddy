@@ -57,6 +57,7 @@ public:
     inline void set_PhaseShiftThr(uint8_t val) { pha_thr = val; }
     void set_PWM(uint8_t new_pwm);
     inline void set_PhaseShiftMode(PhaseShiftMode new_pha_mode) { pha_mode = new_pha_mode; }
+
     void safeState();
 
 private:
@@ -154,7 +155,7 @@ public:
     // setters
     virtual bool set_pwm(uint16_t pwm) override; // set PWM value - switch to non closed-loop mode
     bool setPhaseShiftMode(CFanCtlPWM::PhaseShiftMode psm); // set phase shift mode (none/triangle/random)
-    void safeState();
+    void safe_state() override;
 
     inline void setSkipTacho(skip_tacho_t skip_tacho) {
         m_skip_tacho = skip_tacho;

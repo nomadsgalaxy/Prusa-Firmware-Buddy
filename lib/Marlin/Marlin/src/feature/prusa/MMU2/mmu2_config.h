@@ -41,8 +41,7 @@ static constexpr float MMU2_UNLOAD_TO_FINDA_FEED_RATE = 120.0F; // mm/s
 static constexpr float MMU2_RETRY_UNLOAD_TO_FINDA_LENGTH = 20.0f; // mm
 static constexpr float MMU2_RETRY_UNLOAD_TO_FINDA_FEED_RATE = 20.0f; // mm/s
 
-static constexpr float MMU2_RETRY_UNLOAD_FINISH_LENGTH = -40.0f; // mm
-static constexpr float MMU2_RETRY_UNLOAD_FINISH_FEED_RATE = 20.0f; // mm/s
+static constexpr float MMU2_RETRY_UNLOAD_FINISH_LENGTH = -80.0f; // mm
 
 static constexpr float MMU2_EXTRUDER_NOZZLE_LENGTH = 20.F;
 #ifdef USE_TRY_LOAD

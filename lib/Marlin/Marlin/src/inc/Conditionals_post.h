@@ -29,23 +29,6 @@
  * Defines that depend on configuration but are not editable.
  */
 
-#define AVR_ATmega2560_FAMILY_PLUS_70 ( \
-     MB(BQ_ZUM_MEGA_3D)                 \
-  || MB(MIGHTYBOARD_REVE)               \
-  || MB(MINIRAMBO)                      \
-  || MB(SCOOVO_X9H)                     \
-)
-
-#ifdef TEENSYDUINO
-  #undef max
-  #define max(a,b) ((a)>(b)?(a):(b))
-  #undef min
-  #define min(a,b) ((a)<(b)?(a):(b))
-
-  #undef NOT_A_PIN    // Override Teensyduino legacy CapSense define work-around
-  #define NOT_A_PIN 0 // For PINS_DEBUGGING
-#endif
-
 #if (ENABLED(CLASSIC_JERK))
   #define HAS_CLASSIC_JERK 1
 #endif
@@ -84,18 +67,6 @@
 #define Y_MAX_BED (Y_MIN_BED + Y_BED_SIZE)
 
 /**
- * Dual X Carriage
- */
-#if ENABLED(DUAL_X_CARRIAGE)
-  #ifndef X1_MIN_POS
-    #define X1_MIN_POS X_MIN_POS
-  #endif
-  #ifndef X1_MAX_POS
-    #define X1_MAX_POS X_BED_SIZE
-  #endif
-#endif
-
-/**
  * CoreXY, CoreXZ, and CoreYZ - and their reverse
  */
 #if EITHER(COREXY, COREYX)
@@ -128,46 +99,22 @@
 #endif
 
 /**
- * SCARA cannot use SLOWDOWN and requires QUICKHOME
- */
-#if IS_SCARA
-  #undef SLOWDOWN
-  #define QUICK_HOME
-#endif
-
-/**
  * Set the home position based on settings or manual overrides
  */
 #ifdef MANUAL_X_HOME_POS
   #define X_HOME_POS MANUAL_X_HOME_POS
 #elif ENABLED(BED_CENTER_AT_0_0)
-  #if ENABLED(DELTA)
-    #define X_HOME_POS 0
-  #else
-    #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
-  #endif
+  #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
 #else
-  #if ENABLED(DELTA)
-    #define X_HOME_POS (X_MIN_POS + (X_BED_SIZE) * 0.5)
-  #else
-    #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
-  #endif
+  #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
 #endif
 
 #ifdef MANUAL_Y_HOME_POS
   #define Y_HOME_POS MANUAL_Y_HOME_POS
 #elif ENABLED(BED_CENTER_AT_0_0)
-  #if ENABLED(DELTA)
-    #define Y_HOME_POS 0
-  #else
-    #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
-  #endif
+  #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
 #else
-  #if ENABLED(DELTA)
-    #define Y_HOME_POS (Y_MIN_POS + (Y_BED_SIZE) * 0.5)
-  #else
-    #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
-  #endif
+  #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
 #endif
 
 #ifdef MANUAL_Z_HOME_POS
@@ -177,25 +124,10 @@
 #endif
 
 /**
- * If DELTA_HEIGHT isn't defined use the old setting
- */
-#if ENABLED(DELTA) && !defined(DELTA_HEIGHT)
-  #define DELTA_HEIGHT Z_HOME_POS
-#endif
-
-/**
  * Z Sled Probe requires Z_SAFE_HOMING
  */
 #if ENABLED(Z_PROBE_SLED)
   #define Z_SAFE_HOMING
-#endif
-
-/**
- * DELTA should ignore Z_SAFE_HOMING and SLOWDOWN
- */
-#if ENABLED(DELTA)
-  #undef Z_SAFE_HOMING
-  #undef SLOWDOWN
 #endif
 
 #ifndef MESH_INSET
@@ -225,62 +157,6 @@
  */
 #ifndef DEFAULT_KEEPALIVE_INTERVAL
   #define DEFAULT_KEEPALIVE_INTERVAL 2
-#endif
-
-/**
- * LCD Contrast for Graphical Displays
- */
-#if ENABLED(CARTESIO_UI)
-  #define _LCD_CONTRAST_MIN   60
-  #define _LCD_CONTRAST_INIT  90
-  #define _LCD_CONTRAST_MAX  140
-#elif ENABLED(miniVIKI)
-  #define _LCD_CONTRAST_MIN   75
-  #define _LCD_CONTRAST_INIT  95
-  #define _LCD_CONTRAST_MAX  115
-#elif ENABLED(VIKI2)
-  #define _LCD_CONTRAST_INIT 140
-#elif ENABLED(ELB_FULL_GRAPHIC_CONTROLLER)
-  #define _LCD_CONTRAST_MIN   90
-  #define _LCD_CONTRAST_INIT 110
-  #define _LCD_CONTRAST_MAX  130
-#elif ENABLED(AZSMZ_12864)
-  #define _LCD_CONTRAST_MIN  120
-  #define _LCD_CONTRAST_INIT 190
-#elif ENABLED(MKS_MINI_12864)
-  #define _LCD_CONTRAST_MIN  120
-  #define _LCD_CONTRAST_INIT 195
-#elif ENABLED(ULTI_CONTROLLER)
-  #define _LCD_CONTRAST_INIT 127
-  #define _LCD_CONTRAST_MAX  254
-#elif EITHER(MAKRPANEL, MINIPANEL)
-  #define _LCD_CONTRAST_INIT  17
-#endif
-
-#define HAS_LCD_CONTRAST defined(_LCD_CONTRAST_INIT)
-#if HAS_LCD_CONTRAST
-  #ifndef LCD_CONTRAST_MIN
-    #ifdef _LCD_CONTRAST_MIN
-      #define LCD_CONTRAST_MIN _LCD_CONTRAST_MIN
-    #else
-      #define LCD_CONTRAST_MIN 0
-    #endif
-  #endif
-  #ifndef LCD_CONTRAST_INIT
-    #define LCD_CONTRAST_INIT _LCD_CONTRAST_INIT
-  #endif
-  #ifndef LCD_CONTRAST_MAX
-    #ifdef _LCD_CONTRAST_MAX
-      #define LCD_CONTRAST_MAX _LCD_CONTRAST_MAX
-    #elif _LCD_CONTRAST_INIT > 63
-      #define LCD_CONTRAST_MAX 255
-    #else
-      #define LCD_CONTRAST_MAX 63   // ST7567 6-bits contrast
-    #endif
-  #endif
-  #ifndef DEFAULT_LCD_CONTRAST
-    #define DEFAULT_LCD_CONTRAST LCD_CONTRAST_INIT
-  #endif
 #endif
 
 /**
@@ -898,7 +774,6 @@
 #define HAS_TEMP_CHAMBER HAS_TEMP_ADC_CHAMBER
 #define HAS_TEMP_HEATBREAK HAS_TEMP_ADC_HEATBREAK
 #define HAS_TEMP_BOARD HAS_TEMP_ADC_BOARD
-#define HAS_HEATED_CHAMBER (HAS_TEMP_CHAMBER && PIN_EXISTS(HEATER_CHAMBER))
 #define HAS_TEMP_HEATBREAK_CONTROL (HAS_TEMP_HEATBREAK && PIN_EXISTS(HEATER_HEATBREAK))  // For future use to control heatbreak temperature
 
 // Heaters
@@ -932,7 +807,6 @@
   #define WATCH_HOTENDS 1
 #endif
 #define WATCH_BED (HAS_THERMALLY_PROTECTED_BED && WATCH_BED_TEMP_PERIOD > 0)
-#define WATCH_CHAMBER (HAS_HEATED_CHAMBER && ENABLED(THERMAL_PROTECTION_CHAMBER) && WATCH_CHAMBER_TEMP_PERIOD > 0)
 #define WATCH_HEATBREAK (HAS_TEMP_HEATBREAK_CONTROL && ENABLED(THERMAL_PROTECTION_HEATBREAK) && WATCH_HEATBREAK_TEMP_PERIOD > 0)
 #define WATCH_BOARD (HAS_TEMP_BOARD_CONTROL && ENABLED(THERMAL_PROTECTION_BOARD) && WATCH_BOARD_TEMP_PERIOD > 0)
 
@@ -971,7 +845,7 @@
   #define Z_PROBE_SERVO_NR -1
 #endif
 
-#define HAS_SERVO_ANGLES (EITHER(SWITCHING_EXTRUDER, SWITCHING_NOZZLE) || (HAS_Z_SERVO_PROBE && defined(Z_PROBE_SERVO_NR)))
+#define HAS_SERVO_ANGLES (HAS_Z_SERVO_PROBE && defined(Z_PROBE_SERVO_NR))
 
 #if !HAS_SERVO_ANGLES || ENABLED(BLTOUCH)
   #undef EDITABLE_SERVO_ANGLES
@@ -982,8 +856,6 @@
 #define HAS_KILL        (PIN_EXISTS(KILL))
 #define HAS_SUICIDE     (PIN_EXISTS(SUICIDE))
 #define HAS_PHOTOGRAPH  (PIN_EXISTS(PHOTOGRAPH))
-#define HAS_BUZZER      (PIN_EXISTS(BEEPER) || ENABLED(LCD_USE_I2C_BUZZER))
-#define USE_BEEPER      (HAS_BUZZER && DISABLED(LCD_USE_I2C_BUZZER))
 #define HAS_CASE_LIGHT  (PIN_EXISTS(CASE_LIGHT) && ENABLED(CASE_LIGHT_ENABLE))
 
 // Digital control
@@ -1064,19 +936,6 @@
 /**
  * Heated chamber requires settings
  */
-#if HAS_HEATED_CHAMBER
-  #ifndef MAX_CHAMBER_POWER
-    #define MAX_CHAMBER_POWER 255
-  #endif
-  #ifndef HEATER_CHAMBER_INVERTING
-    #define HEATER_CHAMBER_INVERTING false
-  #endif
-  #define WRITE_HEATER_CHAMBER(v) WRITE(HEATER_CHAMBER_PIN, (v) ^ HEATER_CHAMBER_INVERTING)
-#endif
-
-/**
- * Heated chamber requires settings
- */
 #if HAS_TEMP_HEATBREAK_CONTROL
   #ifndef MIN_HEATBREAK_POWER
     #define MIN_HEATBREAK_POWER 0
@@ -1110,11 +969,6 @@
 #if FAN_COUNT > 0
   #define WRITE_FAN(n, v) WRITE(FAN##n##_PIN, (v) ^ FAN_INVERTING)
 #endif
-
-/**
- * Part Cooling fan multipliexer
- */
-#define HAS_FANMUX PIN_EXISTS(FANMUX0)
 
 /**
  * MIN/MAX case light PWM scaling
@@ -1194,7 +1048,7 @@
 /**
  * Set granular options based on the specific type of leveling
  */
-#define UBL_SEGMENTED   (ENABLED(AUTO_BED_LEVELING_UBL) && ANY(SEGMENT_LEVELED_MOVES, DELTA))
+#define UBL_SEGMENTED   (ENABLED(AUTO_BED_LEVELING_UBL) && ANY(SEGMENT_LEVELED_MOVES))
 #if ENABLED(AUTO_BED_LEVELING_UBL)
   #define HAS_LEVELING 1
 #endif
@@ -1232,7 +1086,7 @@
 
 /**
  * Bed Probing rectangular bounds
- * These can be further constrained in code for Delta and SCARA
+ * These can be further constrained in code for Delta
  */
 #ifndef MIN_PROBE_EDGE
   #define MIN_PROBE_EDGE 0
@@ -1254,50 +1108,6 @@
   #define NOZZLE_TO_PROBE_OFFSET { 0, 0, 0 }
 #endif
 
-#if ENABLED(DELTA)
-  /**
-   * Delta radius/rod trimmers/angle trimmers
-   */
-  #define _PROBE_RADIUS (DELTA_PRINTABLE_RADIUS - (MIN_PROBE_EDGE))
-  #ifndef DELTA_CALIBRATION_RADIUS
-    #ifdef NOZZLE_TO_PROBE_OFFSET
-      #define DELTA_CALIBRATION_RADIUS (DELTA_PRINTABLE_RADIUS - _MAX(ABS(nozzle_to_probe_offset.x), ABS(nozzle_to_probe_offset.y), ABS(MIN_PROBE_EDGE)))
-    #else
-      #define DELTA_CALIBRATION_RADIUS _PROBE_RADIUS
-    #endif
-  #endif
-  #ifndef DELTA_ENDSTOP_ADJ
-    #define DELTA_ENDSTOP_ADJ { 0, 0, 0 }
-  #endif
-  #ifndef DELTA_TOWER_ANGLE_TRIM
-    #define DELTA_TOWER_ANGLE_TRIM { 0, 0, 0 }
-  #endif
-  #ifndef DELTA_RADIUS_TRIM_TOWER
-    #define DELTA_RADIUS_TRIM_TOWER { 0, 0, 0 }
-  #endif
-  #ifndef DELTA_DIAGONAL_ROD_TRIM_TOWER
-    #define DELTA_DIAGONAL_ROD_TRIM_TOWER { 0, 0, 0 }
-  #endif
-
-  // Probing points may be verified at compile time within the radius
-  // using static_assert(HYPOT2(X2-X1,Y2-Y1)<=sq(DELTA_PRINTABLE_RADIUS),"bad probe point!")
-  // so that may be added to SanityCheck.h in the future.
-  #define PROBE_X_MIN (X_CENTER - (_PROBE_RADIUS))
-  #define PROBE_Y_MIN (Y_CENTER - (_PROBE_RADIUS))
-  #define PROBE_X_MAX (X_CENTER + _PROBE_RADIUS)
-  #define PROBE_Y_MAX (Y_CENTER + _PROBE_RADIUS)
-
-#elif IS_SCARA
-
-  #define SCARA_PRINTABLE_RADIUS (SCARA_LINKAGE_1 + SCARA_LINKAGE_2)
-  #define _PROBE_RADIUS (SCARA_PRINTABLE_RADIUS - (MIN_PROBE_EDGE))
-  #define PROBE_X_MIN (X_CENTER - (SCARA_PRINTABLE_RADIUS) + MIN_PROBE_EDGE_LEFT)
-  #define PROBE_Y_MIN (Y_CENTER - (SCARA_PRINTABLE_RADIUS) + MIN_PROBE_EDGE_FRONT)
-  #define PROBE_X_MAX (X_CENTER +  SCARA_PRINTABLE_RADIUS - (MIN_PROBE_EDGE_RIGHT))
-  #define PROBE_Y_MAX (Y_CENTER +  SCARA_PRINTABLE_RADIUS - (MIN_PROBE_EDGE_BACK))
-
-#endif
-
 #if ENABLED(SEGMENT_LEVELED_MOVES) && !defined(LEVELED_SEGMENT_LENGTH)
   #define LEVELED_SEGMENT_LENGTH 5
 #endif
@@ -1306,19 +1116,17 @@
  * Default mesh area is an area with an inset margin on the print area.
  */
 #if HAS_LEVELING
-  #if 1
-    // Boundaries for Cartesian probing based on set limits
-    #if ENABLED(AUTO_BED_LEVELING_UBL)
-      #define _MESH_MIN_X (_MAX(X_MIN_BED + MESH_INSET, X_MIN_POS))  // UBL is careful not to probe off the bed.  It does not
-      #define _MESH_MIN_Y (_MAX(Y_MIN_BED + MESH_INSET, Y_MIN_POS))  // need NOZZLE_TO_PROBE_OFFSET in the mesh dimensions
-      #define _MESH_MAX_X (_MIN(X_MAX_BED - (MESH_INSET), X_MAX_POS))
-      #define _MESH_MAX_Y (_MIN(Y_MAX_BED - (MESH_INSET), Y_MAX_POS))
-    #else
-      #define _MESH_MIN_X (_MAX(X_MIN_BED + MESH_INSET, X_MIN_POS + nozzle_to_probe_offset.x))
-      #define _MESH_MIN_Y (_MAX(Y_MIN_BED + MESH_INSET, Y_MIN_POS + nozzle_to_probe_offset.y))
-      #define _MESH_MAX_X (_MIN(X_MAX_BED - (MESH_INSET), X_MAX_POS + nozzle_to_probe_offset.x))
-      #define _MESH_MAX_Y (_MIN(Y_MAX_BED - (MESH_INSET), Y_MAX_POS + nozzle_to_probe_offset.y))
-    #endif
+  // Boundaries for Cartesian probing based on set limits
+  #if ENABLED(AUTO_BED_LEVELING_UBL)
+    #define _MESH_MIN_X (_MAX(X_MIN_BED + MESH_INSET, X_MIN_POS))  // UBL is careful not to probe off the bed.  It does not
+    #define _MESH_MIN_Y (_MAX(Y_MIN_BED + MESH_INSET, Y_MIN_POS))  // need NOZZLE_TO_PROBE_OFFSET in the mesh dimensions
+    #define _MESH_MAX_X (_MIN(X_MAX_BED - (MESH_INSET), X_MAX_POS))
+    #define _MESH_MAX_Y (_MIN(Y_MAX_BED - (MESH_INSET), Y_MAX_POS))
+  #else
+    #define _MESH_MIN_X (_MAX(X_MIN_BED + MESH_INSET, X_MIN_POS + nozzle_to_probe_offset.x))
+    #define _MESH_MIN_Y (_MAX(Y_MIN_BED + MESH_INSET, Y_MIN_POS + nozzle_to_probe_offset.y))
+    #define _MESH_MAX_X (_MIN(X_MAX_BED - (MESH_INSET), X_MAX_POS + nozzle_to_probe_offset.x))
+    #define _MESH_MAX_Y (_MIN(Y_MAX_BED - (MESH_INSET), Y_MAX_POS + nozzle_to_probe_offset.y))
   #endif
 
   // These may be overridden in Configuration.h if a smaller area is desired
@@ -1336,25 +1144,6 @@
   #endif
 
 #endif // AUTO_BED_LEVELING_UBL
-
-/**
- * Buzzer/Speaker
- */
-#if ENABLED(LCD_USE_I2C_BUZZER)
-  #ifndef LCD_FEEDBACK_FREQUENCY_HZ
-    #define LCD_FEEDBACK_FREQUENCY_HZ 1000
-  #endif
-  #ifndef LCD_FEEDBACK_FREQUENCY_DURATION_MS
-    #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 100
-  #endif
-#elif HAS_BUZZER
-  #ifndef LCD_FEEDBACK_FREQUENCY_HZ
-    #define LCD_FEEDBACK_FREQUENCY_HZ 5000
-  #endif
-  #ifndef LCD_FEEDBACK_FREQUENCY_DURATION_MS
-    #define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
-  #endif
-#endif
 
 /**
  * Z_HOMING_HEIGHT / Z_CLEARANCE_BETWEEN_PROBES
@@ -1380,81 +1169,23 @@
   #endif
 #endif
 
-#ifndef __SAM3X8E__ //todo: hal: broken hal encapsulation
-  #undef UI_VOLTAGE_LEVEL
-  #undef RADDS_DISPLAY
-  #undef MOTOR_CURRENT
-#endif
-
 // Updated G92 behavior shifts the workspace
 #define HAS_POSITION_SHIFT DISABLED(NO_WORKSPACE_OFFSETS)
 // The home offset also shifts the coordinate space
 #define HAS_HOME_OFFSET (DISABLED(NO_WORKSPACE_OFFSETS))
-// The SCARA home offset applies only on G28
-#define HAS_SCARA_OFFSET (DISABLED(NO_WORKSPACE_OFFSETS) && IS_SCARA)
 // Cumulative offset to workspace to save some calculation
 #define HAS_WORKSPACE_OFFSET (HAS_POSITION_SHIFT && HAS_HOME_OFFSET)
 // M206 sets the home offset for Cartesian machines
-#define HAS_M206_COMMAND (HAS_HOME_OFFSET && !IS_SCARA)
-
-// LCD timeout to status screen default is 15s
-#ifndef LCD_TIMEOUT_TO_STATUS
-  #define LCD_TIMEOUT_TO_STATUS 15000
-#endif
+#define HAS_M206_COMMAND (HAS_HOME_OFFSET)
 
 // Add commands that need sub-codes to this list
-#define USE_GCODE_SUBCODES ANY(G38_PROBE_TARGET, CNC_COORDINATE_SYSTEMS, PRINT_CHECKING_Q_CMDS)
-
-// Parking Extruder
-#if ENABLED(PARKING_EXTRUDER)
-  #ifndef PARKING_EXTRUDER_GRAB_DISTANCE
-    #define PARKING_EXTRUDER_GRAB_DISTANCE 0
-  #endif
-  #ifndef PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE
-    #define PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE HIGH
-  #endif
-#endif
+#define USE_GCODE_SUBCODES ANY(G38_PROBE_TARGET, PRINT_CHECKING_Q_CMDS)
 
 // Number of VFAT entries used. Each entry has 13 UTF-16 characters
 #if ENABLED(SCROLL_LONG_FILENAMES)
   #define MAX_VFAT_ENTRIES (5)
 #else
   #define MAX_VFAT_ENTRIES (2)
-#endif
-
-// Nozzle park for Delta
-#if ENABLED(DELTA)
-  #undef NOZZLE_PARK_Z_FEEDRATE
-  #define NOZZLE_PARK_Z_FEEDRATE NOZZLE_PARK_XY_FEEDRATE
-#endif
-
-// Force SDCARD_SORT_ALPHA to be enabled for Graphical LCD on LPC1768
-// on boards where SD card and LCD display share the same SPI bus
-// because of a bug in the shared SPI implementation. (See #8122)
-#if defined(TARGET_LPC1768) && ENABLED(REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER) && (SCK_PIN == LCD_PINS_D4)
-  #define SDCARD_SORT_ALPHA         // Keeps one directory level in RAM. Changing
-                                    // directory levels still glitches the screen,
-                                    // but the following LCD update cleans it up.
-  #undef SDSORT_LIMIT
-  #undef SDSORT_USES_RAM
-  #undef SDSORT_USES_STACK
-  #undef SDSORT_CACHE_NAMES
-  #define SDSORT_LIMIT       64
-  #define SDSORT_USES_RAM    true
-  #define SDSORT_USES_STACK  false
-  #define SDSORT_CACHE_NAMES true
-  #ifndef FOLDER_SORTING
-    #define FOLDER_SORTING     -1
-  #endif
-  #ifndef SDSORT_GCODE
-    #define SDSORT_GCODE       false
-  #endif
-  #ifndef SDSORT_DYNAMIC_RAM
-    #define SDSORT_DYNAMIC_RAM false
-  #endif
-  #ifndef SDSORT_CACHE_VFATS
-    #define SDSORT_CACHE_VFATS 2
-  #endif
 #endif
 
 // Defined here to catch the above defines

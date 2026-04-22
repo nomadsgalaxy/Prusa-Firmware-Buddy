@@ -183,11 +183,9 @@ BootloaderProtocol::status_t BootloaderProtocol::compute_fingerprint(uint32_t sa
     return write_command(commands_t::COMPUTE_FINGERPRINT, 4);
 }
 
-BootloaderProtocol::status_t BootloaderProtocol::get_fingerprint(fingerprint_t &fingerprint, uint8_t offset, uint8_t size) {
-    if ((offset + size) > sizeof(fingerprint)) {
-        return INVALID_ARGUMENTS;
-    }
-
+BootloaderProtocol::status_t BootloaderProtocol::get_fingerprint(fingerprint_t &fingerprint) {
+    const uint8_t offset = 0;
+    const uint8_t size = sizeof(fingerprint_t);
     uint8_t *cmd = get_run_transaction_buffer();
     cmd[0] = offset;
     cmd[1] = size;

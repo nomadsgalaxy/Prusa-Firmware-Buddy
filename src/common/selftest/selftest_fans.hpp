@@ -7,8 +7,14 @@
 #include <selftest_fans_config.hpp>
 #include <utils/enum_array.hpp>
 #include <option/xl_enclosure_support.h>
-#include <option/xbuddy_extension_variant_standard.h>
+#include <option/xbuddy_extension_variant.h>
 #include <pwm_utils.hpp>
+#include <option/has_bed_fan.h>
+#include <option/has_psu_fan.h>
+
+#if HAS_BED_FAN()
+    #include <feature/bed_fan/controller.hpp>
+#endif
 
 namespace fan_selftest {
 
@@ -18,8 +24,14 @@ enum class FanType {
 #if XL_ENCLOSURE_SUPPORT()
     xl_enclosure,
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     xbe_chamber,
+#endif
+#if HAS_BED_FAN()
+    bed,
+#endif
+#if HAS_PSU_FAN()
+    psu,
 #endif
     _count,
 };
@@ -30,8 +42,14 @@ static constexpr EnumArray<FanType, const char *, FanType::_count> fan_type_name
 #if XL_ENCLOSURE_SUPPORT()
         { FanType::xl_enclosure, N_("XL Enclosure") },
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         { FanType::xbe_chamber, N_("Chamber") },
+#endif
+#if HAS_BED_FAN()
+        { FanType::bed, N_("Bed") },
+#endif
+#if HAS_PSU_FAN()
+        { FanType::psu, N_("PSU") },
 #endif
 };
 
@@ -95,7 +113,7 @@ private:
     CFanCtlCommon *fan;
 };
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
 class XBEFanHandler : public FanHandler {
 public:
     XBEFanHandler(const FanType type, const uint8_t desc_nr, const FanRPMRange fan_range);
@@ -106,6 +124,31 @@ public:
 
 private:
     PWM255OrAuto original_pwm;
+};
+#endif
+
+#if HAS_BED_FAN()
+class BedFanHandler final : public FanHandler {
+private:
+    bed_fan::Controller::Mode mode;
+
+public:
+    BedFanHandler(uint8_t desc_num, const FanRPMRange, const FanRPMRange);
+    ~BedFanHandler();
+
+    void set_pwm(uint8_t pwm) final;
+    void record_sample() final;
+};
+#endif
+
+#if HAS_PSU_FAN()
+class PSUFanHandler final : public FanHandler {
+public:
+    PSUFanHandler(const FanRPMRange, const FanRPMRange);
+    ~PSUFanHandler();
+
+    void set_pwm(uint8_t pwm) final;
+    void record_sample() final;
 };
 #endif
 

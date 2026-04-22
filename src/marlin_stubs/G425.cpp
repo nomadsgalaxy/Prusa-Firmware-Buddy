@@ -622,7 +622,7 @@ inline void calibrate_all_toolheads(measurements_t &m) {
     TEMPORARY_BACKLASH_CORRECTION(all_on);
     TEMPORARY_BACKLASH_SMOOTHING(0.0f);
 
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
 #if ENABLED(PRUSA_TOOLCHANGER)
         if (!prusa_toolchanger.getTool(e).is_enabled()) {
             continue;
@@ -698,7 +698,7 @@ inline bool calibrate_all_simple() {
     bool failed = false;
     // Measure centers
     std::array<xyz_pos_t, HOTENDS> centers;
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
 #if ENABLED(PRUSA_TOOLCHANGER)
         if (!prusa_toolchanger.getTool(e).is_enabled()) {
             continue;
@@ -731,7 +731,7 @@ inline bool calibrate_all_simple() {
     tool_change(prusa_toolchanger.MARLIN_NO_TOOL_PICKED, tool_return_t::no_return);
 
     // Apply the offset
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         if (!prusa_toolchanger.getTool(e).is_enabled()) {
             continue;
         }
@@ -742,7 +742,7 @@ inline bool calibrate_all_simple() {
     normalize_hotend_offsets();
 
     // Check offsets
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
 #if ENABLED(PRUSA_TOOLCHANGER)
         if (!prusa_toolchanger.getTool(e).is_enabled()) {
             hotend_offset[e].reset();
@@ -762,7 +762,7 @@ inline bool calibrate_all_simple() {
     }
     prusa_toolchanger.save_tool_offsets();
 
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         if (!prusa_toolchanger.getTool(e).is_enabled()) {
             continue;
         }

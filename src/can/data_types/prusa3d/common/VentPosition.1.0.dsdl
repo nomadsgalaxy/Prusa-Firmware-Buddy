@@ -1,0 +1,8 @@
+
+# Ventilation flap that redirects the air inside or outside the printer
+
+float32 INSIDE = 0.0 # Keep all air inside the printer to heat up
+float32 OUTSIDE = 1.0 # Blow/suck air outside the printer to cool
+float32 position # Can be nan for not care or not set or unknown
+
+@sealed

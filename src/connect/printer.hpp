@@ -17,7 +17,7 @@
 #include <device/board.h>
 #include <connect/hostname.hpp>
 #include <filament.hpp>
-#include <filament_sensor_states.hpp>
+#include <feature/filament_sensor/filament_sensor_states.hpp>
 
 #include <option/has_mmu2.h>
 #include <option/has_toolchanger.h>
@@ -26,7 +26,9 @@
 #endif
 
 #include <option/has_cancel_object.h>
-#include <option/xbuddy_extension_variant_standard.h>
+#include <option/xbuddy_extension_variant.h>
+
+#include <option/has_esp.h>
 
 namespace connect_client {
 
@@ -80,7 +82,7 @@ public:
     };
 #endif
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     struct ChamberInfo {
         static constexpr int target_temp_unset = 0U; // agreed with the Connect team, that 0 maps to unset values
         uint32_t target_temp = target_temp_unset;
@@ -114,9 +116,9 @@ public:
 #if XL_ENCLOSURE_SUPPORT()
         EnclosureInfo enclosure_info;
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         ChamberInfo chamber_info;
-        bool addon_power;
+        bool addon_power = false;
 #endif
 #if HAS_MMU2()
         MMU2::Version mmu_version = { 0, 0, 0 };
@@ -205,7 +207,9 @@ public:
 
     enum class Iface {
         Ethernet,
+#if HAS_ESP()
         Wifi,
+#endif
     };
 
     struct NetInfo {

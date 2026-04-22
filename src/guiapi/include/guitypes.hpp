@@ -5,7 +5,6 @@
 
 #include <cstdint>
 #include <cstring>
-#include <optional>
 
 #include <utils/color.hpp>
 
@@ -73,12 +72,6 @@ using point_ui16_t = point_t<uint16_t>;
 enum class layout_color : uint8_t { leave_it,
     black,
     red,
-    blue,
-};
-
-struct GUIStartupProgress {
-    unsigned percent_done;
-    std::optional<const char *> bootstrap_description;
 };
 
 union event_conversion_union {
@@ -89,7 +82,6 @@ union event_conversion_union {
     struct header_t {
         layout_color layout;
     } header;
-    GUIStartupProgress *pGUIStartupProgress;
 };
 
 static_assert(sizeof(event_conversion_union::point) <= sizeof(event_conversion_union::pvoid), "event_conversion_union is broken");

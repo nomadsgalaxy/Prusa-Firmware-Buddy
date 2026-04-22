@@ -51,15 +51,12 @@
  * G17  - Select Plane XY (Requires CNC_WORKSPACE_PLANES)
  * G18  - Select Plane ZX (Requires CNC_WORKSPACE_PLANES)
  * G19  - Select Plane YZ (Requires CNC_WORKSPACE_PLANES)
- * G20  - Set input units to inches (Requires INCH_MODE_SUPPORT)
- * G21  - Set input units to millimeters (Requires INCH_MODE_SUPPORT)
  * G27  - Park Nozzle
  * G28  - Home one or more axes
  * G29  - Start or continue the bed leveling probe procedure (Requires bed leveling)
  * G30  - Single Z probe, probes bed at X Y location (defaults to current XY location)
  * G31  - Dock sled (Z_PROBE_SLED only)
  * G32  - Undock sled (Z_PROBE_SLED only)
- * G33  - Delta Auto-Calibration (Requires DELTA_AUTO_CALIBRATION)
  * G34  - Z Stepper automatic alignment using probe: I<iterations> T<accuracy> A<amplification> (Requires Z_STEPPER_AUTO_ALIGN)
  * G38  - Probe in any direction using the Z_MIN_PROBE (Requires G38_PROBE_TARGET)
  * G42  - Coordinated move to a mesh point (Requires AUTO_BED_LEVELING_BLINEAR or AUTO_BED_LEVELING_UBL)
@@ -78,7 +75,6 @@
  * M7   - Turn mist coolant ON. (Requires COOLANT_CONTROL)
  * M8   - Turn flood coolant ON. (Requires COOLANT_CONTROL)
  * M9   - Turn coolant OFF. (Requires COOLANT_CONTROL)
- * M12  - Set up closed loop control system. (Requires EXTERNAL_CLOSED_LOOP_CONTROLLER)
  * M16  - Expected printer check. (Requires EXPECTED_PRINTER_CHECK)
  * M17  - Enable/Power all stepper motors
  * M18  - Disable all stepper motors; same as M84
@@ -101,14 +97,11 @@
  *        The '#' is necessary when calling from within sd files, as it stops buffer prereading
  * M33  - Get the longname version of a path. (Requires LONG_FILENAME_HOST_SUPPORT)
  * M34  - Set SD Card sorting options. (Requires SDCARD_SORT_ALPHA)
- * M42  - Change pin status via gcode: M42 P<pin> S<value>. LED pin assumed if P is omitted.
- * M43  - Display pin status, watch pins for changes, watch endstops & toggle LED, Z servo probe test, toggle pins
  * M48  - Measure Z Probe repeatability: M48 P<points> X<pos> Y<pos> V<level> E<engage> L<legs> S<chizoid>. (Requires Z_MIN_PROBE_REPEATABILITY_TEST)
- * M73  - Set the progress percentage. (Requires LCD_SET_PROGRESS_MANUALLY)
+ * M73  - Set the progress percentage.
  * M75  - Start the print job timer.
  * M76  - Pause the print job timer.
  * M77  - Stop the print job timer.
- * M78  - Show statistical information about the print jobs. (Requires PRINTCOUNTER)
  * M80  - Turn on Power Supply. (Requires PSU_CONTROL)
  * M81  - Turn off Power Supply. (Requires PSU_CONTROL)
  * M82  - Set E codes absolute (default).
@@ -117,7 +110,6 @@
  *        duration after which steppers should turn off. S0 disables the timeout.
  * M86  - Set Safety Timer expiration time (S<seconds>). Set to zero to disable the timer.
  * M92  - Set planner.settings.axis_steps_per_mm for one or more axes.
- * M100 - Watch Free Memory (for debugging) (Requires M100_FREE_MEMORY_WATCHER)
  * M104 - Set extruder target temp.
  * M105 - Report current temperatures.
  * M106 - Set print fan speed.
@@ -138,13 +130,7 @@
  * M120 - Enable endstops detection.
  * M121 - Disable endstops detection.
  * M122 - Debug stepper (Requires at least one _DRIVER_TYPE defined as TMC2130/2160/5130/5160/2208/2209/2660)
- * M126 - Solenoid Air Valve Open. (Requires BARICUDA)
- * M127 - Solenoid Air Valve Closed. (Requires BARICUDA)
- * M128 - EtoP Open. (Requires BARICUDA)
- * M129 - EtoP Closed. (Requires BARICUDA)
  * M140 - Set bed target temp. S<temp>
- * M141 - Set heated chamber target temp. S<temp> (Requires a chamber heater)
- * M149 - Set temperature units. (Requires TEMPERATURE_UNITS_SUPPORT)
  * M150 - Set Status LED Color as R<red> U<green> B<blue> P<bright>. Values 0-255.
  * M155 - Auto-report temperatures with interval of S<seconds>. (Requires AUTO_REPORT_TEMPERATURES)
  * M190 - S<temp> Wait for bed current temp to reach target temp. ** Wait only when heating! **
@@ -158,15 +144,13 @@
             S<print> T<travel> minimum speeds
             B<minimum segment time>
             X<max X jerk>, Y<max Y jerk>, Z<max Z jerk>, E<max E jerk>
- * M206 - Set additional homing offset. (Disabled by NO_WORKSPACE_OFFSETS or DELTA)
+ * M206 - Set additional homing offset. (Disabled by NO_WORKSPACE_OFFSETS)
  * M211 - Enable, Disable, and/or Report software endstops: S<0|1> (Requires MIN_SOFTWARE_ENDSTOPS or MAX_SOFTWARE_ENDSTOPS)
  * M217 - Set filament swap parameters: "M217 S<length> P<feedrate> R<feedrate>". (Requires SINGLENOZZLE)
  * M218 - Set/get a tool offset: "M218 T<index> X<offset> Y<offset>". (Requires 2 or more extruders)
  * M220 - Set Feedrate Percentage: "M220 S<percent>" (i.e., "FR" on the LCD)
  * M221 - Set Flow Percentage: "M221 S<percent>"
- * M226 - Wait until a pin is in a given state: "M226 P<pin> S<state>"
  * M240 - Trigger a camera to take a photograph. (Requires PHOTO_GCODE)
- * M250 - Set LCD contrast: "M250 C<contrast>" (0-63). (Requires LCD support)
  * M260 - i2c Send Data
  * M261 - i2c Request Data
  * M280 - Set servo position absolute: "M280 P<index> S<angle|µs>". (Requires servos)
@@ -192,7 +176,7 @@
  * M421 - Set a single Z coordinate in the Mesh Leveling grid. X<units> Y<units> Z<units> (Requires AUTO_BED_LEVELING_UBL)
  * M422 - Set Z Stepper automatic alignment position using probe. X<units> Y<units> A<axis> (Requires Z_STEPPER_AUTO_ALIGN)
  * M425 - Enable/Disable and tune backlash correction. (Requires BACKLASH_COMPENSATION and BACKLASH_GCODE)
- * M428 - Set the home_offset based on the current_position. Nearest edge applies. (Disabled by NO_WORKSPACE_OFFSETS or DELTA)
+ * M428 - Set the home_offset based on the current_position. Nearest edge applies. (Disabled by NO_WORKSPACE_OFFSETS)
  * M500 - Store parameters in EEPROM. (Requires EEPROM_SETTINGS)
  * M501 - Restore parameters from EEPROM. (Requires EEPROM_SETTINGS)
  * M502 - Revert to the default "factory settings". ** Does not write them to EEPROM! **
@@ -207,12 +191,10 @@
  * M602 - Unpark print-head parked with M601 called before and unpause print process. (Requires ADVANCED_PAUSE_FEATURE)
  * M603 - Configure filament change: "M603 T<tool> U<unload_length> L<load_length>". (Requires ADVANCED_PAUSE_FEATURE)
  * M604 - Abort (serial) print
- * M605 - Set Dual X-Carriage movement mode: "M605 S<mode> [X<x_offset>] [R<temp_offset>]". (Requires DUAL_X_CARRIAGE)
- * M665 - Set delta configurations: "M665 H<delta height> L<diagonal rod> R<delta radius> S<segments/s> B<calibration radius> X<Alpha angle trim> Y<Beta angle trim> Z<Gamma angle trim> (Requires DELTA)
- * M666 - Set/get offsets for delta (Requires DELTA) or dual endstops (Requires [XYZ]_DUAL_ENDSTOPS).
+ * M605 - Set Dual X-Carriage movement mode: "M605 S<mode> [X<x_offset>] [R<temp_offset>]". (Requires MULTI_NOZZLE_DUPLICATION)
+ * M666 - Set/get offsets for dual endstops (Requires [XYZ]_DUAL_ENDSTOPS).
  * M701 - Load filament (Requires FILAMENT_LOAD_UNLOAD_GCODES)
  * M702 - Unload filament (Requires FILAMENT_LOAD_UNLOAD_GCODES)
- * M810-M819 - Define/execute a G-code macro (Requires GCODE_MACROS)
  * M851 - Set Z probe's XYZ offsets in current units. (Negative values: X=left, Y=front, Z=below)
  * M852 - Set skew factors: "M852 [I<xy>] [J<xz>] [K<yz>]". (Requires SKEW_CORRECTION_GCODE, and SKEW_CORRECTION_FOR_Z for IJ)
  * M860 - Report the position of position encoder modules.
@@ -232,14 +214,7 @@
  * M912 - Clear stepper driver overtemperature pre-warn condition flag. (Requires at least one _DRIVER_TYPE defined as TMC2130/2160/5130/5160/2208/2209/2660)
  * M913 - Set HYBRID_THRESHOLD speed. (Requires HYBRID_THRESHOLD)
  * M914 - Set StallGuard sensitivity. (Requires SENSORLESS_HOMING or SENSORLESS_PROBING)
- * M951 - Set Magnetic Parking Extruder parameters. (Requires MAGNETIC_PARKING_EXTRUDER)
  * M7219 - Control Max7219 Matrix LEDs. (Requires MAX7219_GCODE)
- *
- * M360 - SCARA calibration: Move to cal-position ThetaA (0 deg calibration)
- * M361 - SCARA calibration: Move to cal-position ThetaB (90 deg calibration - steps per degree)
- * M362 - SCARA calibration: Move to cal-position PsiA (0 deg calibration)
- * M363 - SCARA calibration: Move to cal-position PsiB (90 deg calibration - steps per degree)
- * M364 - SCARA calibration: Move to cal-position PSIC (90 deg to Theta calibration position)
  *
  * ************ Custom codes - This can change to suit future G-code regulations
  * G425 - Calibrate using a conductive object. (Requires CALIBRATION_GCODE)
@@ -279,7 +254,7 @@
   #include "../feature/I2CPositionEncoder.h"
 #endif
 
-#if EITHER(IS_SCARA, POLAR) || defined(G0_FEEDRATE)
+#if ANY(POLAR) || defined(G0_FEEDRATE)
   #define HAS_FAST_MOVES 1
 #endif
 
@@ -302,6 +277,10 @@ struct G28Flags {
   #if ENABLED(DETECT_PRINT_SHEET)
     bool check_sheet = false;
   #endif
+
+  /// If set to false, homing_failed() function will not be called on homing failure
+  // This means that the G28 will return false instead of a crash/redscreen
+  bool throw_homing_failed = true;
 };
 
 class GcodeSuite {
@@ -345,15 +324,6 @@ public:
      */
     enum WorkspacePlane : char { PLANE_XY, PLANE_ZX, PLANE_YZ };
     static WorkspacePlane workspace_plane;
-  #endif
-
-  #define MAX_COORDINATE_SYSTEMS 9
-  #if ENABLED(CNC_COORDINATE_SYSTEMS)
-    static int8_t active_coordinate_system;
-    static xyz_pos_t coordinate_system[MAX_COORDINATE_SYSTEMS];
-    static bool select_coordinate_system(const int8_t _new);
-    static int8_t get_coordinate_system();
-    static void set_coordinate_system_offset(int8_t system, AxisEnum axis, float offset);
   #endif
 
   /// Validates that the option value is valid and may pass it through tool mapping (depending on is_physical flag)
@@ -442,11 +412,6 @@ private:
     static void G19();
   #endif
 
-  #if ENABLED(INCH_MODE_SUPPORT)
-    static void G20();
-    static void G21();
-  #endif
-
   static void G27();
 
   static void G28();
@@ -460,10 +425,6 @@ private:
     #endif
     static G29_TYPE G29();
   #endif
-  #if ENABLED(ADVANCED_HOMING)
-    static void G65();
-  #endif
-
 
   #if HAS_BED_PROBE
     static void G30();
@@ -471,10 +432,6 @@ private:
       static void G31();
       static void G32();
     #endif
-  #endif
-
-  #if ENABLED(DELTA_AUTO_CALIBRATION)
-    static void G33();
   #endif
 
   #if ENABLED(Z_STEPPER_AUTO_ALIGN)
@@ -488,16 +445,6 @@ private:
 
   #if HAS_MESH
     static void G42();
-  #endif
-
-  #if ENABLED(CNC_COORDINATE_SYSTEMS)
-    static void G53();
-    static void G54();
-    static void G55();
-    static void G56();
-    static void G57();
-    static void G58();
-    static void G59();
   #endif
 
   #if ENABLED(GCODE_MOTION_MODES) || HAS_GCODE_COMPATIBILITY()
@@ -527,10 +474,6 @@ private:
       static void M8();
     #endif
     static void M9();
-  #endif
-
-  #if ENABLED(EXTERNAL_CLOSED_LOOP_CONTROLLER)
-    static void M12();
   #endif
 
   #if ENABLED(EXPECTED_PRINTER_CHECK)
@@ -567,20 +510,10 @@ private:
     #endif
   #endif
 
-  static void M42();
-
-  #if ENABLED(PINS_DEBUGGING)
-    static void M43();
-  #endif
-
   static void M46();
 
   #if ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST)
     static void M48();
-  #endif
-
-  #if ENABLED(LCD_SET_PROGRESS_MANUALLY)
-    static void M73();
   #endif
 
 #if ENABLED(M73_PRUSA)
@@ -593,10 +526,6 @@ private:
   static void M76();
   static void M77();
 
-  #if ENABLED(PRINTCOUNTER)
-    static void M78();
-  #endif
-
   #if HAS_POWER_SWITCH
     static void M80();
   #endif
@@ -606,10 +535,6 @@ private:
   static void M83();
   static void M86();
   static void M92();
-
-  #if ENABLED(M100_FREE_MEMORY_WATCHER)
-    static void M100();
-  #endif
 
   #if EXTRUDERS
     static void M109();
@@ -646,33 +571,13 @@ private:
   static void M120();
   static void M121();
 
-  #if ENABLED(BARICUDA)
-    #if HAS_HEATER_1
-      static void M126();
-      static void M127();
-    #endif
-    #if HAS_HEATER_2
-      static void M128();
-      static void M129();
-    #endif
-  #endif
-
   #if HAS_HEATED_BED
     static void M140();
     static void M190();
   #endif
 
-  #if HAS_HEATED_CHAMBER
-    static void M141();
-    static void M191();
-  #endif
-
   #if HAS_TEMP_HEATBREAK_CONTROL
     static void M142();
-  #endif
-
-  #if ENABLED(TEMPERATURE_UNITS_SUPPORT)
-    static void M149();
   #endif
 
   #if ENABLED(AUTO_REPORT_TEMPERATURES) && HAS_TEMP_SENSOR
@@ -710,14 +615,8 @@ private:
     static void M221();
   #endif
 
-  static void M226();
-
   #if ENABLED(PHOTO_GCODE)
     static void M240();
-  #endif
-
-  #if HAS_LCD_CONTRAST
-    static void M250();
   #endif
 
   #if HAS_I2C_EXPANDER()
@@ -734,10 +633,6 @@ private:
 
   #if ENABLED(BABYSTEPPING)
     static void M290();
-  #endif
-
-  #if HAS_BUZZER
-    static void M300();
   #endif
 
   #if ENABLED(PIDTEMP)
@@ -762,14 +657,6 @@ private:
 
   #if HAS_CASE_LIGHT
     static void M355();
-  #endif
-
-  #if ENABLED(MORGAN_SCARA)
-    static bool M360();
-    static bool M361();
-    static bool M362();
-    static bool M363();
-    static bool M364();
   #endif
 
   #if EITHER(EXT_SOLENOID, MANUAL_SOLENOID_CONTROL)
@@ -848,17 +735,13 @@ private:
     static void M605();
   #endif
 
-  #if ENABLED(DELTA) || HAS_EXTRA_ENDSTOPS
+  #if HAS_EXTRA_ENDSTOPS
     static void M666();
   #endif
 
   #if ENABLED(FILAMENT_LOAD_UNLOAD_GCODES)
     static void M701();
     static void M702();
-  #endif
-
-  #if ENABLED(GCODE_MACROS)
-    static void M810_819();
   #endif
 
   #if HAS_BED_PROBE
@@ -901,10 +784,6 @@ private:
     #if USE_SENSORLESS
       static void M914();
     #endif
-  #endif
-
-  #if ENABLED(MAGNETIC_PARKING_EXTRUDER)
-    static void M951();
   #endif
 
 #if HAS_LOCAL_ACCELEROMETER() || HAS_REMOTE_ACCELEROMETER()

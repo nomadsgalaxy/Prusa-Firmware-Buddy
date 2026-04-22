@@ -57,6 +57,11 @@ public:
 
         bool operator==(const char *str) const { return std::equal(begin, end, str) && str[end - begin] == '\0' /* safe, after the equal passed */; }
 
+        /// Skips a fixed prefix, if present.
+        ///
+        /// If not, returns false and doesn't modify
+        bool skip_prefix(const char *prefix);
+
         /// Returns true if the gcode command starts with $str (and is followed by whitespace or string end) and skips the gcode code (plus whitespace).
         /// Returns false and does nothing otherwise.
         bool skip_gcode(const char *gcode_str);

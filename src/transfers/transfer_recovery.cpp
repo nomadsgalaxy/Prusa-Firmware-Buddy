@@ -8,7 +8,7 @@
 #include <version/version.hpp>
 #include <common/bsod.h>
 #include <common/crc32.h>
-#include <common/unique_dir_ptr.hpp>
+#include <common/directory.hpp>
 #include <common/filename_type.hpp>
 #include <common/filepath_operation.h>
 #include <lang/i18n.h>
@@ -356,11 +356,9 @@ std::optional<Download::Request> Transfer::RestoredTransfer::get_download_reques
 Transfer::RecoverySearchResult Transfer::search_transfer_for_recovery(Path &path) {
     // First, check we already have the USB connected, because otherwise we
     // would just assume there's no index file and nothing to recover.
-    unique_dir_ptr dir(opendir("/usb"));
-    if (!dir) {
+    if (Directory dir { "/usb" }; !dir) {
         return RecoverySearchResult::WaitingForUSB;
     }
-    dir.reset();
 
     auto index = unique_file_ptr(fopen(transfer_index, "r"));
     if (index.get() == nullptr) {

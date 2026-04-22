@@ -15,7 +15,7 @@ class SelftestFrameFirstLayer : public SelftestFrame {
         "Once the printer starts extruding plastic, adjust the nozzle height by turning the knob until the filament sticks to the print sheet.");
     StatusFooter footer;
     window_text_t text;
-    window_numberless_progress_t progress;
+    WindowProgressBar progress;
     WindowLiveAdjustZ_withText live_z;
 
     void set_live_z_enable(bool set) {

@@ -1,10 +1,13 @@
 #include "screen_toolhead_settings_fs.hpp"
 
+#include <feature/filament_sensor/filament_sensor_adc_eval.hpp>
+
 using namespace screen_toolhead_settings;
 
 static constexpr NumericInputConfig fs_ref_spin_config = {
-    .max_value = 99999,
-    .special_value = -1,
+    .min_value = std::numeric_limits<FSensorADCEval::Value>::min(),
+    .max_value = static_cast<float>(std::numeric_limits<FSensorADCEval::Value>::max()),
+    .special_value = FSensorADCEval::ref_value_not_calibrated,
     .special_value_str = N_("-"),
 };
 

@@ -584,6 +584,11 @@ void Dwarf::set_fan(uint8_t fan, uint16_t target) {
     fan_pwm_desired[fan].store(target);
 }
 
+void Dwarf::set_fan_auto(uint8_t fan) {
+    assert(fan < NUM_FANS);
+    fan_pwm_desired[fan].store(buddy::puppies::Dwarf::FAN_MODE_AUTO_PWM);
+}
+
 void Dwarf::set_cheese_led(uint8_t pwr_selected, uint8_t pwr_not_selected) {
     Lock guard(*mutex);
 

@@ -36,8 +36,9 @@ private:
         /// Last job in the queue
         AsyncJobBase *last_job = nullptr;
 
-        /// Marks that the AsyncJob instance for the currently running job was destroyed/discarded
-        bool current_job_discarded = false;
+        /// Job that is currently being executed on the thread
+        /// Discarding the job is indicated by setting this to nullptr
+        AsyncJobBase *current_job = nullptr;
 
     } synchronized_data;
 

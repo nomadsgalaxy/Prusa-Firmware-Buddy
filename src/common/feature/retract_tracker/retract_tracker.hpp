@@ -6,7 +6,7 @@
 #include <utils/uncopyable.hpp>
 #include <bitset>
 #include <optional>
-#include <option/has_loadcell.h>
+#include <option/has_nextruder.h>
 
 namespace buddy {
 
@@ -24,7 +24,7 @@ class RetractTracker : Uncopyable {
     friend RetractTracker &retract_tracker();
 
 public:
-#if HAS_LOADCELL() // Instead of HAS_NEXTRUDER() which is not present in RELEASE-6.4
+#if HAS_NEXTRUDER()
     static constexpr float extruder_to_nozzle_distance = 40.f; // mm
 #else
     #error

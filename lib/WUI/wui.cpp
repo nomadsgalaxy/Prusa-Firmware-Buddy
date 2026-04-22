@@ -4,14 +4,18 @@
 #include "marlin_client.hpp"
 #include "wui_api.h"
 #include "ethernetif.h"
-#include "espif.h"
+
+#include <option/has_esp.h>
+#if HAS_ESP()
+    #include "espif.h"
+#endif
+
 #include <option/mdns.h>
 #if MDNS()
     #include "mdns/mdns.h"
 #endif
 
 #include <otp.hpp>
-#include <mbedtls/sha256.h>
 #include <tasks.hpp>
 
 #include "sntp_client.h"
@@ -119,8 +123,10 @@ public:
         Reconfigure = 1 << 1,
         EthInitDone = 1 << 2,
         EthData = 1 << 3,
+#if HAS_ESP()
         EspInitDone = 1 << 4,
         EspData = 1 << 5,
+#endif
         TriggerNtp = 1 << 6,
         HealthCheck = 1 << 7,
 #if MDNS()
@@ -154,8 +160,10 @@ private:
     static const constexpr uint32_t RESET_FAULTY_AFTER = 60 * 1000;
 
     std::array<Iface, NETDEV_COUNT> ifaces;
+#if HAS_ESP()
     ap_entry_t ap = { "", "" };
     uint32_t last_esp_ok;
+#endif
 
     TaskHandle_t network_task;
     // This makes it a singleton. This one is accessed from outside.
@@ -191,14 +199,18 @@ private:
             } else {
                 log_info(Network, "Eth link went down");
             }
-        } else if (&iface == &ifaces[NETDEV_ESP_ID].dev) {
+        }
+#if HAS_ESP()
+        else if (&iface == &ifaces[NETDEV_ESP_ID].dev) {
             if (netif_is_link_up(&iface)) {
                 log_info(Network, "ESP link went up");
                 action = EspInitDone;
             } else {
                 log_info(Network, "ESP link went down");
             }
-        } else {
+        }
+#endif
+        else {
             assert(0);
         }
         xTaskNotify(network_task, action, eSetBits);
@@ -211,9 +223,13 @@ private:
             unique_lock lock(mutex);
             // Or, shall we say copy info out?
             ethernetif_update_config(&iface);
-        } else if (&iface == &ifaces[NETDEV_ESP_ID].dev) {
+        }
+#if HAS_ESP()
+        else if (&iface == &ifaces[NETDEV_ESP_ID].dev) {
             // Nothing to be done for wifi here
-        } else {
+        }
+#endif
+        else {
             assert(0); /* Unknown interface. */
         }
     }
@@ -249,12 +265,16 @@ private:
         } else {
             // FIXME: ???
         }
+
+#if HAS_ESP()
         if (netif_add_noaddr(&ifaces[NETDEV_ESP_ID].dev, this, espif_init, tcpip_input)) {
             netif_set_link_callback(&ifaces[NETDEV_ESP_ID].dev, link_callback_raw);
             netif_set_status_callback(&ifaces[NETDEV_ESP_ID].dev, status_callback_raw);
         } else {
             // FIXME: ???
         }
+#endif
+
         if (allow_full) {
             wui_marlin_client_init();
         }
@@ -321,12 +341,6 @@ private:
         netifapi_netif_set_up(&iface);
     }
 
-    void join_ap() {
-        unique_lock lock(mutex);
-        const char *passwd = ap.pass[0] == '\0' ? NULL : ap.pass;
-        espif_join_ap(ap.ssid, passwd);
-    }
-
     void reconfigure() {
         log_info(Network, "Reconfigure");
         // Read some stuff from the eeprom.
@@ -338,7 +352,9 @@ private:
         // Store into the atomic variable, but keep working with the stack copy.
         active = active_local;
         load_net_params(&ifaces[NETDEV_ETH_ID].desired_config, nullptr, NETDEV_ETH_ID);
+#if HAS_ESP()
         load_net_params(&ifaces[NETDEV_ESP_ID].desired_config, &ap, NETDEV_ESP_ID);
+#endif
 
         // First, bring everything down. Then bring whatever is enabled up.
         for (auto &iface : ifaces) {
@@ -354,13 +370,16 @@ private:
             // can change, how it is synchronized with threads (or isn't!).
             iface.dev.hostname = iface.desired_config.hostname;
 
+#if HAS_ESP()
             if (&iface == &ifaces[NETDEV_ESP_ID]) {
                 // The ESP interface is a bit weird. It doesn't support (yet)
                 // disconnecting from AP, so we reset it. Then we have to wait
                 // for it to become ready to join the AP, etc, which is done
                 // asynchronously in the event loop.
                 espif_reset();
-            } else {
+            } else
+#endif
+            {
                 // Other interfaces can just be turned on and be done with them.
                 // "Pause" the mutex for a while, this calls callbacks that also lock.
                 lock.unlock();
@@ -408,7 +427,11 @@ private:
             const uint32_t now = sys_now();
             if (now - last_poll >= LOOP_EVT_TIMEOUT) {
                 last_poll = now;
-                events |= EspData | HealthCheck | EthData | TriggerNtp;
+                events |= HealthCheck | EthData | TriggerNtp;
+#if HAS_ESP()
+                events |= EspData;
+#endif
+
 #if MDNS()
                 if (allow_full) {
                     events |= MdnsInitCheck;
@@ -424,6 +447,7 @@ private:
                 TaskDeps::provide(TaskDeps::Dependency::networking_ready);
             }
 
+#if HAS_ESP()
             // Note: This is allowed even before we are fully initialized. This
             // is on purpose, because the initialization of ESP absolutely
             // needs the communication.
@@ -438,10 +462,15 @@ private:
                 // Delayed init, after the ESP told us it is ready and gave us a MAC address.
                 // If we are reconfiguring don't send old connection information, wait for next loop and new ap info.
                 if (iface_mode(ifaces[NETDEV_ESP_ID]) != Mode::Off && espif_need_ap() && !(events & Reconfigure)) {
-                    join_ap();
+                    {
+                        unique_lock lock(mutex);
+                        const char *passwd = ap.pass[0] == '\0' ? NULL : ap.pass;
+                        espif_join_ap(ap.ssid, passwd);
+                    }
                     set_up(ifaces[NETDEV_ESP_ID].dev);
                 }
             }
+#endif
 
             if (!initialized) {
                 // Keep the events unprocessed for now, until the init is fully
@@ -458,9 +487,11 @@ private:
                 post_init(NETDEV_ETH_ID);
             }
 
+#if HAS_ESP()
             if (events & EspInitDone) {
                 post_init(NETDEV_ESP_ID);
             }
+#endif
 
             if (events & EthData) {
                 ethernetif_input_once(&ifaces[NETDEV_ETH_ID].dev);
@@ -473,6 +504,7 @@ private:
                 sntp_client_step();
             }
 
+#if HAS_ESP()
             if (events & HealthCheck) {
                 const bool was_alive = espif_tick();
 
@@ -492,6 +524,7 @@ private:
                     last_esp_ok = now;
                 }
             }
+#endif
 
 #if MDNS()
             if (events & MdnsInitCheck) {
@@ -545,9 +578,13 @@ private:
         if (netdev_id == NETDEV_ETH_ID) {
             return ethernetif_link(&ifaces[NETDEV_ETH_ID]);
         }
+
+#if HAS_ESP()
         if (netdev_id == NETDEV_ESP_ID) {
             return espif_link();
         }
+#endif
+
         assert(0);
         return false;
     }
@@ -557,7 +594,9 @@ public:
         network_task = osThreadGetId();
         assert(instance == nullptr);
         instance = this;
+#if HAS_ESP()
         last_esp_ok = sys_now();
+#endif
     }
     static void run_task(bool allow_full) {
         NetworkState::allow_full = allow_full;
@@ -582,13 +621,18 @@ public:
     }
 
     static bool get_mac(uint32_t netdev_id, uint8_t mac[6]) {
+#if HAS_ESP()
         NetworkState *state = instance;
+#endif
+
         if (netdev_id == NETDEV_ETH_ID) {
             // TODO: Why not to copy address from netif? Maybe because we need
             // it sooner than when it's initialized?
             memcpy(mac, otp_get_mac_address()->mac, sizeof(otp_get_mac_address()->mac));
             return true;
-        } else if (state != nullptr && netdev_id == NETDEV_ESP_ID) {
+        }
+#if HAS_ESP()
+        else if (state != nullptr && netdev_id == NETDEV_ESP_ID) {
             unique_lock lock(state->mutex);
             if (esp_fw_state() == EspFwState::Ok) {
                 memcpy(mac, state->ifaces[NETDEV_ESP_ID].dev.hwaddr, state->ifaces[NETDEV_ESP_ID].dev.hwaddr_len);
@@ -596,7 +640,9 @@ public:
             } else {
                 return false;
             }
-        } else {
+        }
+#endif
+        else {
             memset(mac, 0, sizeof(otp_get_mac_address()->mac));
             return false;
         }
@@ -647,9 +693,11 @@ const char *wui_get_password() {
     return config_store().prusalink_password.get_c_str();
 }
 
+#if HAS_ESP()
 void notify_esp_data() {
     NetworkState::notify(NetworkState::NetworkAction::EspData);
 }
+#endif
 
 void notify_ethernet_data() {
     NetworkState::notify(NetworkState::NetworkAction::EthData);
@@ -693,7 +741,11 @@ namespace {
 
 template <class F>
 void modify_flag(uint32_t netdev_id, F &&f) {
+#if HAS_ESP()
     assert(netdev_id == NETDEV_ETH_ID || netdev_id == NETDEV_ESP_ID);
+#else
+    assert(netdev_id == NETDEV_ETH_ID);
+#endif
 
     // Read it from the EEPROM, not from the state. For two reasons:
     // * While it likely can't happen, it's unclear what should happen if the

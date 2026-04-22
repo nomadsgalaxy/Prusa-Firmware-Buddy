@@ -1,5 +1,6 @@
 #include "st7789v.hpp"
 
+#include <common/sys.hpp>
 #include "cmath_ext.h"
 #include "cmsis_os.h"
 #include "interrupt_disabler.hpp"
@@ -187,12 +188,8 @@ static inline void st7789v_fill_ui16(uint16_t *p, uint16_t v, uint16_t c) {
     }
 }
 
-static inline int is_interrupt(void) {
-    return (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0;
-}
-
 static void st7789v_delay_ms(uint32_t ms) {
-    if (is_interrupt() || (st7789v_flg & (uint8_t)ST7789V_FLG_SAFE)) {
+    if (sys_is_interrupt() || (st7789v_flg & (uint8_t)ST7789V_FLG_SAFE)) {
         volatile uint32_t temp;
         while (ms--) {
             do {

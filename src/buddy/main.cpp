@@ -1,5 +1,4 @@
 #include <buddy/main.h>
-#include "buddy/esp_flash_task.hpp"
 #include "platform.h"
 #include <device/board.h>
 #include <device/peripherals.h>
@@ -16,6 +15,7 @@
 #include "buffered_serial.hpp"
 #include "bsod_gui.hpp"
 #include <config_store/store_instance.hpp>
+#include <Marlin/src/feature/prusa/e-stall_detector.h>
 #include <wdt.hpp>
 #include <crash_dump/dump.hpp>
 #include "error_codes.hpp"
@@ -60,17 +60,19 @@
 #include "tasks.hpp"
 #include <appmain.hpp>
 #include "safe_state.h"
-#include <espif.h>
 #include "sound.hpp"
 #include <buddy/ccm_thread.hpp>
 #include <version/version.hpp>
 #include "data_exchange.hpp"
 #include "bootloader/bootloader.hpp"
-#include "gui_bootstrap_screen.hpp"
 #include "resources/revision.hpp"
 #include <buddy/filesystem_semihosting.h>
 #include <freertos/timing.hpp>
 #include <heap.h>
+#include <heap.hpp>
+#include <fanctl.hpp>
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
+#include <sensor_data.hpp>
 
 #if BUDDY_ENABLE_CONNECT()
     #include "connect/run.hpp"
@@ -112,12 +114,13 @@
     #include <nfc.hpp>
 #endif
 
-#if HAS_XBUDDY_EXTENSION()
-    #include <buddy/mmu_port.hpp>
-#endif
-
 #if HAS_ADVANCED_POWER()
     #include <advanced_power.hpp>
+#endif
+
+#include <option/has_esp.h>
+#if HAS_ESP()
+    #include "buddy/esp_flash_task.hpp"
 #endif
 
 using namespace crash_dump;
@@ -145,7 +148,6 @@ void StartDefaultTask(void const *argument);
 void StartDisplayTask(void const *argument);
 void StartConnectTask(void const *argument);
 void StartConnectTaskError(void const *argument); // Version for redscreen
-void StartESPTask(void const *argument);
 void iwdg_warning_cb(void);
 
 /**
@@ -158,15 +160,20 @@ void iwdg_warning_cb(void);
  * dependencies to connected peripherals.
  */
 static void manufacture_report_endless_loop() {
+#if HAS_ESP()
     // ESP reset (needed for XL, since it has embedded ESP)
     HAL_GPIO_WritePin(ESP_RST_GPIO_Port, ESP_RST_Pin, GPIO_PIN_RESET);
+    UART_HandleTypeDef uart_for_tester = uart_handle_for_esp;
+#else
+    UART_HandleTypeDef uart_for_tester = uart_handle_for_puppies;
+#endif
 
     constexpr const uint8_t endl = '\n';
     constexpr const char *str_fw = "FW:";
     while (true) {
-        HAL_UART_Transmit(&uart_handle_for_esp, reinterpret_cast<const uint8_t *>(str_fw), strlen(str_fw), 1000);
-        HAL_UART_Transmit(&uart_handle_for_esp, reinterpret_cast<const uint8_t *>(version::project_version_full), strlen(version::project_version_full), 1000);
-        HAL_UART_Transmit(&uart_handle_for_esp, &endl, sizeof(endl), 1000);
+        HAL_UART_Transmit(&uart_for_tester, reinterpret_cast<const uint8_t *>(str_fw), strlen(str_fw), 1000);
+        HAL_UART_Transmit(&uart_for_tester, reinterpret_cast<const uint8_t *>(version::project_version_full), strlen(version::project_version_full), 1000);
+        HAL_UART_Transmit(&uart_for_tester, &endl, sizeof(endl), 1000);
         osDelay(500); // tester needs 500ms, do not change this value!
     }
 }
@@ -175,25 +182,7 @@ static void manufacture_report_endless_loop() {
 // Return TRUE if bootloader was updated -> in this case we have to reset the system, because important data addresses could be moved
 static bool bootloader_update() {
     if (buddy::bootloader::needs_update()) {
-        buddy::bootloader::update(
-            [](int percent_done, buddy::bootloader::UpdateStage stage) {
-                const char *stage_description = nullptr;
-                switch (stage) {
-                case buddy::bootloader::UpdateStage::LookingForBbf:
-                    stage_description = "Looking for BBF...";
-                    break;
-                case buddy::bootloader::UpdateStage::PreparingUpdate:
-                case buddy::bootloader::UpdateStage::Updating:
-                    stage_description = "Updating bootloader";
-                    break;
-                default:
-                    bsod("unreachable");
-                }
-
-                if (gui_bootstrap_screen_set_state(percent_done, stage_description)) {
-                    log_info(Buddy, "Bootloader update progress %s (%i %%)", stage_description, percent_done);
-                }
-            });
+        buddy::bootloader::update();
         return true;
     }
     return false;
@@ -202,29 +191,23 @@ static bool bootloader_update() {
 
 static void resources_update() {
     if (!buddy::resources::has_resources(buddy::resources::revision::standard)) {
-        buddy::resources::bootstrap(
-            buddy::resources::revision::standard, [](int percent_done, buddy::resources::BootstrapStage stage) {
-                const char *stage_description = nullptr;
-                switch (stage) {
-                case buddy::resources::BootstrapStage::LookingForBbf:
-                    stage_description = "Looking for BBF...";
-                    break;
-                case buddy::resources::BootstrapStage::PreparingBootstrap:
-                    stage_description = "Preparing";
-                    break;
-                case buddy::resources::BootstrapStage::CopyingFiles:
-                    stage_description = "Installing";
-                    break;
-                default:
-                    bsod("unreachable");
-                }
-
-                if (gui_bootstrap_screen_set_state(percent_done, stage_description)) {
-                    log_info(Buddy, "Bootstrap progress %s (%i %%)", stage_description, percent_done);
-                }
-            });
+        buddy::resources::bootstrap(buddy::resources::revision::standard);
     }
     TaskDeps::provide(TaskDeps::Dependency::resources_ready);
+}
+
+// Initializes static variables of singletons which are accessed from ISRs (requires locking a mutex)
+static void init_isr_statics() {
+    EMotorStallDetector::Instance();
+    Fans::print(0);
+    Fans::heat_break(0);
+#if XL_ENCLOSURE_SUPPORT()
+    Fans::enclosure();
+#endif
+    sensor_data();
+    GetExtruderFSensor(0);
+    GetSideFSensor(0);
+    Sound::getInstance();
 }
 
 extern "C" void main_cpp(void) {
@@ -232,12 +215,10 @@ extern "C" void main_cpp(void) {
     HAL_RCC_CSR = RCC->CSR;
     __HAL_RCC_CLEAR_RESET_FLAGS();
 
-    // Initialize sound instance now with its default settings
-    // to be able to service sound related calls from interrupts.
-    Sound::getInstance();
-
     hw_gpio_init();
     hw_dma_init();
+
+    w25x_init();
 
     // ADC/DMA
     hw_adc1_init();
@@ -260,7 +241,9 @@ extern "C" void main_cpp(void) {
 
 #if BOARD_IS_BUDDY() || BOARD_IS_XBUDDY()
     hw_tim1_init();
+    #if HAS_LOCAL_ACCELEROMETER()
     hw_tim9_init();
+    #endif
 #endif
 
 #if HAS_PHASE_STEPPING()
@@ -272,8 +255,6 @@ extern "C" void main_cpp(void) {
 #endif
 
     hw_tim14_init();
-
-    w25x_init();
 
     const bool want_error_screen = (dump_is_valid() && !dump_is_displayed()) || (message_is_valid() && message_get_type() != MsgType::EMPTY && !message_is_displayed());
 
@@ -298,20 +279,30 @@ extern "C" void main_cpp(void) {
     SPI_INIT(led);
 #endif
 
-#if PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_COREONE()
+#if PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
     /*
      * MK3.5 HW detected on MK4 firmware or vice versa
      * MK4 HW detected on CORE ONE firmware or vice versa
      *
      * Ignore the check in production (tester_mode), the xBuddy's connected peripherals are safe in this mode.
      */
-    if (buddy::hw::Configuration::Instance().is_fw_incompatible_with_hw() && !running_in_tester_mode()) {
+    if (!buddy::hw::Configuration::Instance().is_fw_compatible_with_hw() && !running_in_tester_mode()) {
         const auto &error = find_error(ErrCode::WARNING_DIFFERENT_FW_REQUIRED);
         crash_dump::force_save_message_without_dump(crash_dump::MsgType::FATAL_WARNING, static_cast<uint16_t>(error.err_code), error.err_text, error.err_title);
         hwio_safe_state();
         init_error_screen();
         return;
     }
+#endif
+
+#if HAS_XBUDDY_EXTENSION()
+    buddy::hw::Configuration::Instance().setup_ext_reset();
+    #if XBUDDY_EXTENSION_VARIANT_IS_iX()
+    buddy::hw::ext_shutdown.writeb(want_error_screen);
+    buddy::hw::ext_pwr_enable.writeb(!want_error_screen);
+    #else
+    buddy::hw::ext_pwr_enable.set();
+    #endif
 #endif
 
     /*
@@ -323,7 +314,7 @@ extern "C" void main_cpp(void) {
         init_error_screen();
 
 #if BUDDY_ENABLE_WUI() && BUDDY_ENABLE_CONNECT()
-        // We want to send the redscreen/bluescreen/error to Connect to show there.
+        // We want to send the error screen to Connect to show there.
         //
         // For that we need networking (and some other peripherals). We do not
         // init the rest - including the USB stack.
@@ -334,15 +325,17 @@ extern "C" void main_cpp(void) {
         // block esp in tester mode (redscreen probably shouldn't happen on tester, but better safe than sorry)
         if (!running_in_tester_mode() && config_store().connect_enabled.get()) {
             TaskDeps::components_init();
-            uart_init_esp();
             // Needed for certificate verification
             hw_rtc_init();
             // Needed for SSL random data
             hw_rng_init();
 
+    #if HAS_ESP()
+            uart_init_esp();
             // We can't flash ESP while showing error screen as there is no bootstrap progressbar.
             // Let's pretend that flashing was successful in order to enable Wi-Fi.
             skip_esp_flashing();
+    #endif
 
             TaskDeps::wait(TaskDeps::Tasks::network);
             start_network_task(/*allow_full=*/false);
@@ -382,7 +375,7 @@ extern "C" void main_cpp(void) {
     #error Do not know how to init TMC communication channel
 #endif
 
-#if BUDDY_ENABLE_WUI()
+#if HAS_ESP() && BUDDY_ENABLE_WUI()
     uart_init_esp();
 #endif
 
@@ -395,13 +388,16 @@ extern "C" void main_cpp(void) {
 #endif
 
 #if HAS_PUPPIES()
-    uart_init_puppies();
-    buddy::puppies::PuppyBus::Open();
+    uart_init_puppies(running_in_tester_mode());
+    if (!running_in_tester_mode()) {
+        buddy::puppies::PuppyBus::Open();
+    }
 #endif
 
     hw_rtc_init();
     hw_rng_init();
 
+#if HAS_ESP()
     // ESP flashing can start fairly early in the boot process.
     // On printers without embedded ESP32 we need to upload stub to enable verification.
     // This would take some seconds, which we can hide here.
@@ -411,6 +407,7 @@ extern "C" void main_cpp(void) {
     if (!running_in_tester_mode()) {
         start_flash_esp_task();
     }
+#endif
 
 #if HAS_ADVANCED_POWER()
     advancedpower.ResetOvercurrentFault();
@@ -473,13 +470,6 @@ extern "C" void main_cpp(void) {
     uart_for_tmc.Open();
 #endif
 
-#if HAS_XBUDDY_EXTENSION()
-    mmu_port::setup_reset_pin();
-    // Yes, this is intentional.
-    // MMUEnable is probably a misnomer now that we have xBuddyExtension.
-    buddy::hw::MMUEnable.set();
-#endif
-
 #if HAS_MMU2_OVER_UART()
     uart_for_mmu.Open();
     // mmu2 is normally serviced from the marlin thread
@@ -494,7 +484,7 @@ extern "C" void main_cpp(void) {
     buddy::hw::io_expander2.initialize();
 #endif
 
-    osThreadCCMDef(defaultTask, StartDefaultTask, TASK_PRIORITY_DEFAULT_TASK, 0, 1200);
+    osThreadCCMDef(defaultTask, StartDefaultTask, TASK_PRIORITY_DEFAULT_TASK, 0, 1160);
     defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
 #if ENABLED(POWER_PANIC)
@@ -650,21 +640,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
  * @retval None
  */
 void Error_Handler(void) {
-    /* User can add his own implementation to report the HAL error return state */
-    app_error();
-}
-
-void system_core_error_handler() {
-    app_error();
+    bsod("Error_Handler");
 }
 
 void iwdg_warning_cb(void) {
-    crash_dump::save_message(crash_dump::MsgType::IWDGW, 0, nullptr, nullptr);
+    const auto &e = find_error(ErrCode::ERR_SYSTEM_INTERNAL_ERROR);
+    crash_dump::save_message(crash_dump::MsgType::IWDGW, static_cast<uint16_t>(e.err_code), nullptr, nullptr);
     trigger_crash_dump();
 }
 
 extern "C" void idle_callback() {
-    check_isr_stack_overflow();
+    if (isr_stack_overflow_checker().has_overflowed()) {
+        bsod("ISR stack overflow");
+    }
 }
 
 void init_error_screen() {
@@ -745,6 +733,8 @@ extern "C" void startup_task(void const *) {
     // init global variables and call constructors
     __libc_init_array();
 
+    init_isr_statics();
+
     // call the main main() function
     main_cpp();
 
@@ -772,8 +762,10 @@ int main() {
     system_core_init();
     tick_timer_init();
 
+    // Instantiate isr_stack_overflow_checker now
+    (void)isr_stack_overflow_checker();
+
     // other MCU setup
-    setup_isr_stack_overflow_trap();
     enable_trap_on_division_by_zero();
     enable_backup_domain();
     enable_segger_sysview();
@@ -782,9 +774,6 @@ int main() {
     // case this is a noboot build
     data_exchange_init();
 
-#if PRINTER_IS_PRUSA_iX()
-    hw_preinit_turbine_disable();
-#endif
     // define the startup task
     osThreadDef(startup, startup_task, TASK_PRIORITY_STARTUP, 0, 1024 + 512 + 256);
     osThreadCreate(osThread(startup), NULL);
@@ -794,16 +783,8 @@ int main() {
 }
 
 #ifdef USE_FULL_ASSERT
-/**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+/// Used by stm32 HAL"
 void assert_failed(uint8_t *file, uint32_t line) {
-    /* User can add his own implementation to report the file name and line number,
-     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-    app_assert(file, line);
+    _bsod("STM32 assert fail", file, line);
 }
 #endif /* USE_FULL_ASSERT */

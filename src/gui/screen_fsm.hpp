@@ -18,7 +18,7 @@ concept is_update_callable = std::is_invocable_v<decltype(&T::update), T &, fsm:
 
 }; // namespace common_frames
 
-template <auto Phase, class Frame>
+template <auto Phase, class Frame, auto... constructor_args>
 struct FrameDefinition {
     using FrameType = Frame;
     static constexpr auto phase = Phase;
@@ -26,18 +26,15 @@ struct FrameDefinition {
 
 template <class Storage, class... T>
 struct FrameDefinitionList {
-    template <class F>
-    using FrameType = typename F::FrameType;
-
-    static_assert(Storage::template has_enough_space_for<FrameType<T>...>());
-
     static void create_frame(Storage &storage, auto phase, auto... args) {
-        auto f = [&]<typename FD> {
-            if (phase == FD::phase) {
-                storage.template create<typename FD::FrameType>(args...);
+        auto f = [&]<auto phase_, typename Frame, auto... constructor_args>(FrameDefinition<phase_, Frame, constructor_args...>) {
+            static_assert(!std::is_base_of_v<window_t, Frame>, "Frames should not inherit from window_t (ideally from anything), it incrases flash usage");
+
+            if (phase == phase_) {
+                storage.template create<Frame>(args..., constructor_args...);
             }
         };
-        (f.template operator()<T>(), ...);
+        (f(T {}), ...);
     }
 
     static void destroy_frame(Storage &storage, auto phase) {
@@ -61,12 +58,13 @@ struct FrameDefinitionList {
     }
 };
 
-template <typename Parent>
+template <typename Parent, size_t FrameStorageSize>
 class WindowFSM : public Parent {
-    static constexpr size_t frame_static_storage_size = 1324;
-
 public:
-    using FrameStorage = StaticStorage<frame_static_storage_size>;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    using FrameStorage = StaticStorage<FrameStorageSize>;
+#pragma GCC diagnostic pop
 
     template <typename... Args>
     WindowFSM(Rect16 inner_frame_rect, Args &&...args)
@@ -97,7 +95,7 @@ protected:
     virtual void update_frame() = 0;
 };
 
-class ScreenFSM : public WindowFSM<screen_t> {
+class ScreenFSM : public WindowFSM<screen_t, 1448> {
 
 public:
     ScreenFSM(const char *header_txt, Rect16 inner_frame_rect = GuiDefaults::RectScreenNoHeader)
@@ -120,7 +118,7 @@ protected:
     window_header_t header;
 };
 
-class DialogFSM : public WindowFSM<IDialogMarlin> {
+class DialogFSM : public WindowFSM<IDialogMarlin, 1124> {
 
 public:
     DialogFSM(fsm::BaseData data)

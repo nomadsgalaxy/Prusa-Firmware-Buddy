@@ -32,6 +32,8 @@ enum class Dock : uint8_t {
     DWARF_5,
     DWARF_6,
     XBUDDY_EXTENSION,
+    // AC_CONTROLLER = 8 - but not really a full puppy, not listed here. But please do
+    // _not_ reuse the 8th modbus address.
 };
 
 static_assert(std::to_underlying(Dock::XBUDDY_EXTENSION) == 7, "Must stay 8th puppy, because we are unable to do dynamic address assignemnt on startup on xBuddy");

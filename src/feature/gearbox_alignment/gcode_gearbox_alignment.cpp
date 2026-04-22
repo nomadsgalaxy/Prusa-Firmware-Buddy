@@ -2,8 +2,8 @@
 #include "gcode_gearbox_alignment.hpp"
 
 #include <buddy/unreachable.hpp>
-#include <common/filament_sensors_handler.hpp>
-#include <common/RAII.hpp>
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
+#include <raii/auto_restore.hpp>
 #include <config_store/store_instance.hpp>
 #include <M70X.hpp>
 #include <mapi/motion.hpp>
@@ -97,7 +97,7 @@ private:
     void filament_unload() {
         const uint8_t target_extruder = active_extruder;
 
-        filament_gcodes::M702_no_parser(std::nullopt, Z_AXIS_LOAD_POS, RetAndCool_t::Return, target_extruder, false);
+        filament_gcodes::M702_unload(std::nullopt, Z_AXIS_LOAD_POS, RetAndCool_t::Return, target_extruder, false);
 
         // check if we returned from preheat or finished the unload
         if (PreheatStatus::ConsumeResult() == PreheatStatus::Result::DoneNoFilament) {
@@ -112,9 +112,7 @@ private:
     void intro() {
         switch (marlin_server::wait_for_response(PhaseGearboxAlignment::intro)) {
         case Response::Skip:
-            // Skipped gearvox alignment is considered passed;
-            // this is meant for users with prebuilt printer.
-            finish(TestResult_Passed);
+            finish(TestResult_Skipped);
             return;
         case Response::Continue:
 #if HAS_TOOLCHANGER()

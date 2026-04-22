@@ -1,23 +1,27 @@
 /// @file
 #include "hal.hpp"
 
-#include "hal_clock.hpp"
 #include "extension_variant.h"
+#include "hal_clock.hpp"
+#include "hal_pub.hpp"
 #include <bitset>
 #include <freertos/binary_semaphore.hpp>
 #include <freertos/stream_buffer.hpp>
 #include <freertos/timing.hpp>
 #include <stm32h5xx_hal.h>
 #include <stm32h5xx_ll_gpio.h>
+#include <stm32h5xx_ll_rng.h>
 
 #include <utils/timing/timer_event_period_tracker.hpp>
+#include <atomic>
 
 const std::span<std::byte> hal::memory::peripheral_address_region(reinterpret_cast<std::byte *>(PERIPH_BASE_NS), 0x10000000);
 
 static UART_HandleTypeDef huart_rs485;
-static std::byte rx_buf_rs485[256];
+alignas(uint16_t) static std::byte rx_buf_rs485[256];
 static volatile size_t rx_len_rs485;
 static freertos::BinarySemaphore tx_semaphore_rs485;
+static std::atomic<bool> ore_occurred_rs485;
 
 static UART_HandleTypeDef huart_mmu;
 static std::byte rx_byte_mmu;
@@ -48,12 +52,17 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
         }
         __HAL_RCC_USART3_CLK_ENABLE();
         __HAL_RCC_GPIOB_CLK_ENABLE();
-        GPIO_InitStruct.Pin = GPIO_PIN_7 | GPIO_PIN_8;
+        GPIO_InitStruct.Pin = GPIO_PIN_8;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
         GPIO_InitStruct.Alternate = GPIO_AF13_USART3;
         HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+        GPIO_InitStruct.Pin = GPIO_PIN_7;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
         GPIO_InitStruct.Pin = GPIO_PIN_14;
         GPIO_InitStruct.Alternate = GPIO_AF7_USART3;
         HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -85,8 +94,12 @@ extern "C" void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
 }
 
 extern "C" void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-    // TODO
-    (void)huart;
+    // TODO add ORE handling for MMU too
+    if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
+        if (huart == &huart_rs485) {
+            ore_occurred_rs485 = true;
+        }
+    }
 }
 
 static void rx_callback_rs485(UART_HandleTypeDef *huart, uint16_t size) {
@@ -582,25 +595,6 @@ void usb_pins_init() {
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
-static void pub_init() {
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    constexpr GPIO_InitTypeDef GPIO_InitStruct {
-        .Pin = GPIO_PIN_15,
-        .Mode = GPIO_MODE_OUTPUT_PP,
-        .Pull = GPIO_NOPULL,
-        .Speed = GPIO_SPEED_FREQ_LOW,
-        .Alternate = 0,
-    };
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-    // Initialize CAN to off state
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_SET);
-}
-
-static void pub_enable() {
-    // CAN enable is inverted
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
-}
-
 static constexpr auto FSENSOR_PIN = EXTENSION_IS_IX() ? GPIO_PIN_9 : GPIO_PIN_5;
 
 static void filament_sensor_pins_init() {
@@ -612,6 +606,36 @@ static void filament_sensor_pins_init() {
         .Alternate = 0,
     };
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+
+static void rng_init() {
+    __HAL_RCC_RNG_CONFIG(RCC_RNGCLKSOURCE_PLL1Q);
+    __HAL_RCC_RNG_CLK_ENABLE();
+    LL_RNG_Disable(RNG);
+    LL_RNG_EnableClkErrorDetect(RNG);
+    LL_RNG_SetHealthConfig(RNG, RNG_HTCR_NIST_VALUE);
+    LL_RNG_EnableNistCompliance(RNG);
+    while (LL_RNG_IsEnabledCondReset(RNG)) {
+    }
+    LL_RNG_Enable(RNG);
+}
+
+static void rng_recovery() {
+    if (LL_RNG_IsActiveFlag_SECS(RNG)) {
+        // Sequence to fully recover from a seed error
+        LL_RNG_EnableCondReset(RNG);
+        LL_RNG_DisableCondReset(RNG);
+        while (LL_RNG_IsEnabledCondReset(RNG)) {
+        }
+        if (LL_RNG_IsActiveFlag_SEIS(RNG)) {
+            LL_RNG_ClearFlag_SEIS(RNG);
+        }
+        while (LL_RNG_IsActiveFlag_SECS(RNG)) {
+        }
+    } else {
+        // peripheral performed the reset automatically
+        LL_RNG_ClearFlag_SEIS(RNG);
+    }
 }
 
 void hal::init() {
@@ -633,9 +657,9 @@ void hal::init() {
     mmu_pins_init();
     mmu::nreset_pin_set(false);
     usb_pins_init();
-    pub_init();
-    pub_enable();
+    hal::pub::init();
     filament_sensor_pins_init();
+    rng_init();
 }
 
 void hal::panic() {
@@ -825,8 +849,23 @@ std::span<std::byte> hal::rs485::receive() {
     return { rx_buf_rs485, rx_len_rs485 };
 }
 
+std::span<std::byte> hal::rs485::receive_timeout(uint32_t timeout_ms) {
+    if (tx_semaphore_rs485.try_acquire_for(timeout_ms)) {
+        return { rx_buf_rs485, rx_len_rs485 };
+    }
+    return {};
+}
+
 void hal::rs485::transmit_and_then_start_receiving(std::span<std::byte> payload) {
     HAL_UART_Transmit_IT(&huart_rs485, (uint8_t *)payload.data(), payload.size());
+}
+
+void hal::rs485::housekeeping() {
+    if (ore_occurred_rs485) {
+        HAL_UART_AbortReceive_IT(&huart_rs485);
+        HAL_UARTEx_ReceiveToIdle_IT(&huart_rs485, (uint8_t *)rx_buf_rs485, sizeof(rx_buf_rs485));
+        ore_occurred_rs485 = false;
+    }
 }
 
 void hal::mmu::transmit(std::span<const std::byte> payload) {
@@ -867,4 +906,27 @@ bool hal::mmu::nreset_pin_get() {
 
 void hal::usb::power_pin_set(bool enabled) {
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+uint32_t hal::rng::get() {
+    // Note: RNG functionality is critical for correct operation of xbuddy extension.
+    //       If we ever hang in these loops, parent system will restart us after a while.
+    for (;;) {
+        // check if there is a seed error
+        if (LL_RNG_IsActiveFlag_SEIS(RNG)) {
+            rng_recovery();
+        }
+
+        // wait for random data
+        while (!LL_RNG_IsActiveFlag_DRDY(RNG)) {
+        }
+        const uint32_t result = LL_RNG_ReadRandData32(RNG);
+
+        if (LL_RNG_IsActiveFlag_SEIS(RNG)) {
+            // not enough entropy, try again
+            continue;
+        } else {
+            return result;
+        }
+    }
 }

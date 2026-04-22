@@ -96,7 +96,7 @@ struct PrintStatusMessage {
         TypeRecord<Type::additional_probing, PrintStatusMessageDataProgress>,
         TypeRecord<Type::dwelling, PrintStatusMessageDataProgress>,
         TypeRecord<Type::absorbing_heat, PrintStatusMessageDataProgress>,
-        TypeRecord<Type::waiting_for_hotend_temp, PrintStatusMessageDataProgress>,
+        TypeRecord<Type::waiting_for_hotend_temp, PrintStatusMessageDataToolProgress>,
         TypeRecord<Type::waiting_for_bed_temp, PrintStatusMessageDataProgress>,
 #if ENABLED(PROBE_CLEANUP_SUPPORT)
         TypeRecord<Type::nozzle_cleaning, std::monostate>,

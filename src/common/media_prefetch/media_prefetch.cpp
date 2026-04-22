@@ -1,16 +1,22 @@
 #include "media_prefetch.hpp"
 
+#include <cassert>
+#include <cctype>
 #include <cstring>
 #include <cinttypes>
 
+#include "bsod.h"
 #include <logging/log.hpp>
 #include <utils/enum_array.hpp>
+#include <option/has_e2ee_support.h>
+
+#include <config_store/store_instance.hpp>
 
 #include "prefetch_compression.hpp"
 
 #ifndef UNITTESTS
     #include <metric.h>
-    #include <scope_guard.hpp>
+    #include <raii/scope_guard.hpp>
     #include <cmsis_os.h>
 #endif
 
@@ -328,7 +334,14 @@ void MediaPrefetchManager::fetch_routine(AsyncJobExecutionControl &control) {
                 return;
             }
 
-            s.gcode_reader = AnyGcodeFormatReader(filepath.data());
+            s.gcode_reader = AnyGcodeFormatReader(filepath.data(), /*allow_decryption=*/true
+#if HAS_E2EE_SUPPORT()
+                // If we are not starting from zero, the identity must always be trusted,
+                // at least temporarily
+                ,
+                s.gcode_reader_pos == 0 ? config_store().identity_check.get() : e2ee::IdentityCheckLevel::KnownOnly
+#endif
+            );
 
             if (!s.gcode_reader.is_open()) {
                 log_debug(MediaPrefetch, "Fetch open failed");
@@ -340,6 +353,23 @@ void MediaPrefetchManager::fetch_routine(AsyncJobExecutionControl &control) {
                 }
 
                 shared_state.read_tail.status = Status::usb_error;
+                return;
+            }
+
+            // Needs to be checked BEFORE has_error, because it is STATEFUL and can set the error checked by has_error
+            // Reportedly, this is needed to extract the symmetric cipher info from the file.
+            const bool is_valid_for_print = s.gcode_reader->valid_for_print(true);
+
+            if (s.gcode_reader->has_error()) {
+                log_debug(MediaPrefetch, "reader error: %s", s.gcode_reader->error_str());
+                fetch_handle_error(control, IGcodeReader::Result_t::RESULT_CORRUPT);
+                return;
+            }
+
+            if (!is_valid_for_print) {
+                // Not valid with no error means we just don't have enough data yet
+                // Why this needs to be handled separately out of stream_gcode_start?
+                fetch_handle_error(control, IGcodeReader::Result_t::RESULT_OUT_OF_RANGE);
                 return;
             }
 

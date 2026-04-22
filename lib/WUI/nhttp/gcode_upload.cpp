@@ -5,6 +5,7 @@
 #include "../wui_api.h"
 
 #include <common/stat_retry.hpp>
+#include <path_utils.h>
 #include <transfers/files.hpp>
 #include <transfers/changed_path.hpp>
 
@@ -173,39 +174,6 @@ namespace {
         return make_tuple(Status::Ok, nullptr);
     }
 
-    UploadHooks::Result make_dir(string_view dir) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wvla" // TODO: person who knows a reasonable buffer size should refactor this code to not use variable length array
-        char path[USB_MOUNT_POINT_LENGTH + dir.length() + 1];
-#pragma GCC diagnostic pop
-
-        auto error = prepend_usb_path(dir, path, sizeof(path));
-        if (std::get<0>(error) != Status::Ok) {
-            return error;
-        }
-        if (mkdir(path, 0777) != 0) {
-            // teoretically could fail not on the first
-            // folder and we would then leave some previous
-            // folder in place ,but this is improbable...
-            if (errno != EEXIST) {
-                return make_tuple(Status::InternalServerError, "Failed to create a folder");
-            }
-        }
-        return make_tuple(Status::Ok, nullptr);
-    }
-
-    UploadHooks::Result make_dirs(string_view path) {
-        size_t pos = path.find('/');
-        while (pos != path.npos) {
-            if (auto error = make_dir(path.substr(0, pos)); std::get<0>(error) != Status::Ok) {
-                return error;
-            }
-            pos = path.find('/', pos + 1);
-        }
-
-        return make_tuple(Status::Ok, nullptr);
-    }
-
     std::variant<bool, UploadHooks::Result> file_dir_exists(string_view path) {
         size_t pos = path.find_last_of('/');
         if (pos == path.npos) {
@@ -304,12 +272,9 @@ namespace {
             tuple<http::Status, const char *> error { Status::InternalServerError, "Unknown error" };
             switch (result) {
             case Result::Ok: {
-                // Remove the "/usb/" prefix
-                // FIXME: Why? Relict of old / Post / multipart upload?
-                const char *final_filename = filepath.data() + USB_MOUNT_POINT_LENGTH;
-
                 // create directories if uploading points to non existing one
-                if (error = make_dirs(final_filename); get<0>(error) != Status::Ok) {
+                if (!make_dirs(filepath.data())) {
+                    error = make_tuple(Status::InternalServerError, "Failed to create a folder");
                     goto CLEANUP;
                 }
                 if (!f->sync()) {
@@ -319,6 +284,9 @@ namespace {
 
                 // Close the file first, otherwise it can't be moved
                 f.reset();
+                // Remove the "/usb/" prefix
+                // FIXME: Why? Relict of old / Post / multipart upload?
+                const char *final_filename = filepath.data() + USB_MOUNT_POINT_LENGTH;
                 error = try_rename(fname.begin(), final_filename, overwrite, [&](char *filename) -> UploadHooks::Result {
                     monitor_slot->done(Monitor::Outcome::Finished);
                     ChangedPath::instance.changed_path(filename, Type::File, Incident::Created);
@@ -421,9 +389,18 @@ UploadHooks::Result GcodeUpload::check_filename(const char *filename) const {
 UploadHooks::Result GcodeUpload::finish(const char *final_filename, bool start_print) {
     const auto fname = transfer_name(file_idx);
 
-    // create directories if uploading points to non existing one
-    if (auto error = make_dirs(final_filename); get<0>(error) != Status::Ok) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvla" // TODO: person who knows a reasonable buffer size should refactor this code to not use variable length array
+    char path[USB_MOUNT_POINT_LENGTH + strlen(final_filename) + 1];
+#pragma GCC diagnostic pop
+
+    auto error = prepend_usb_path(final_filename, path, sizeof(path));
+    if (std::get<0>(error) != Status::Ok) {
         return error;
+    }
+    // create directories if uploading points to non existing one
+    if (!make_dirs(path)) {
+        return make_tuple(Status::InternalServerError, "Failed to create a folder");
     }
 
     // In the "POST" mode (old / legacy), we don't know the exact size in

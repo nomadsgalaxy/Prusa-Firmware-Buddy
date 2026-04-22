@@ -15,12 +15,13 @@
  * This is basically std::aligned_union_t which doesn't require
  * knowledge of the types upfront with some convenience functions.
  */
-template <size_t Size>
-class StaticStorage {
-private:
-    alignas(std::max_align_t) std::array<std::byte, Size> bytes;
+template <size_t size_, typename Alignment_ = void *>
+class [[deprecated("Please use InplaceAny, StaticStorage is prone to UB")]] StaticStorage {
 
 public:
+    using Alignment = Alignment_;
+    static constexpr size_t size = size_;
+
     /** Access the value of type T previously created at this storage */
     template <class T>
     constexpr T *as() {
@@ -33,7 +34,7 @@ public:
      */
     template <class T, class... Args>
     constexpr T *create(Args &&...args) {
-        static_assert(sizeof(T) <= Size);
+        static_assert(can_construct<T>());
         return std::construct_at(as<T>(), std::forward<Args>(args)...);
     }
 
@@ -50,14 +51,20 @@ public:
      */
     template <class... T>
     static constexpr bool has_ideal_size_for() {
-        return std::max({ sizeof(T)... }) == Size;
+        return std::max({ sizeof(T)... }) == size;
     }
 
     /**
-     * Return true if the storage has just enough space to accomodate largest of given types.
+     * Return true if the storage is able to construct all provided types
      */
     template <class... T>
-    static constexpr bool has_enough_space_for() {
-        return std::max({ sizeof(T)... }) <= Size;
+    static constexpr bool can_construct() {
+        constexpr auto f = []<typename U>() {
+            return sizeof(U) <= size && alignof(U) <= alignof(Alignment);
+        };
+        return (f.template operator()<T>() && ...);
     }
+
+private:
+    alignas(Alignment) std::array<std::byte, size> bytes;
 };

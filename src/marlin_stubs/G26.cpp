@@ -239,7 +239,7 @@ void FirstLayer::plan_destination(const float x, const float y, const float z, c
         feedrate_mm_s = f / 60.f;
     }
 
-    prepare_move_to_destination();
+    prepare_move_to(destination, feedrate_mm_s, {});
 }
 
 void FirstLayer::go_to_destination(const float x, const float y, const float z, const float e, const float f) {

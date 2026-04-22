@@ -37,14 +37,6 @@
 
 bool GCodeParser::volumetric_enabled;
 
-#if ENABLED(INCH_MODE_SUPPORT)
-  float GCodeParser::linear_unit_factor, GCodeParser::volumetric_unit_factor;
-#endif
-
-#if ENABLED(TEMPERATURE_UNITS_SUPPORT)
-  TempUnit GCodeParser::input_temp_units = TEMPUNIT_C;
-#endif
-
 char *GCodeParser::command_ptr,
      *GCodeParser::string_arg,
      *GCodeParser::value_ptr;
@@ -221,9 +213,6 @@ void GCodeParser::parse(char *p) {
 
   // Only use string_arg for these M codes
   if (letter == 'M') switch (codenum) {
-    #if ENABLED(GCODE_MACROS)
-      case 810 ... 819:
-    #endif
     #if ENABLED(EXPECTED_PRINTER_CHECK)
       case 16:
     #endif
@@ -307,26 +296,6 @@ void GCodeParser::parse(char *p) {
     }
   }
 }
-
-#if ENABLED(CNC_COORDINATE_SYSTEMS)
-
-  // Parse the next parameter as a new command
-  bool GCodeParser::chain() {
-    #if ENABLED(FASTER_GCODE_PARSER)
-      char *next_command = command_ptr;
-      if (next_command) {
-        while (*next_command && *next_command != ' ') ++next_command;
-        while (*next_command == ' ') ++next_command;
-        if (!*next_command) next_command = nullptr;
-      }
-    #else
-      const char *next_command = command_args;
-    #endif
-    if (next_command) parse(next_command);
-    return !!next_command;
-  }
-
-#endif // CNC_COORDINATE_SYSTEMS
 
 void GCodeParser::unknown_command_error() {
   SERIAL_ECHO_START();

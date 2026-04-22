@@ -6,7 +6,6 @@
 #include <option/has_toolchanger.h>
 #include <option/has_remote_bed.h>
 #include <option/has_chamber_api.h>
-#include <option/xbuddy_extension_variant_standard.h>
 
 #include <Configuration_adv.h>
 #include <fs_autoload_autolock.hpp>
@@ -15,6 +14,7 @@
 #include <MItem_tools.hpp>
 
 #include <MItem_love_board.hpp>
+#include <MItem_menus.hpp>
 #include <MItem_print.hpp>
 
 #if HAS_MMU2()
@@ -31,9 +31,6 @@
 #endif
 #if HAS_CHAMBER_API()
     #include <gui/menu_item/specific/menu_items_chamber.hpp>
-#endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
-    #include <gui/menu_item/specific/menu_items_xbuddy_extension.hpp>
 #endif
 
 #if PRINTER_IS_PRUSA_MK3_5()
@@ -98,17 +95,9 @@ struct ScreenMenuSensorInfo__<std::index_sequence<hotend...>> {
         MI_INFO_FINDA,
     #endif
 
-        MI_INFO_PRINT_FAN,
-        MI_INFO_HBR_FAN,
-    #if XBUDDY_EXTENSION_VARIANT_STANDARD()
-        MI_INFO_XBUDDY_EXTENSION_FAN1,
-        MI_INFO_XBUDDY_EXTENSION_FAN2,
-        MI_INFO_XBUDDY_EXTENSION_FAN3,
-    #endif
-
     #if BOARD_IS_XBUDDY()
+        MI_INFO_BED_VOLTAGE,
         MI_INFO_HEATER_VOLTAGE,
-        MI_INFO_INPUT_VOLTAGE,
         MI_INFO_HEATER_CURRENT,
         MI_INFO_INPUT_CURRENT,
     #endif
@@ -120,7 +109,7 @@ struct ScreenMenuSensorInfo__<std::index_sequence<hotend...>> {
     #if HAS_MMU2()
         MI_INFO_MMU_CURRENT,
     #endif
-        MI_ALWAYS_HIDDEN
+        MI_FAN_INFO
 #endif
         >;
 };

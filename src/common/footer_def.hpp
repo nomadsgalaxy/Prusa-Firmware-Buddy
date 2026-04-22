@@ -15,7 +15,6 @@
 #include <option/has_sheet_profiles.h>
 #include <option/has_chamber_api.h>
 #include "i18n.h"
-#include <bsod.h>
 #include <device/board.h>
 
 // sadly this must be macros, it is used in preprocessor
@@ -73,6 +72,7 @@ enum class Item : uint8_t { // stored in eeprom, must fit to footer::eeprom::val
     nozzle_diameter = 22,
     nozzle_pwm = 23,
     chamber_temp = 24,
+    f_s_value_side = 25,
     _count,
 };
 
@@ -101,14 +101,13 @@ inline constexpr std::array item_list {
         Item::chamber_temp,
 #endif
 
-    // Filament sensors
-#if _DEBUG
+        // Filament sensors
         Item::f_s_value,
-#endif
         Item::f_sensor,
         Item::speed,
 #if HAS_SIDE_FSENSOR()
         Item::f_sensor_side,
+        Item::f_s_value_side,
 #endif
 #if HAS_MMU2()
         Item::finda,
@@ -160,11 +159,11 @@ inline constexpr Record default_items = { { Item::speed,
 inline constexpr Record default_items = { { Item::nozzle,
     Item::bed,
     Item::filament,
-    #if PRINTER_IS_PRUSA_COREONE()
+    #if HAS_CHAMBER_API()
     Item::chamber_temp,
     #else
     Item::none,
-    #endif // PRINTER_IS_PRUSA_COREONE()
+    #endif
     Item::none } };
 #endif // FOOTER_LINES__ == 1 && FOOTER_ITEMS_PER_LINE__ == 5
 

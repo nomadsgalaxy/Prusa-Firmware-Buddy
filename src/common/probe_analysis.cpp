@@ -1,5 +1,5 @@
 #include "probe_analysis.hpp"
-#include "scope_guard.hpp"
+#include <raii/scope_guard.hpp>
 #include "metric.h"
 #include "timing.h"
 #include <printers.h>
@@ -24,22 +24,31 @@ void ProbeAnalysisBase::StoreSample([[maybe_unused]] uint32_t time_us, float cur
 #endif
 }
 
-ProbeAnalysisBase::Result ProbeAnalysisBase::Analyse() {
+ProbeAnalysisBase::Result ProbeAnalysisBase::Analyse(bool is_nozzle_clean /*= false*/) {
     analysisInProgress = true;
     ScopeGuard _sg = [this] {
         analysisInProgress = false;
     };
 
     // First of all, shift Z coordinates in order to compansate for the system's delay.
-    if (!CompensateForSystemDelay()) {
-        return Result::Bad("not-ready");
+    if (auto r = CompensateForSystemDelay(); !r) {
+        return std::unexpected(r.error());
+    }
+
+    for (const auto &sample : window) {
+        if (std::isnan(sample.load)) {
+            return std::unexpected(AnalysisError { "load-nan" });
+        }
+        if (std::isnan(sample.z)) {
+            return std::unexpected(AnalysisError { "z-nan" });
+        }
     }
 
     // Next, calculate all the features
     Features features;
     CalculateHaltSpan(features);
-    if (!CalculateAnalysisRange(features)) {
-        return Result::Bad("not-ready");
+    if (auto r = CalculateAnalysisRange(features); !r) {
+        return std::unexpected(r.error());
     }
 
 #ifdef PROBE_ANALYSIS_WITH_METRICS
@@ -55,13 +64,13 @@ ProbeAnalysisBase::Result ProbeAnalysisBase::Analyse() {
 #endif
 
     if (CalculateLoadLineApproximationFeatures(features) == false) {
-        return Result::Bad("load-lines");
+        return std::unexpected(AnalysisError { "load-lines" });
     }
     if (CalculateZLineApproximationFeatures(features) == false) {
-        return Result::Bad("z-lines");
+        return std::unexpected(AnalysisError { "z-lines" });
     }
     if (!CheckLineSanity(features)) {
-        return Result::Bad("sanity-check");
+        return std::unexpected(AnalysisError { "sanity-check" });
     }
     CalculateLoadMeans(features);
     CalculateLoadAngles(features);
@@ -133,10 +142,10 @@ ProbeAnalysisBase::Result ProbeAnalysisBase::Analyse() {
 
     // Check all features are within expected range
     {
-        const char *feature;
+        const char *feature = "feature-out-of-range";
         float value;
-        if (HasOutOfRangeFeature(features, &feature, &value)) {
-            return Result::Bad("feature-out-of-range");
+        if (HasOutOfRangeFeature(features, &feature, &value, is_nozzle_clean)) {
+            return std::unexpected(AnalysisError { .description = feature, .arg = value });
         }
     }
 
@@ -145,10 +154,10 @@ ProbeAnalysisBase::Result ProbeAnalysisBase::Analyse() {
     if (isGood) {
         float zCoordinate = InterpolateFinalZCoordinate(features);
         log_features_metrics(features, zCoordinate);
-        return Result::Good(zCoordinate);
+        return AnalysisResult { .z_coordinate = zCoordinate };
     } else {
         log_features_metrics(features, std::nullopt);
-        return Result::Bad("low-precision");
+        return std::unexpected(AnalysisError { "low-precision" });
     }
 }
 
@@ -251,12 +260,12 @@ std::tuple<ProbeAnalysisBase::Sample, ProbeAnalysisBase::Line, ProbeAnalysisBase
     return std::make_tuple(bestSplit, leftLine, rightLine);
 }
 
-bool ProbeAnalysisBase::CompensateForSystemDelay() {
+std::expected<void, ProbeAnalysisBase::AnalysisError> ProbeAnalysisBase::CompensateForSystemDelay() {
     // Shift Z samples right (to the future)
     int samplesToShift = loadDelay / samplingInterval;
 
     if (window.size() <= static_cast<size_t>(samplesToShift) + 2) {
-        return false;
+        return std::unexpected(AnalysisError { .description = "small-window", .arg = (float)window.size() });
     }
 
     auto it = window.rbegin();
@@ -269,7 +278,7 @@ bool ProbeAnalysisBase::CompensateForSystemDelay() {
         it->z = (it - 1)->z + diff;
     }
 
-    return true;
+    return {};
 }
 
 void ProbeAnalysisBase::CalculateHaltSpan(Features &features) {
@@ -312,20 +321,20 @@ void ProbeAnalysisBase::CalculateHaltSpan(Features &features) {
     features.riseEnd = riseEnd;
 }
 
-bool ProbeAnalysisBase::CalculateAnalysisRange(Features &features) {
+std::expected<void, ProbeAnalysisBase::AnalysisError> ProbeAnalysisBase::CalculateAnalysisRange(Features &features) {
     int lookbackSamples = analysisLookback / samplingInterval;
     int lookaheadSamples = analysisLookahead / samplingInterval;
 
-    if (features.fallEnd - window.begin() < lookbackSamples) {
-        return false;
+    if (auto sz = features.fallEnd - window.begin(); sz < lookbackSamples) {
+        return std::unexpected(AnalysisError { .description = "small-lookback", .arg = (float)sz });
     }
-    if (window.end() - features.riseStart < lookaheadSamples) {
-        return false;
+    if (auto sz = window.end() - features.riseStart; sz < lookaheadSamples) {
+        return std::unexpected(AnalysisError { .description = "small-lookahead", .arg = (float)sz });
     }
 
     features.analysisStart = features.fallEnd - lookbackSamples;
     features.analysisEnd = features.riseStart + lookaheadSamples;
-    return true;
+    return {};
 }
 
 bool ProbeAnalysisBase::CalculateLoadLineApproximationFeatures(Features &features) {
@@ -458,7 +467,7 @@ float ProbeAnalysisBase::InterpolateFinalZCoordinate(Features &features) {
     float middleTimestamp = features.decompressionLine.GetTime(loadAtDecompressionEnd - 120 + 70);
     float zDecompressionMiddle = features.riseLine.GetY(middleTimestamp);
     return (zDecompressionEnd + zDecompressionMiddle) / 2
-#if PRINTER_IS_PRUSA_COREONE()
+#if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
         + 0.02f
 #endif
         ;
@@ -528,7 +537,7 @@ int ProbeAnalysisBase::Classify(Features &features) {
     }
 }
 
-bool ProbeAnalysisBase::HasOutOfRangeFeature(Features &features, const char **feature, float *value) const {
+bool ProbeAnalysisBase::HasOutOfRangeFeature(Features &features, const char **feature, float *value, bool is_nozzle_clean /*= false*/) const {
     if (features.loadMeanBeforeCompression < -154.48058105323756f || features.loadMeanBeforeCompression > 152.44410035911991f) {
         *feature = "load_mean_before_compression";
         *value = features.loadMeanBeforeCompression;
@@ -619,11 +628,14 @@ bool ProbeAnalysisBase::HasOutOfRangeFeature(Features &features, const char **fe
         *value = features.r2_60ms.decompressionEnd;
         return true;
     }
-    auto compressedvsDecompressedAngleAfter = features.compressedLine.CalculateAngle(features.afterDecompressionLine, false);
-    if (std::abs(compressedvsDecompressedAngleAfter) > 40) {
-        *feature = "angle_after";
-        *value = compressedvsDecompressedAngleAfter;
-        return true;
+    if (!is_nozzle_clean) {
+        // this is too strict for nozzle clean, where 3 consecutive good probes are required.
+        auto compressedvsDecompressedAngleAfter = features.compressedLine.CalculateAngle(features.afterDecompressionLine, false);
+        if (std::abs(compressedvsDecompressedAngleAfter) > 40) {
+            *feature = "angle_after";
+            *value = compressedvsDecompressedAngleAfter;
+            return true;
+        }
     }
     return false;
 }

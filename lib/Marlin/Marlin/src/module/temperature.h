@@ -204,9 +204,7 @@ struct ModularBedHeater: public HeaterInfo {
     typedef heater_info_t bed_info_t;
   #endif
 #endif
-#if HAS_HEATED_CHAMBER
-  typedef heater_info_t chamber_info_t;
-#elif HAS_TEMP_CHAMBER
+#if HAS_TEMP_CHAMBER
   typedef temp_info_t chamber_info_t;
 #endif
 
@@ -237,9 +235,22 @@ typedef struct {
 
 // Heater watch handling
 typedef struct {
+  /**
+   * The target temperature that should be reached by the next check.
+   * @warning: This value is not the same as temp_heatbreak.target
+   */
   uint16_t target;
+  /**
+   * The time in milliseconds to wait for the temperature to rise.
+   * @note: The value 0 means no watch.
+   */
   millis_t next_ms;
-  inline bool elapsed(const millis_t &ms) { return next_ms && ELAPSED(ms, next_ms); }
+  /**
+   * Checks if the next_ms has elapsed since the last call.
+   * @retval true if ${next_ms} has elapsed and the watch is active. (next_ms != 0)
+   * @retval false if ${next_ms} has not elapsed or the watch is inactive. (next_ms == 0) 
+   */
+  inline bool elapsed(const millis_t &ms) { return (next_ms != 0) && ELAPSED(ms, next_ms); }
   inline bool elapsed() { return elapsed(millis()); }
 } heater_watch_t;
 
@@ -330,9 +341,6 @@ class Temperature {
       #if HAS_HEATED_BED
         static heater_idle_t bed_idle;
       #endif
-      #if HAS_HEATED_CHAMBER
-        static heater_idle_t chamber_idle;
-      #endif
     #endif
 
     #if ENABLED(PID_EXTRUSION_SCALING)
@@ -378,7 +386,7 @@ class Temperature {
 
     #if HAS_TEMP_HEATBREAK
       #if WATCH_HEATBREAK
-        static heater_watch_t watch_heatbreak;
+      static heater_watch_t watch_heatbreak[HOTENDS];
       #endif
       static millis_t next_heatbreak_check_ms;
       #ifdef HEATBREAK_MINTEMP
@@ -395,19 +403,6 @@ class Temperature {
       #endif
       #ifdef BOARD_MAXTEMP
         static int16_t maxtemp_raw_BOARD;
-      #endif
-    #endif
-
-    #if HAS_HEATED_CHAMBER
-      #if WATCH_CHAMBER
-        static heater_watch_t watch_chamber;
-      #endif
-      static millis_t next_chamber_check_ms;
-      #ifdef CHAMBER_MINTEMP
-        static int16_t mintemp_raw_CHAMBER;
-      #endif
-      #ifdef CHAMBER_MAXTEMP
-        static int16_t maxtemp_raw_CHAMBER;
       #endif
     #endif
 
@@ -504,11 +499,6 @@ class Temperature {
       static inline uint8_t scaledFanSpeed(const uint8_t target) {
         return scaledFanSpeed(target, fan_speed[target]);
       }
-
-      #if ENABLED(EXTRA_FAN_SPEED)
-        static uint8_t old_fan_speed[FAN_COUNT], new_fan_speed[FAN_COUNT];
-        static void set_temp_fan_speed(const uint8_t fan, const uint16_t tmp_temp);
-      #endif
 
       #if EITHER(PROBING_FANS_OFF, ADVANCED_PAUSE_FANS_PAUSE)
         void set_fans_paused(const bool p);
@@ -638,33 +628,7 @@ class Temperature {
 
     #if HAS_TEMP_CHAMBER
       FORCE_INLINE static float degChamber()            { return temp_chamber.celsius; }
-      #if HAS_HEATED_CHAMBER
-        FORCE_INLINE static int16_t degTargetChamber()  { return temp_chamber.target; }
-        FORCE_INLINE static bool isHeatingChamber()     { return temp_chamber.target > temp_chamber.celsius; }
-        FORCE_INLINE static bool isCoolingChamber()     { return temp_chamber.target < temp_chamber.celsius; }
-
-        static bool wait_for_chamber(const bool no_wait_for_cooling=true);
-      #endif
     #endif // HAS_TEMP_CHAMBER
-
-    #if WATCH_CHAMBER
-      static void start_watching_chamber();
-    #else
-      static inline void start_watching_chamber() {}
-    #endif
-
-    #if HAS_HEATED_CHAMBER
-      static void setTargetChamber(const int16_t celsius) {
-        temp_chamber.target =
-          #ifdef CHAMBER_MAXTEMP
-            _MIN(celsius, CHAMBER_MAXTEMP)
-          #else
-            celsius
-          #endif
-        ;
-        start_watching_chamber();
-      }
-    #endif // HAS_HEATED_CHAMBER
 
     #if HAS_TEMP_HEATBREAK
       FORCE_INLINE static float degHeatbreak(const uint8_t E_NAME)            { return temp_heatbreak[HOTEND_INDEX].celsius; }
@@ -678,9 +642,9 @@ class Temperature {
     #endif // HAS_TEMP_HEATBREAK
 
     #if WATCH_HEATBREAK
-      static void start_watching_heatbreak();
+      static void start_watching_heatbreak(const uint8_t E_NAME);
     #else
-      static inline void start_watching_heatbreak() {}
+      static inline void start_watching_heatbreak(const uint8_t) {}
     #endif
 
     #if HAS_TEMP_HEATBREAK_CONTROL
@@ -695,7 +659,7 @@ class Temperature {
         #if ENABLED(PRUSA_TOOLCHANGER)
           prusa_toolchanger.getTool(HOTEND_INDEX).set_heatbreak_target_temp(celsius);
         #endif
-        start_watching_heatbreak();
+        start_watching_heatbreak(HOTEND_INDEX);
       }
     #endif // HAS_TEMP_HEATBREAK
 
@@ -763,7 +727,7 @@ public:
           #endif
           #if ENABLED(PRUSA_TOOLCHANGER)
             // Set PID parameters to all dwarves
-            HOTEND_LOOP() {
+            for (int8_t e = 0; e < HOTENDS; e++) {
               buddy::puppies::dwarfs[e].set_pid(Temperature::temp_hotend[e].pid.Kp, Temperature::temp_hotend[e].pid.Ki, Temperature::temp_hotend[e].pid.Kd);
             }
           #endif /*HAS_DWARF()*/
@@ -827,10 +791,6 @@ public:
 
     #if ENABLED(PIDTEMPBED)
       static float get_pid_output_bed();
-    #endif
-
-    #if HAS_HEATED_CHAMBER
-      static float get_pid_output_chamber();
     #endif
 
     #if ENABLED(PIDTEMPHEATBREAK)

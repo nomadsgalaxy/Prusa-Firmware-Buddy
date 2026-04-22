@@ -19,10 +19,8 @@
     #include "Configuration_iX.h"
 #elif PRINTER_IS_PRUSA_COREONE()
     #include "Configuration_COREONE.h"
+#elif PRINTER_IS_PRUSA_COREONEL()
+    #include "Configuration_COREONEL.h"
 #else
     #error "Unknown PRINTER_TYPE!"
-#endif
-
-#ifndef MOTHERBOARD
-    #error "Undefined MOTHERBOARD"
 #endif

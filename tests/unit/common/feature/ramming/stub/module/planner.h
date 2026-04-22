@@ -6,4 +6,4 @@ struct Planner {
 };
 inline Planner planner;
 
-struct Temporary_Reset_Motion_Parameters {};
+struct [[maybe_unused]] Temporary_Reset_Motion_Parameters {};

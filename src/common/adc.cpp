@@ -11,7 +11,7 @@ using namespace buddy::hw;
 
 #if BOARD_IS_XBUDDY()
 namespace AdcGet {
-SumRingBuffer<uint32_t, nozzle_buff_size> nozzle_ring_buff;
+SumRingBuffer<uint16_t, uint32_t, nozzle_buff_size> nozzle_ring_buff;
 }
 #endif
 

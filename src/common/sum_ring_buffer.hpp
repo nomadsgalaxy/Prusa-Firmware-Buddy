@@ -3,10 +3,10 @@
 #include <cstdlib>
 #include <concepts>
 
-template <std::integral T, size_t SIZE>
+template <std::integral T, std::integral sumT, size_t SIZE>
 class SumRingBuffer {
 public:
-    typedef T sum_type;
+    typedef sumT sum_type;
     static_assert(SIZE > 0, "Invalid input");
 
     void Clear() {
@@ -33,13 +33,13 @@ public:
             --count;
         }
     }
-    size_t GetSize() {
+    inline constexpr size_t GetSize() const {
         return SIZE;
     };
-    size_t GetCount() {
+    size_t GetCount() const {
         return count;
     };
-    T GetSum() {
+    sumT GetSum() const {
         return sum;
     };
 
@@ -47,5 +47,5 @@ protected:
     size_t count { 0 };
     size_t index { 0 };
     T pdata[SIZE] {};
-    T sum { 0 };
+    sumT sum { 0 };
 };

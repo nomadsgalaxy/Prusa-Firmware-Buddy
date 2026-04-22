@@ -1,7 +1,6 @@
 #include "frame_progress_prompt.hpp"
 #include <find_error.hpp>
 #include <gui/auto_layout.hpp>
-#include <buddy/unreachable.hpp>
 
 namespace {
 static constexpr std::array layout_no_footer {
@@ -17,9 +16,9 @@ static constexpr std::array layout_with_footer = stdext::array_concat(layout_no_
 static_assert(layout_no_footer.size() + 1 == layout_with_footer.size(), "Layout without footer should be exactly one item (the footer) smaller than layout with footer");
 } // namespace
 
-FrameProgressPrompt::FrameProgressPrompt(window_t *parent, FSMAndPhase fsm_phase, const string_view_utf8 &txt_title, const string_view_utf8 &txt_info, Align_t info_alignment)
+FrameProgressPrompt::FrameProgressPrompt(window_frame_t *parent, FSMAndPhase fsm_phase, const string_view_utf8 &txt_title, const string_view_utf8 &txt_info, Align_t info_alignment)
     : title(parent, {}, is_multiline::yes, is_closed_on_click_t::no, txt_title)
-    , progress_bar(parent, {}, COLOR_ORANGE, COLOR_GRAY)
+    , progress_bar(parent, {}, COLOR_BRAND, COLOR_GRAY)
     , info(parent, {}, is_multiline::yes, is_closed_on_click_t::no, txt_info)
     , radio(parent, {}, fsm_phase) {
 
@@ -42,7 +41,7 @@ FrameProgressPrompt::FrameProgressPrompt(window_frame_t *parent, FSMAndPhase fsm
     // Extracting information: Phase -> corresponding error code -> message
     const auto err_code = error_code_mapper(fsm_phase);
     if (!err_code.has_value()) {
-        BUDDY_UNREACHABLE(); // Some phases do not have corresponding error codes - they should not be called with this constructor
+        bsod_unreachable(); // Some phases do not have corresponding error codes - they should not be called with this constructor
     }
 
     const auto err = find_error(err_code.value());

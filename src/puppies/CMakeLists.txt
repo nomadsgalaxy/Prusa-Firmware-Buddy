@@ -26,6 +26,11 @@ if(HAS_XBUDDY_EXTENSION)
   target_sources(firmware PUBLIC xbuddy_extension.cpp)
 endif()
 
+if(HAS_AC_CONTROLLER)
+  target_sources(firmware PUBLIC ac_controller.cpp)
+  target_link_libraries(firmware PUBLIC ac_controller)
+endif()
+
 if(HAS_PUPPIES_BOOTLOADER)
   target_sources(firmware PUBLIC BootloaderProtocol.cpp)
 endif()

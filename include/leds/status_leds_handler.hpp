@@ -1,7 +1,7 @@
 #pragma once
 
-#include <leds/color.hpp>
-#include "leds/frame_animation.hpp"
+#include <utils/led_color.hpp>
+#include <led_animation_controller/frame_animation.hpp>
 
 #include <freertos/mutex.hpp>
 
@@ -10,18 +10,19 @@ namespace leds {
 enum class StateAnimation : uint8_t {
     Idle,
     Printing,
-    Aborting,
     Finishing,
+    Aborting,
     Warning,
     PowerPanic,
     PowerUp,
 #if PRINTER_IS_PRUSA_iX()
+    WaitingForPrinter,
+    WaitingForUser,
     Unloading,
     WaitingForFilamentRemoval,
     FilamentRemoved,
     Inserting,
     Loading,
-    WaitingForFilamentUserRetraction,
 #endif
     Error,
     _last = Error,
@@ -61,6 +62,8 @@ public:
      */
     void set_custom_animation(const ColorRGBW &color, AnimationType type, uint16_t period_ms);
 
+    ColorRGBW get_color() const;
+
     bool get_active();
     void set_active(bool val);
 
@@ -76,6 +79,8 @@ private:
 
     std::array<FrameAnimation<3>::Params, 2> custom_params_banks;
     uint8_t custom_params_bank_index { 0 };
+
+    ColorRGBW color;
 };
 
 } // namespace leds

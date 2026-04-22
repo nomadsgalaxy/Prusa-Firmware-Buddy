@@ -15,7 +15,6 @@
 #include <option/has_toolchanger.h>
 #include <option/has_side_leds.h>
 #include <option/has_leds.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_manual_belt_tuning.h>
 #include <option/has_door_sensor_calibration.h>
 #include <option/has_chamber_vents.h>
@@ -208,7 +207,11 @@ bool GcodeSuite::process_parsed_command_custom(bool no_ok) {
             }
             break;
 #endif
-
+#if PRINTER_IS_PRUSA_iX()
+        case 853:
+            PrusaGcodeSuite::M853();
+            break;
+#endif
 #if ENABLED(PRUSA_TOOL_MAPPING)
         case 863:
             PrusaGcodeSuite::M863();
@@ -235,11 +238,6 @@ bool GcodeSuite::process_parsed_command_custom(bool no_ok) {
             break;
         case 920:
             PrusaGcodeSuite::M920();
-            break;
-#endif
-#if HAS_BELT_TUNING()
-        case 960:
-            PrusaGcodeSuite::M960();
             break;
 #endif
 #if HAS_MANUAL_BELT_TUNING()
@@ -279,9 +277,11 @@ bool GcodeSuite::process_parsed_command_custom(bool no_ok) {
         case 1702:
             PrusaGcodeSuite::M1702();
             break;
+#if HAS_ESP()
         case 1703:
             PrusaGcodeSuite::M1703();
             break;
+#endif
 #if HAS_INPUT_SHAPER_CALIBRATION()
         case 1959:
             PrusaGcodeSuite::M1959();
@@ -305,6 +305,11 @@ bool GcodeSuite::process_parsed_command_custom(bool no_ok) {
 #if HAS_DOOR_SENSOR_CALIBRATION()
         case 1980:
             PrusaGcodeSuite::M1980();
+            break;
+#endif
+#if HAS_SELFTEST()
+        case 1981:
+            PrusaGcodeSuite::M1981();
             break;
 #endif
         case 9140:
@@ -352,9 +357,6 @@ bool GcodeSuite::process_parsed_command_custom(bool no_ok) {
             break;
         case 123:
             PrusaGcodeSuite::G123();
-            break;
-        case 64:
-            PrusaGcodeSuite::G64();
             break;
 #if HAS_SELFTEST()
         case 162:

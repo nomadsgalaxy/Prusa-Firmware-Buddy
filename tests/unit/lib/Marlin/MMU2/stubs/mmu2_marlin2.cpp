@@ -149,4 +149,6 @@ bool marlin_is_retracted() {
     return false; // @@TODO probably also subject to set/reset for unit tests in the future
 }
 
+void marlin_resetE() {}
+
 } // namespace MMU2

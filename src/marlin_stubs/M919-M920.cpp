@@ -23,8 +23,8 @@ void tmc_read_reg(TMC &st, uint8_t reg) {
 }
 
 /// command, write acesse, read acesse
-tmc_reg_t *text_cmd_to_register(const char *cmd_in, bool write, bool read) {
-    tmc_reg_t *tmc_reg = tmc_reg_map;
+const tmc_reg_t *text_cmd_to_register(const char *cmd_in, bool write, bool read) {
+    const tmc_reg_t *tmc_reg = tmc_reg_map;
     while (tmc_reg->cmd_name != NULL) {
         if (!strcmp(tmc_reg->cmd_name, cmd_in) && tmc_reg->write == write) {
             return tmc_reg;
@@ -61,7 +61,7 @@ tmc_reg_t *text_cmd_to_register(const char *cmd_in, bool write, bool read) {
 void PrusaGcodeSuite::M919() {
     char cmd[16] = { 0 };
     int val = 0;
-    tmc_reg_t *adress_reg;
+    const tmc_reg_t *adress_reg;
 
     LOOP_XYZE(i) {
 
@@ -121,7 +121,7 @@ void PrusaGcodeSuite::M919() {
  */
 void PrusaGcodeSuite::M920() {
     char cmd[16] = { 0 };
-    tmc_reg_t *adress_reg;
+    const tmc_reg_t *adress_reg;
 
     LOOP_XYZE(i) {
 

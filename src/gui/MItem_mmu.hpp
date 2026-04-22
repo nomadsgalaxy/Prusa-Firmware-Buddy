@@ -5,18 +5,8 @@
 #include "WindowMenuInfo.hpp"
 #include "WindowItemFormatableLabel.hpp"
 #include "i18n.h"
-#include <option/has_loadcell.h>
+#include <option/has_nextruder.h>
 #include <gui/menu_item/menu_item_select_menu.hpp>
-
-class MI_MMU_PRELOAD_ADVANCED : public IWindowMenuItem {
-    static constexpr const char *const label = N_("Preload to MMU Advanced");
-
-public:
-    MI_MMU_PRELOAD_ADVANCED();
-
-protected:
-    virtual void click(IWindowMenu &window_menu) override;
-};
 
 class MI_MMU_PRELOAD : public IWindowMenuItem {
     static constexpr const char *const label = N_("Preload to MMU");
@@ -86,68 +76,84 @@ public:
     MI_MMU_ISSUE_GCODE(const char *lbl, const char *gcode, is_hidden_t hidden = is_hidden_t::no);
 
 protected:
-    virtual void click(IWindowMenu &window_menu) override;
+    virtual void click(IWindowMenu &) override;
 };
 
-class MI_MMU_ISSUE_GCODE_SLOT : public IWindowMenuItem {
+class MI_MMU_ITEM_WITH_SLOT : public IWindowMenuItem {
 
 public:
     /// \param slot_i Slot index, starting at 0. For label, +1 is shown
-    /// \param gcode_fmt Format used for snprintf. An '%i' parameter is passed, being the 0-indexed slot number.
-    MI_MMU_ISSUE_GCODE_SLOT(uint8_t slot_i, const char *label_prefix, const char *gcode_fmt);
+    MI_MMU_ITEM_WITH_SLOT(uint8_t slot_i, const char *label_prefix);
 
 protected:
-    void click(IWindowMenu &window_menu) final;
-
-private:
     // We need a buffer to store the formatted string
     // because the label_base needs to go through snprintf
     std::array<char, 32> label_;
 
-    const char *const gcode_fmt_;
-
     const uint8_t slot_i_;
 };
 
+class MI_MMU_ISSUE_GCODE_SLOT_FMT : public MI_MMU_ITEM_WITH_SLOT {
+
+public:
+    /// \param slot_i Slot index, starting at 0. For label, +1 is shown
+    /// \param gcode_fmt Format used for snprintf. An '%i' parameter is passed, being the 0-indexed slot number.
+    MI_MMU_ISSUE_GCODE_SLOT_FMT(uint8_t slot_i, const char *label_prefix, const char *gcode_fmt);
+
+protected:
+    virtual void click(IWindowMenu &) override;
+
+    const char *const gcode_fmt_;
+};
+
+class MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT : public MI_MMU_ITEM_WITH_SLOT {
+
+public:
+    MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT(uint8_t slot_i, const char *label_prefix);
+
+protected:
+    virtual void click(IWindowMenu &) final;
+};
+
 template <uint8_t slot_i>
-class MI_MMU_EJECT_FILAMENT_I : public MI_MMU_ISSUE_GCODE_SLOT {
+class MI_MMU_EJECT_FILAMENT_I : public MI_MMU_ISSUE_GCODE_SLOT_FMT {
 
 public:
     MI_MMU_EJECT_FILAMENT_I()
-        : MI_MMU_ISSUE_GCODE_SLOT(slot_i, N_("Eject From MMU"), "M705 P%i") {}
+        : MI_MMU_ISSUE_GCODE_SLOT_FMT(slot_i, N_("Eject From MMU"), "M705 P%i") {}
 };
 
 template <uint8_t slot_i>
-class MI_MMU_PRELOAD_SLOT_I : public MI_MMU_ISSUE_GCODE_SLOT {
+class MI_MMU_PRELOAD_SLOT_I : public MI_MMU_ISSUE_GCODE_SLOT_FMT {
 
 public:
     MI_MMU_PRELOAD_SLOT_I()
-        : MI_MMU_ISSUE_GCODE_SLOT(slot_i, "Preload Filament", "M704 P%i") {}
+        : MI_MMU_ISSUE_GCODE_SLOT_FMT(slot_i, "Preload Filament", "M704 P%i") {}
 };
 
 template <uint8_t slot_i>
-class MI_MMU_LOAD_TO_NOZZLE_I : public MI_MMU_ISSUE_GCODE_SLOT {
+class MI_MMU_LOAD_TO_NOZZLE_I : public MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT {
 
 public:
     MI_MMU_LOAD_TO_NOZZLE_I()
-        // load filament slot with preheat
-        : MI_MMU_ISSUE_GCODE_SLOT(slot_i, "Load Filament", "M701 W2 P%i") {}
+        // load filament slot with autopreheat based on filament type in MMU slots
+        : MI_MMU_ISSUE_LOAD_TO_NOZZLE_SLOT(slot_i, "Load Filament") {}
 };
 
 template <uint8_t slot_i>
-class MI_MMU_CUT_FILAMENT_I : public MI_MMU_ISSUE_GCODE_SLOT {
+class MI_MMU_CUT_FILAMENT_I : public MI_MMU_ISSUE_GCODE_SLOT_FMT {
 
 public:
     MI_MMU_CUT_FILAMENT_I()
-        : MI_MMU_ISSUE_GCODE_SLOT(slot_i, "Cut Filament", "M706 P%i") {}
+        : MI_MMU_ISSUE_GCODE_SLOT_FMT(slot_i, "Cut Filament", "M706 P%i") {}
 };
 
 template <uint8_t slot_i>
-class MI_MMU_LOAD_TEST_FILAMENT_I : public MI_MMU_ISSUE_GCODE_SLOT {
+class MI_MMU_LOAD_TEST_FILAMENT_I : public MI_MMU_ISSUE_GCODE_SLOT_FMT {
 
 public:
     MI_MMU_LOAD_TEST_FILAMENT_I()
-        : MI_MMU_ISSUE_GCODE_SLOT(slot_i, "Test Filament", "M1704 P%i") {}
+        : MI_MMU_ISSUE_GCODE_SLOT_FMT(slot_i, "Test Filament", "M1704 P%i M0") {}
 };
 
 class MI_MMU_UNLOAD_FILAMENT : public MI_MMU_ISSUE_GCODE {
@@ -300,7 +306,7 @@ public:
 };
 
 class MI_DONE_EXTRUDER_MAINTENANCE : public IWindowMenuItem {
-#if HAS_LOADCELL()
+#if HAS_NEXTRUDER()
     constexpr static const char *const label = N_("Nextruder Maintenance");
 #else
     constexpr static const char *const label = N_("Extruder Maintenance");

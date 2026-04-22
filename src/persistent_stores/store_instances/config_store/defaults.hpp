@@ -11,7 +11,7 @@
 #include <common/sheet.hpp>
 #include <module/prusa/dock_position.hpp>
 #include <module/prusa/tool_offset.hpp>
-#include <filament_sensors_remap_data.hpp>
+#include <feature/filament_sensor/filament_sensors_remap_data.hpp>
 #include <printers.h>
 #include <common/hw_check.hpp>
 #include <filament_eeprom.hpp>
@@ -25,6 +25,7 @@
 
 #include <option/has_sheet_support.h>
 #include <option/has_loadcell.h>
+#include <option/has_phase_stepping.h>
 
 namespace config_store_ns {
 
@@ -88,60 +89,40 @@ namespace defaults {
     inline constexpr uint8_t sound_volume { 5 };
     inline constexpr uint16_t language { 0xffff };
 
-    inline constexpr footer::Item footer_setting_0 {
-#if FOOTER_ITEMS_PER_LINE__ > 0
-        footer::default_items[0]
-#else
-        footer::Item::none
-#endif
-    };
-    inline constexpr footer::Item footer_setting_1 {
-#if FOOTER_ITEMS_PER_LINE__ > 1
-        footer::default_items[1]
-#else
-        footer::Item::none
-#endif
-    };
-    inline constexpr footer::Item footer_setting_2 {
-#if FOOTER_ITEMS_PER_LINE__ > 2
-        footer::default_items[2]
-#else
-        footer::Item::none
-#endif
-    };
-    inline constexpr footer::Item footer_setting_3 {
-#if FOOTER_ITEMS_PER_LINE__ > 3
-        footer::default_items[3]
-#else
-        footer::Item::none
-#endif
-    };
-    inline constexpr footer::Item footer_setting_4 {
-#if FOOTER_ITEMS_PER_LINE__ > 4
-        footer::default_items[4]
-#else
-        footer::Item::none
-#endif
-    };
-
     inline constexpr uint32_t footer_draw_type { footer::ItemDrawCnf::get_default() };
+    inline constexpr bool prusalink_enabled {
+#if PRINTER_IS_PRUSA_iX()
+        false
+#else
+        true
+#endif
+    };
     inline constexpr std::array<char, pl_password_size> prusalink_password { "" };
 
-    inline constexpr std::array<char, connect_host_size + 1> connect_host { "buddy-a.\x01\x01" }; // "Compressed" - this means buddy-a.connect.prusa3d.com.
+    inline constexpr std::array<char, connect_host_size + 1> connect_host {
+#if PRINTER_IS_PRUSA_iX()
+        "connect.afs"
+#else
+        "buddy-a.\x01\x01" // "Compressed" - this means buddy-a.connect.prusa3d.com.
+#endif
+    };
     inline constexpr std::array<char, connect_token_size + 1> connect_token { "" };
     inline constexpr std::array<char, connect_proxy_size + 1> connect_proxy_host { "" };
     inline constexpr uint16_t connect_port { 443 };
 
-    // Defaults for metrics
-#if DEVELOPMENT_ITEMS()
+#if PRINTER_IS_PRUSA_iX()
+    // iX has metrics enabled and pointed to the AFS server by default
+    inline constexpr std::array<char, metrics_host_size + 1> metrics_host { "metrics.afs" };
+    inline constexpr bool enable_metrics { true };
+#elif DEVELOPMENT_ITEMS()
     // Development build has metrics allowed
     inline constexpr std::array<char, metrics_host_size + 1> metrics_host { "matrix.prusa.vc" };
     inline constexpr bool enable_metrics { true };
-#else /*DEVELOPMENT_ITEMS()*/
+#else
     // Production build need user to intentionally allow them
     inline constexpr std::array<char, metrics_host_size + 1> metrics_host { "" };
     inline constexpr bool enable_metrics { false };
-#endif /*DEVELOPMENT_ITEMS()*/
+#endif
 
     inline constexpr bool crash_enabled {
 #if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_XL() || PRINTER_IS_PRUSA_COREONE())
@@ -219,8 +200,16 @@ namespace defaults {
 #endif
     };
 
+    inline constexpr uint8_t nozzle_is_hardened {
+#if PRINTER_IS_PRUSA_iX()
+        1 << 0, // Bitset -> first and only nozzle
+#else
+        0,
+#endif
+    };
+
     inline constexpr uint8_t nozzle_is_high_flow {
-#if PRINTER_IS_PRUSA_COREONE()
+#if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL() || PRINTER_IS_PRUSA_iX()
         1 << 0, // Bitset -> first and only nozzle
 #else
         0,
@@ -269,7 +258,7 @@ namespace defaults {
 
 #if HAS_HOTEND_TYPE_SUPPORT()
     inline constexpr HotendType hotend_type {
-    #if PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE()
+    #if PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
         HotendType::stock_with_sock
     #else
         HotendType::stock
@@ -318,11 +307,19 @@ namespace defaults {
         .nozzle_preheat_temperature = 170,
     };
 
-    // Prusa CORE One has phase stepping enabled by default.
-    // Due to its 400-step motors and CoreXY kinematics, the classic stepping
-    // algorithm can't keep up with the increased demands caused by larger speeds.
-    inline constexpr bool phase_stepping_enabled_x = PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE();
-    inline constexpr bool phase_stepping_enabled_y = PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE();
+#if PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL() || PRINTER_IS_PRUSA_XL()
+    static_assert(HAS_PHASE_STEPPING());
+    inline constexpr bool phase_stepping_enabled = true;
+
+#elif PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_MINI()
+    // On these printers, the phstep is either disabled or only enabled for testing and should be off by default
+    inline constexpr bool phase_stepping_enabled = false;
+
+#else
+    #error
+#endif
+
+    inline constexpr bool heat_entire_bed = PRINTER_IS_PRUSA_iX();
 } // namespace defaults
 
 } // namespace config_store_ns

@@ -185,7 +185,7 @@ ModbusErrorInfo PuppyModbus::make_request(RequestTiming *const timing, uint8_t r
                 }
                 metric_record_event(&modbus_reqfail);
                 retries--;
-                osDelay(10);
+                osDelay(20);
                 continue;
             }
         }

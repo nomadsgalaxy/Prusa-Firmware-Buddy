@@ -131,7 +131,6 @@ public:
 
     void SetRedLayout();
     void SetBlackLayout();
-    void SetBlueLayout();
 
     window_t() = default;
     window_t(window_t *parent, Rect16 rect, win_type_t type = win_type_t::normal, is_closed_on_click_t close = is_closed_on_click_t::no);
@@ -172,7 +171,6 @@ protected:
     enum class ColorLayout : uint8_t {
         red,
         black,
-        blue,
     };
     virtual void set_layout(ColorLayout set);
 

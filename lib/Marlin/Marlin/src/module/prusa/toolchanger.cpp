@@ -26,12 +26,6 @@
 
 LOG_COMPONENT_REF(PrusaToolChanger);
 
-/**
- * @brief Marlin global toolchange settings structure.
- * Initialized by settings.load()
- */
-toolchange_settings_t toolchange_settings;
-
 PrusaToolChanger prusa_toolchanger;
 
 using namespace buddy::puppies;
@@ -154,9 +148,9 @@ static void plan_dock2pos(const float arc_r, const xy_pos_t pos, const xy_pos_t 
 
 } // namespace arc_move
 
-bool PrusaToolChanger::can_move_safely() {
+bool PrusaToolChanger::can_move_safely(AxisHomeLevel required_level) {
     // Toolchange requires precise homing, otherwise we might not hit the docks right
-    return !axis_unhomed_error(_BV(X_AXIS) | _BV(Y_AXIS), AxisHomeLevel::full);
+    return !axis_unhomed_error(_BV(X_AXIS) | _BV(Y_AXIS), required_level);
 }
 
 bool PrusaToolChanger::ensure_safe_move() {
@@ -187,16 +181,10 @@ bool PrusaToolChanger::check_emergency_stop() {
     return false;
 }
 
-/**
- * Link from Marlin tool_change() to prusa_toolchanger.tool_change()
- */
-void tool_change(const uint8_t new_tool,
-    tool_return_t return_type /*= tool_return_t::to_current*/,
-    tool_change_lift_t z_lift /*= tool_change_lift_t::full_lift*/,
-    bool z_return /*= true*/) {
+bool PrusaToolChanger::tool_change(const uint8_t new_tool, tool_return_t return_type, xyz_pos_t return_position, tool_change_lift_t z_lift, bool z_return) {
+    // WARNING: called from default(marlin) task
 
     // Check where we should return to
-    xyz_pos_t return_position = current_position;
     if (return_type == tool_return_t::to_destination || return_type == tool_return_t::purge_and_to_destination) {
         return_position = destination;
     }
@@ -205,13 +193,6 @@ void tool_change(const uint8_t new_tool,
     if (return_type == tool_return_t::to_current && !all_axes_known()) {
         return_type = tool_return_t::no_return;
     }
-
-    // Change tool, ignore return as Marlin doesn't care
-    bool ret [[maybe_unused]] = prusa_toolchanger.tool_change(new_tool, return_type, return_position, z_lift, z_return);
-}
-
-bool PrusaToolChanger::tool_change(const uint8_t new_tool, tool_return_t return_type, xyz_pos_t return_position, tool_change_lift_t z_lift, bool z_return) {
-    // WARNING: called from default(marlin) task
 
     quick_stopped = false;
 
@@ -395,7 +376,7 @@ bool PrusaToolChanger::tool_change(const uint8_t new_tool, tool_return_t return_
             if (current_position.z != return_position.z) {
                 destination = current_position;
                 destination.z = return_position.z;
-                prepare_move_to_destination();
+                prepare_move_to(destination, Z_HOP_FEEDRATE_MM_S, {});
             }
         }
 
@@ -629,8 +610,8 @@ bool PrusaToolChanger::park(Dwarf &dwarf) {
     const xy_pos_t target_pos = { info.dock_x + PARK_X_OFFSET_1, SAFE_Y_WITH_TOOL };
 
     // reduce maximum parking speed to improve reliability during constant toolchanging
-    float target_fr = limit_stealth_feedrate(fminf(PARKING_FINAL_MAX_SPEED, feedrate_mm_s));
-    float tangent_fr = limit_stealth_feedrate(fminf(TRAVEL_MOVE_MM_S, feedrate_mm_s));
+    float target_fr = limit_stealth_feedrate(PARKING_FINAL_MAX_SPEED);
+    float tangent_fr = limit_stealth_feedrate(TRAVEL_MOVE_MM_S);
 
     // Arc will not be limited by jerk
     planner.set_max_jerk(AxisEnum::X_AXIS, arc_move::arc_tg_jerk);
@@ -722,10 +703,10 @@ bool PrusaToolChanger::align_locks() {
     Crash_Temporary_Deactivate ctd;
     #endif
 
-    const float travel_feedrate = limit_stealth_feedrate(fmaxf(feedrate_mm_s, TRAVEL_MOVE_MM_S));
+    const float travel_feedrate = limit_stealth_feedrate(TRAVEL_MOVE_MM_S);
 
     // Move to safe position before homing move
-    if (can_move_safely()) {
+    if (can_move_safely(AxisHomeLevel::imprecise)) {
         if (current_position.y > SAFE_Y_WITHOUT_TOOL) {
             move(current_position.x, SAFE_Y_WITHOUT_TOOL, SLOW_MOVE_MM_S); // To safe Y
             planner.synchronize();
@@ -735,7 +716,19 @@ bool PrusaToolChanger::align_locks() {
         move(X_MAX_POS, 0, travel_feedrate);
     } else {
         // A bit back in case the carriage is near tool
-        do_homing_move(Y_AXIS, SAFE_Y_WITHOUT_TOOL - DOCK_DEFAULT_Y_MM);
+        if (do_homing_move(Y_AXIS, SAFE_Y_WITHOUT_TOOL - DOCK_DEFAULT_Y_MM)) {
+            // If we hit something, it means we're at the front of the printer (Y_MIN)
+            // Back of a bit, otherwise we'll be sliding on the front edge, falsely triggering Y endstops during the X move
+            const bool backoff_move_hit = do_homing_move(Y_AXIS, 10);
+
+            if (backoff_move_hit) {
+                // If we've hit something in both directions, something's wrong
+                toolchanger_error("Y axis stuck");
+            }
+
+            // Check for the correct backoff direction
+            static_assert(SAFE_Y_WITHOUT_TOOL - DOCK_DEFAULT_Y_MM < -10);
+        }
         axes_home_level[Y_AXIS] = AxisHomeLevel::not_homed; // Needs homing after
     }
     planner.synchronize();
@@ -828,7 +821,7 @@ bool PrusaToolChanger::pickup(Dwarf &dwarf) {
 
 void PrusaToolChanger::unpark_to(const xy_pos_t &destination) {
     // Limit feedrate during the arc
-    float arc_fr = limit_stealth_feedrate(fminf(TRAVEL_MOVE_MM_S, feedrate_mm_s));
+    float arc_fr = limit_stealth_feedrate(TRAVEL_MOVE_MM_S);
 
     // Arc will not be limited by jerk
     planner.set_max_jerk(AxisEnum::X_AXIS, arc_move::arc_tg_jerk);
@@ -848,7 +841,7 @@ void PrusaToolChanger::unpark_to(const xy_pos_t &destination) {
     }
 
     // move to the destination
-    move(destination.x, destination.y, feedrate_mm_s);
+    move(destination.x, destination.y, TRAVEL_MOVE_MM_S);
 
     conf_restorer.restore_jerk();
 }

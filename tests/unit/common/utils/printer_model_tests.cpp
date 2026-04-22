@@ -19,6 +19,10 @@ TEST_CASE("printer_model::getters") {
 
     CHECK(code_model(300) == PrinterModel::mk3);
     CHECK(id_model("MK3.5") == PrinterModel::mk3_5);
+    CHECK(id_model("COREONE") == PrinterModel::coreone);
+    CHECK(code_model(310) == PrinterModel::coreone);
+    CHECK(id_model("COREONEOAK") == PrinterModel::coreone_oak);
+    CHECK(code_model(380) == PrinterModel::coreone_oak);
 
     /// MMU variants
     CHECK(code_model(30260) == PrinterModel::mk4s);
@@ -95,5 +99,17 @@ TEST_CASE("printer_model::compatibilities") {
     CHECK(compatibility(PrinterModel::mk3_9s, PrinterModel::mk3) == Compatibility { .is_compatible = true, .mk3_compatibility_mode = true, .mk4_compatibility_mode = true });
     CHECK(compatibility(PrinterModel::mk4s, PrinterModel::mk3) == Compatibility { .is_compatible = true, .mk3_compatibility_mode = true, .mk4_compatibility_mode = true });
 
-    static_assert(std::to_underlying(PrinterModel::_cnt) == 13);
+    // COREONE_OAK shares compatibility_group::coreone — same compat as Core One
+    CHECK(compatibility(PrinterModel::coreone_oak, PrinterModel::coreone) == fully_compatible);
+    CHECK(compatibility(PrinterModel::coreone, PrinterModel::coreone_oak) == fully_compatible);
+    CHECK(compatibility(PrinterModel::coreone_oak, PrinterModel::mk3) == Compatibility { .is_compatible = true, .mk3_compatibility_mode = true, .mk4_compatibility_mode = true, .chamber_compatibility_mode = true });
+    CHECK(compatibility(PrinterModel::coreone_oak, PrinterModel::mk4) == Compatibility { .is_compatible = true, .mk4_compatibility_mode = true, .chamber_compatibility_mode = true });
+    CHECK(compatibility(PrinterModel::coreone_oak, PrinterModel::mk4s) == Compatibility { .is_compatible = true, .chamber_compatibility_mode = true });
+    CHECK(!compatibility(PrinterModel::coreone_oak, PrinterModel::ix).is_compatible);
+    CHECK(!compatibility(PrinterModel::coreone_oak, PrinterModel::xl).is_compatible);
+    CHECK(!compatibility(PrinterModel::coreone_oak, PrinterModel::mk3_5).is_compatible);
+    CHECK(!compatibility(PrinterModel::mk4, PrinterModel::coreone_oak).is_compatible);
+
+    // When increasing this number also add proper tests above
+    static_assert(std::to_underlying(PrinterModel::_cnt) == 15);
 }

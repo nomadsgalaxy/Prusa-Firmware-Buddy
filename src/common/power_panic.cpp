@@ -91,6 +91,7 @@
 #include <usb_host/usbh_async_diskio.hpp>
 #include <gcode/gcode_reader_restore_info.hpp>
 #include <feature/safety_timer/safety_timer.hpp>
+#include <option/xbuddy_extension_variant.h>
 
 namespace {
 
@@ -118,6 +119,10 @@ void ac_fault_task_main([[maybe_unused]] void const *argument) {
 
     // stop & disable endstops
     marlin_server::print_quick_stop_powerpanic();
+#if HAS_REMOTE_BED()
+    remote_bed::safe_state();
+#endif
+
     endstops.enable_globally(false);
 
     // disable unnecessary threads
@@ -315,7 +320,6 @@ void resume_loop() {
         planner.apply_settings(state_buf.planner.settings);
         planner.refresh_acceleration_rates();
 #if !HAS_CLASSIC_JERK
-        planner.max_e_jerk = state_buf.planner.max_jerk.e;
         planner.junction_deviation_mm = state_buf.planner.junction_deviation_mm;
 #endif
 
@@ -375,7 +379,7 @@ void resume_loop() {
         if (state_buf.planner.was_paused) {
             resume_state = ResumeState::ParkForPause;
         } else {
-            HOTEND_LOOP() {
+            for (int8_t e = 0; e < HOTENDS; e++) {
                 marlin_server::set_temp_to_display(state_buf.planner.target_nozzle[e], e);
                 thermalManager.setTargetHotend(state_buf.planner.target_nozzle[e], e);
             }
@@ -443,7 +447,7 @@ void resume_loop() {
         }
 
         // original planner state
-        HOTEND_LOOP() {
+        for (int8_t e = 0; e < HOTENDS; e++) {
             planner.flow_percentage[e] = state_buf.planner.flow_percentage[e];
         }
         gcode.axis_relative = state_buf.planner.axis_relative;
@@ -540,7 +544,7 @@ bool shutdown_loop() {
 #if BOARD_IS_XBUDDY()
     case ShutdownState::mmu:
         // Cut power to the MMU connector
-        buddy::hw::MMUEnable.reset();
+        buddy::hw::ext_pwr_enable.reset();
         break;
 #endif
 
@@ -851,9 +855,6 @@ void ac_fault_isr() {
     power_panic_state = PPState::Triggered;
 
     // power off devices in order of power draw
-#if HAS_REMOTE_BED()
-    remote_bed::safe_state();
-#endif
     runtime_state.orig_axes_home_level = axes_home_level;
     disable_XY();
     buddy::hw::hsUSBEnable.write(buddy::hw::Pin::State::high);
@@ -932,7 +933,7 @@ void ac_fault_isr() {
 #endif
 
         // remaining planner parameters
-        HOTEND_LOOP() {
+        for (int8_t e = 0; e < HOTENDS; e++) {
             state_buf.planner.flow_percentage[e] = planner.flow_percentage[e];
         }
         state_buf.planner.axis_relative = gcode.axis_relative;
@@ -968,7 +969,6 @@ void ac_fault_isr() {
         state_buf.planner.settings = planner.user_settings;
 
 #if !HAS_CLASSIC_JERK
-        state_buf.planner.max_jerk.e = planner.max_e_jerk;
         state_buf.planner.junction_deviation_mm = planner.junction_deviation_mm;
 #endif
     }
@@ -991,7 +991,7 @@ void ac_fault_isr() {
     // heaters are *already* disabled via HW, but stop temperature and fan regulation too
     thermalManager.disable_local_heaters();
     thermalManager.zero_fan_speeds();
-#if !HAS_DWARF() && HAS_TEMP_HEATBREAK && HAS_TEMP_HEATBREAK_CONTROL
+#if !HAS_DWARF() && !XBUDDY_EXTENSION_VARIANT_IS_iX() && HAS_TEMP_HEATBREAK && HAS_TEMP_HEATBREAK_CONTROL
     thermalManager.suspend_heatbreak_fan(2000);
 #endif
     // will continue in the main loop

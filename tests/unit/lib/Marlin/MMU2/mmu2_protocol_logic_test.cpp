@@ -10,12 +10,12 @@
 
 #define supportedMmuFWVersionMajor    3
 #define supportedMmuFWVersionMinor    0
-#define supportedMmuFWVersionRevision 3
-#define supportedMmuFWVersionBuild    895
+#define supportedMmuFWVersionRevision 4
+#define supportedMmuFWVersionBuild    912
 
 static_assert(MMU2::mmuVersionMajor == 3);
 static_assert(MMU2::mmuVersionMinor == 0);
-static_assert(MMU2::mmuVersionPatch == 3);
+static_assert(MMU2::mmuVersionPatch == 4);
 
 #define xstr(s) Str(s)
 #define Str(s)  #s
@@ -189,32 +189,32 @@ void IdleOperation(MMU2::ProtocolLogic &pl) {
     // check for repeated queries while idle (protocol heartbeat)
 
     // FINDA query + response follows immediately
-    IncMillis(heartBeatPeriod);
+    IncMillis(heartBeatPeriod_ms);
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Idle, Processing, "Q0"));
     REQUIRE(StepAndCheckState(pl, "X0 F0", PST::Running, PSC::Idle, Processing, RegisterReq8(pl, 0)));
     QueryRegisters(pl);
 
-    IncMillis(heartBeatPeriod);
+    IncMillis(heartBeatPeriod_ms);
 
     // try several times more with longer timing
     for (int i = 0; i < 10; ++i) {
         REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Idle, Processing, "Q0"));
 
         // receive a response after 100ms - should reset the uart timeout
-        IncMillis(MMU2::heartBeatPeriod / 3);
+        IncMillis(MMU2::heartBeatPeriod_ms / 3);
         // FINDA query + response follows immediately
         REQUIRE(StepAndCheckState(pl, "X0 F0", PST::Running, PSC::Idle, Processing, RegisterReq8(pl, 0)));
         QueryRegisters(pl);
 
         // waiting + not sending anything
-        IncMillis(MMU2::heartBeatPeriod / 3);
+        IncMillis(MMU2::heartBeatPeriod_ms / 3);
         REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Idle, Finished, ""));
 
         // waiting + not sending anything
-        IncMillis(MMU2::heartBeatPeriod / 3);
+        IncMillis(MMU2::heartBeatPeriod_ms / 3);
         REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Idle, Finished, ""));
 
-        IncMillis(MMU2::heartBeatPeriod / 3 + 3); // avoid rounding errors
+        IncMillis(MMU2::heartBeatPeriod_ms / 3 + 3); // avoid rounding errors
     }
 }
 
@@ -229,7 +229,7 @@ void CommandOperation(MMU2::ProtocolLogic &pl, std::string cmdRq) {
     // receive a response
     REQUIRE(StepAndCheckState(pl, cmdRq + " A", PST::Running, PSC::Command, Processing, ""));
 
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
 
     // query command state
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0"));
@@ -243,7 +243,7 @@ void CommandOperation(MMU2::ProtocolLogic &pl, std::string cmdRq) {
     // receive stats
     QueryRegisters(pl, PSC::Command, PSC::Command, Processing);
 
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
 
     // query state
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0"));
@@ -288,16 +288,16 @@ void ResponseTimeout(MMU2::ProtocolLogic &pl) {
     using namespace MMU2;
 
     // cause a timeout waiting for a response
-    IncMillis(MMU2::dataLayerTimeout * 2);
+    IncMillis(MMU2::dataLayerTimeout_ms * 2);
     REQUIRE(StepAndCheckState(pl, "", PST::InitSequence, PSC::StartSeq, Processing, "S0"));
 
     // we should end up in a Processing state while having a first occurrence of CommunicationTimeout recorded
     // and the state machine immediately tries to start the communication again by sending the InitSequence.
     for (uint8_t i = 0; i < MMU2::DropOutFilter::maxOccurrences - 2; ++i) {
-        IncMillis(MMU2::linkLayerTimeout); // let's simulate no response
+        IncMillis(MMU2::linkLayerTimeout_ms); // let's simulate no response
         REQUIRE(StepAndCheckState(pl, "", PST::InitSequence, PSC::StartSeq, Processing, "S0"));
     }
-    IncMillis(MMU2::linkLayerTimeout);
+    IncMillis(MMU2::linkLayerTimeout_ms);
     // now we shall report the error
     REQUIRE(StepAndCheckState(pl, "", PST::InitSequence, PSC::StartSeq, CommunicationTimeout, "S0"));
 }
@@ -331,7 +331,7 @@ void SimProtocolError(MMU2::ProtocolLogic &pl) {
     REQUIRE(pl.currentScope == PSC::DelayedRestart);
 
     // let's simulate no response - should end up in start seq
-    IncMillis(MMU2::linkLayerTimeout);
+    IncMillis(MMU2::linkLayerTimeout_ms);
     sr = pl.Step();
 
     for (uint8_t i = 0; i < MMU2::DropOutFilter::maxOccurrences - 1; ++i) {
@@ -339,7 +339,7 @@ void SimProtocolError(MMU2::ProtocolLogic &pl) {
         REQUIRE(pl.currentScope == PSC::StartSeq);
 
         // let's simulate no response
-        IncMillis(MMU2::linkLayerTimeout);
+        IncMillis(MMU2::linkLayerTimeout_ms);
         sr = pl.Step();
     }
     // now we shall report the original error (i.e. ProtocolError instead of CommunicationTimeout)
@@ -361,7 +361,7 @@ void SimProtocolErrorStreamOfBadBytes(MMU2::ProtocolLogic &pl) {
         REQUIRE(pl.currentScope == PSC::DelayedRestart);
 
         // let's simulate the waiting timeout for a restart attempt
-        IncMillis(MMU2::heartBeatPeriod);
+        IncMillis(MMU2::heartBeatPeriod_ms);
         sr = pl.Step();
 
         REQUIRE(sr == Processing);
@@ -377,7 +377,7 @@ void SimProtocolErrorStreamOfBadBytes(MMU2::ProtocolLogic &pl) {
     REQUIRE(sr == ProtocolError);
     REQUIRE(pl.currentScope == PSC::DelayedRestart);
     // prepare for a correct init seq test
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     pl.Step(); // changes to startSeq
 }
 
@@ -443,7 +443,7 @@ void SimCommandError(MMU2::ProtocolLogic &pl, std::string cmdRq) {
     mmu2SerialSim.txbuffQ.clear();
     // receive a response
     REQUIRE(StepAndCheckState(pl, cmdRq + " A", PST::Running, PSC::Command, Processing, ""));
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
 
     // query state
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0"));
@@ -460,7 +460,7 @@ void SimCommandError(MMU2::ProtocolLogic &pl, std::string cmdRq) {
         REQUIRE(StepAndCheckState(pl, "f0 A", PST::Running, PSC::Command, Processing, RegisterReq8(pl, 0)));
         QueryRegisters(pl, PSC::Command, PSC::Command, Processing);
 
-        IncMillis(MMU2::heartBeatPeriod);
+        IncMillis(MMU2::heartBeatPeriod_ms);
 
         // query state
         REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0"));
@@ -616,7 +616,7 @@ void SimInitSeqCorrupted(MMU2::ProtocolLogic &pl) {
     StepAndCheckState(pl, "T4 25\nS0 A2\n", PST::InitSequence, PSC::DelayedRestart, Processing, "");
 
     // this should cause a protocol error and the state machine shall now wait 1x heartbeat timeout and then issue S0 again
-    IncMillis(heartBeatPeriod);
+    IncMillis(heartBeatPeriod_ms);
 
     StepAndCheckState(pl, "", PST::InitSequence, PSC::StartSeq, Processing, "S0");
 
@@ -640,7 +640,7 @@ void SimInitSeqCorrupted(MMU2::ProtocolLogic &pl) {
     StepAndCheckState(pl, "T0 P6", PST::Running, PSC::Command, Processing, "f0");
     StepAndCheckState(pl, "f0 A", PST::Running, PSC::Command, Processing, RegisterReq8(pl, 0));
     QueryRegisters(pl, PSC::Command, PSC::Command, Processing);
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0");
     IncMillis();
     StepAndCheckState(pl, "T0 F", PST::Running, PSC::Idle, Finished, "");
@@ -731,7 +731,7 @@ void CheckInitSeqStage(MMU2::ProtocolLogic &pl) {
             NextStage(i);
 
             // handle delayed restart
-            IncMillis(heartBeatPeriod);
+            IncMillis(heartBeatPeriod_ms);
             pl.Step(); // next Step() should move to S0
             mmu2SerialSim.txbuffQ.clear();
             break;
@@ -770,7 +770,7 @@ TEST_CASE("Marlin::MMU2::ProtocolLogic AsyncCommandRqQuery", "[Marlin][MMU2]") {
     ProtocolLogic pl(&mmu2Serial, MMU2_TOOL_CHANGE_LOAD_LENGTH, PULLEY_SLOW_FEED_RATE);
     InitCommunication(pl);
 
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Idle, Processing, "Q0"));
 
     // now shoot an async command
@@ -804,7 +804,7 @@ TEST_CASE("Marlin::MMU2::ProtocolLogic AsyncCommandRqCommand", "[Marlin][MMU2]")
     // receive a response
     REQUIRE(StepAndCheckState(pl, "T1 A", PST::Running, PSC::Command, Processing, ""));
 
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     // query command state
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0"));
 
@@ -814,7 +814,7 @@ TEST_CASE("Marlin::MMU2::ProtocolLogic AsyncCommandRqCommand", "[Marlin][MMU2]")
     REQUIRE(StepAndCheckState(pl, "f0 A", PST::Running, PSC::Command, Processing, RegisterReq8(pl, 0)));
     QueryRegisters(pl, PSC::Command, PSC::Command, Processing);
 
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     // query command state and meanwhile push a button
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0"));
 
@@ -840,7 +840,7 @@ TEST_CASE("Marlin::MMU2::ProtocolLogic AsyncCommandRqCommandReset", "[Marlin][MM
     ProtocolLogic pl(&mmu2Serial, MMU2_TOOL_CHANGE_LOAD_LENGTH, PULLEY_SLOW_FEED_RATE);
     InitCommunication(pl);
 
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     // query command state and meanwhile push a button
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Idle, Processing, "Q0"));
     // simulate MMU reset
@@ -881,7 +881,7 @@ TEST_CASE("Marlin::MMU2::ProtocolLogic repeated comm link attempts", "[Marlin][M
 
     for (uint8_t i = 0; i < 10; ++i) {
         mmu2SerialSim.txbuffQ.clear(); // pretend we sent the data
-        IncMillis(MMU2::linkLayerTimeout);
+        IncMillis(MMU2::linkLayerTimeout_ms);
         pl.Step();
         REQUIRE(mmu2SerialSim.TxBuffMatchesCRC("S0"));
     }
@@ -901,16 +901,16 @@ TEST_CASE("Marlin::MMU2::ProtocolLogic Previous command finished while a new one
 
     // receive a response
     REQUIRE(StepAndCheckState(pl, "T1 A", PST::Running, PSC::Command, Processing, ""));
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0"));
     IncMillis();
     // T1 finished
     REQUIRE(StepAndCheckState(pl, "T1 F", PST::Running, PSC::Idle, Finished, ""));
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Idle, Processing, "Q0"));
     REQUIRE(StepAndCheckState(pl, "T1 F", PST::Running, PSC::Idle, Processing, RegisterReq8(pl, 0)));
     QueryRegisters(pl);
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Idle, Processing, "Q0"));
 
     pl.ToolChange(0); // now issue another command
@@ -984,17 +984,17 @@ TEST_CASE("Marlin::MMU2::ProtocolLogic Interrupted", "[Marlin][MMU2]") {
     mmu2SerialSim.txbuffQ.clear();
     IncMillis();
     REQUIRE(StepAndCheckState(pl, cmdRq + " A", PST::Running, PSC::Command, Processing, ""));
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     REQUIRE(StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0"));
     IncMillis();
     REQUIRE(StepAndCheckState(pl, cmdRq + " P1", PST::Running, PSC::Command, Processing, "f0"));
     REQUIRE(StepAndCheckState(pl, "f0 A", PST::Running, PSC::Command, Processing, RegisterReq8(pl, 0)));
     QueryRegisters(pl, PSC::Command, PSC::Command, Processing);
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     StepAndCheckState(pl, "", PST::Running, PSC::Command, Processing, "Q0");
 
     // cause a timeout
-    IncMillis(MMU2::dataLayerTimeout * 2);
+    IncMillis(MMU2::dataLayerTimeout_ms * 2);
     REQUIRE(StepAndCheckState(pl, "", PST::InitSequence, PSC::StartSeq, Processing, "S0"));
     StepAndCheckState(pl, "S0 A" xstr(supportedMmuFWVersionMajor), PST::InitSequence, PSC::StartSeq, Processing, "S1");
     IncMillis();
@@ -1010,6 +1010,6 @@ TEST_CASE("Marlin::MMU2::ProtocolLogic Interrupted", "[Marlin][MMU2]") {
     StepAndCheckState(pl, "X0 F0", PST::Running, PSC::Idle, Interrupted, "");
 
     // even though "interrupted" the state machine should continue querying the MMU like usually
-    IncMillis(MMU2::heartBeatPeriod);
+    IncMillis(MMU2::heartBeatPeriod_ms);
     StepAndCheckState(pl, "", PST::Running, PSC::Idle, Processing, "Q0");
 }

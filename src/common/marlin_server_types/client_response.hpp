@@ -21,9 +21,9 @@
 #include <guiconfig/guiconfig.h>
 #include <option/filament_sensor.h>
 #include <option/has_attachable_accelerometer.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_coldpull.h>
 #include <option/has_emergency_stop.h>
+#include <option/has_esp.h>
 #include <option/has_gearbox_alignment.h>
 #include <option/has_input_shaper_calibration.h>
 #include <option/has_loadcell.h>
@@ -43,6 +43,8 @@
 #include <option/has_nozzle_cleaner.h>
 #include <option/has_chamber_vents.h>
 #include <option/has_precise_homing_corexy.h>
+#include <option/has_side_fsensor.h>
+#include <option/has_human_interactions.h>
 
 #include <option/has_hotend_type_support.h>
 #if HAS_HOTEND_TYPE_SUPPORT()
@@ -50,6 +52,7 @@
 #endif
 
 #include <device/board.h>
+#include <option/has_e2ee_support.h>
 
 /// number of bits used to encode response
 // TODO: Make 2 everywhere: BFW-6028
@@ -146,6 +149,10 @@ enum class PhasesLoadUnload : PhaseUnderlyingType {
     IsFilamentInGear,
     Ejecting_stoppable,
     Ejecting_unstoppable,
+#if HAS_SIDE_FSENSOR()
+    LoadingObstruction_stoppable,
+    LoadingObstruction_unstoppable,
+#endif
     Loading_stoppable,
     Loading_unstoppable,
     LoadingToGears_stoppable,
@@ -172,6 +179,7 @@ enum class PhasesLoadUnload : PhaseUnderlyingType {
 #if HAS_MMU2()
     // MMU-specific dialogs
     LoadFilamentIntoMMU,
+    MMUDummyStartNoAttention,
     // internal states of the MMU
     MMU_EngagingIdler,
     MMU_DisengagingIdler,
@@ -239,6 +247,9 @@ enum class PhasesPrintPreview : PhaseUnderlyingType {
     tools_mapping,
 #endif
     wrong_filament,
+#if HAS_E2EE_SUPPORT()
+    untrusted_identity,
+#endif
     file_error, ///< Something is wrong with the gcode file
     _last = file_error
 };
@@ -263,19 +274,6 @@ enum class PhasesSelftest : PhaseUnderlyingType {
     Loadcell_fail,
     _first_Loadcell = Loadcell_prepare,
     _last_Loadcell = Loadcell_fail,
-
-    FSensor_ask_unload,
-    FSensor_wait_tool_pick,
-    FSensor_unload_confirm,
-    FSensor_calibrate,
-    FSensor_insertion_wait,
-    FSensor_insertion_ok,
-    FSensor_insertion_calibrate,
-    Fsensor_enforce_remove,
-    FSensor_done,
-    FSensor_fail,
-    _first_FSensor = FSensor_ask_unload,
-    _last_FSensor = FSensor_fail,
 
     CalibZ,
     _first_CalibZ = CalibZ,
@@ -361,6 +359,7 @@ enum class PhasesFansSelftest : PhaseUnderlyingType {
 constexpr inline ClientFSM client_fsm_from_phase(PhasesFansSelftest) { return ClientFSM::FansSelftest; }
 #endif
 
+#if HAS_ESP()
 enum class PhaseNetworkSetup : PhaseUnderlyingType {
     init,
 
@@ -369,11 +368,11 @@ enum class PhaseNetworkSetup : PhaseUnderlyingType {
     wifi_scan, ///< Scanning available wi-fi networks (the scanning is fully handled on the GUI thread)
     wait_for_ini_file, ///< Prompting user to insert a flash drive with creds
     ask_delete_ini_file, ///< Asking the user if he wants to delete the ini file
-#if HAS_NFC()
+    #if HAS_NFC()
     ask_use_prusa_app, ///< User is prompted if he wants to use the Prusa app to connect to the wi-fi
     wait_for_nfc, ///< Prompting user to provide the credentials through NFW
     nfc_confirm, ///< Loaded credentials via NFC, asking for confirmation
-#endif
+    #endif
     connecting_finishable, ///< The user is connecting to a Wi-Fi. The screen offers a "Finish" button that keeps connecting on the background and "Cancel" to go back.
     connecting_nonfinishable, ///< The user is connecting to a Wi-Fi. The screen only offers a "Cancel" button to go back.
     connected,
@@ -388,6 +387,7 @@ enum class PhaseNetworkSetup : PhaseUnderlyingType {
     _last = finish,
 };
 constexpr inline ClientFSM client_fsm_from_phase(PhaseNetworkSetup) { return ClientFSM::NetworkSetup; }
+#endif
 
 #if ENABLED(CRASH_RECOVERY)
 enum class PhasesCrashRecovery : PhaseUnderlyingType {
@@ -463,7 +463,7 @@ enum class PhasesWarning : PhaseUnderlyingType {
     HomingCalibrationFromMenuNeeded,
 #endif
 
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
     DisplayProblemDetected,
 #endif
 
@@ -530,14 +530,14 @@ constexpr inline ClientFSM client_fsm_from_phase(PhasesPhaseStepping) { return C
 
 #if HAS_INPUT_SHAPER_CALIBRATION()
 enum class PhasesInputShaperCalibration : PhaseUnderlyingType {
-    info,
-    parking,
     #if HAS_ATTACHABLE_ACCELEROMETER()
+    info,
     connect_to_board,
     wait_for_extruder_temperature,
     attach_to_extruder,
     attach_to_bed,
     #endif
+    parking,
     measuring_x_axis,
     measuring_y_axis,
     measurement_failed,
@@ -559,44 +559,6 @@ enum class PhasesSerialPrinting : PhaseUnderlyingType {
     active,
 };
 constexpr inline ClientFSM client_fsm_from_phase(PhasesSerialPrinting) { return ClientFSM::Serial_printing; }
-
-#if HAS_BELT_TUNING()
-enum class PhaseBeltTuning : PhaseUnderlyingType {
-    init,
-
-    /// The user is prompted to loose the belts so that the gantry is aligned
-    ask_for_gantry_align,
-
-    /// Homing, selecting a proper tool and moving it to the measuring position
-    preparing,
-
-    /// Asking the user to install the dampeners
-    ask_for_dampeners_installation,
-
-    /// Calibrating accelerometer
-    calibrating_accelerometer,
-
-    /// Measuring the vibrations and such
-    measuring,
-
-    /// We vibrate on the highest measured peak frequency and let the user evaluate whether the belts are resonating.
-    /// This is basically a measurement validity check
-    vibration_check,
-
-    /// Presenting the results to the user
-    results,
-
-    /// Asking the user to remove the dampeners
-    ask_for_dampeners_uninstallation,
-
-    /// Some error occured
-    error,
-
-    finish,
-    _last = finish,
-};
-constexpr inline ClientFSM client_fsm_from_phase(PhaseBeltTuning) { return ClientFSM::BeltTuning; }
-#endif
 
 #if HAS_GEARBOX_ALIGNMENT()
 enum class PhaseGearboxAlignment : PhaseUnderlyingType {
@@ -624,6 +586,8 @@ enum class PhaseDoorSensorCalibration : PhaseUnderlyingType {
     loosen_screw_half,
     finger_test,
     loosen_screw_quarter,
+    ask_enable_safety_features,
+    warn_disabled_sensor,
     done,
     finish,
     _last = finish,
@@ -658,6 +622,10 @@ inline constexpr EnumArray<PhasesLoadUnload, PhaseResponses, CountPhases<PhasesL
         { PhasesLoadUnload::IsFilamentInGear, { Response::Yes, Response::No } },
         { PhasesLoadUnload::Ejecting_stoppable, { Response::Stop } },
         { PhasesLoadUnload::Ejecting_unstoppable, {} },
+#if HAS_SIDE_FSENSOR()
+        { PhasesLoadUnload::LoadingObstruction_stoppable, { Response::Retry, Response::Stop } },
+        { PhasesLoadUnload::LoadingObstruction_unstoppable, { Response::Retry, Response::Help } },
+#endif
         { PhasesLoadUnload::Loading_stoppable, { Response::Stop } },
         { PhasesLoadUnload::Loading_unstoppable, {} },
         { PhasesLoadUnload::LoadingToGears_stoppable, { Response::Stop } },
@@ -681,6 +649,7 @@ inline constexpr EnumArray<PhasesLoadUnload, PhaseResponses, CountPhases<PhasesL
 #endif
 #if HAS_MMU2()
         { PhasesLoadUnload::LoadFilamentIntoMMU, { Response::Continue } },
+        { PhasesLoadUnload::MMUDummyStartNoAttention, {} },
 
         { PhasesLoadUnload::MMU_EngagingIdler, {} },
         { PhasesLoadUnload::MMU_DisengagingIdler, {} },
@@ -782,6 +751,9 @@ inline constexpr EnumArray<PhasesPrintPreview, PhaseResponses, CountPhases<Phase
                                                   Response::Ok,
                                                   Response::Abort,
                                               } },
+#if HAS_E2EE_SUPPORT()
+        { PhasesPrintPreview::untrusted_identity, { Response::Yes, Response::No, Response::Abort } },
+#endif
         { PhasesPrintPreview::file_error, {
                                               Response::Abort,
                                           } },
@@ -801,17 +773,6 @@ inline constexpr EnumArray<PhasesSelftest, PhaseResponses, CountPhases<PhasesSel
     { PhasesSelftest::Loadcell_user_tap_check, {} },
     { PhasesSelftest::Loadcell_user_tap_ok, {} },
     { PhasesSelftest::Loadcell_fail, {} },
-
-    { PhasesSelftest::FSensor_ask_unload, { Response::Continue, Response::Unload, Response::Abort } },
-    { PhasesSelftest::FSensor_wait_tool_pick, {} },
-    { PhasesSelftest::FSensor_unload_confirm, { Response::Yes, Response::No } },
-    { PhasesSelftest::FSensor_calibrate, {} },
-    { PhasesSelftest::FSensor_insertion_wait, { Response::Abort_invalidate_test } },
-    { PhasesSelftest::FSensor_insertion_ok, { Response::Continue, Response::Abort_invalidate_test } },
-    { PhasesSelftest::FSensor_insertion_calibrate, { Response::Abort_invalidate_test } },
-    { PhasesSelftest::Fsensor_enforce_remove, { Response::Abort_invalidate_test } },
-    { PhasesSelftest::FSensor_done, {} },
-    { PhasesSelftest::FSensor_fail, {} },
 
     { PhasesSelftest::CalibZ, {} },
 
@@ -875,6 +836,7 @@ inline constexpr PhaseResponses FanSelftestResponses[] = {
 static_assert(std::size(ClientResponses::FanSelftestResponses) == CountPhases<PhasesFansSelftest>());
 #endif
 
+#if HAS_ESP()
 inline constexpr EnumArray<PhaseNetworkSetup, PhaseResponses, CountPhases<PhaseNetworkSetup>()> network_setup_responses {
     { PhaseNetworkSetup::init, {} },
         { PhaseNetworkSetup::ask_switch_to_wifi, { Response::Yes, Response::No } },
@@ -884,11 +846,11 @@ inline constexpr EnumArray<PhaseNetworkSetup, PhaseResponses, CountPhases<PhaseN
         { PhaseNetworkSetup::wifi_scan, { Response::Back } },
         { PhaseNetworkSetup::wait_for_ini_file, { Response::Cancel } },
         { PhaseNetworkSetup::ask_delete_ini_file, { Response::Yes, Response::No } },
-#if HAS_NFC()
+    #if HAS_NFC()
         { PhaseNetworkSetup::ask_use_prusa_app, { Response::Yes, Response::No } },
         { PhaseNetworkSetup::wait_for_nfc, { Response::Cancel } },
         { PhaseNetworkSetup::nfc_confirm, { Response::Ok, Response::Cancel } },
-#endif
+    #endif
         { PhaseNetworkSetup::connecting_finishable, { Response::Finish, Response::Cancel } },
         { PhaseNetworkSetup::connecting_nonfinishable, { Response::Cancel } },
         { PhaseNetworkSetup::connected, { Response::Ok } },
@@ -900,6 +862,7 @@ inline constexpr EnumArray<PhaseNetworkSetup, PhaseResponses, CountPhases<PhaseN
         { PhaseNetworkSetup::help_qr, { Response::Back } },
         { PhaseNetworkSetup::finish, {} },
 };
+#endif
 
 #if ENABLED(CRASH_RECOVERY)
 inline constexpr PhaseResponses CrashRecoveryResponses[] = {
@@ -927,7 +890,7 @@ inline constexpr EnumArray<PhasesWarning, PhaseResponses, CountPhases<PhasesWarn
 #if HAS_EMERGENCY_STOP()
     { PhasesWarning::DoorOpen, {} },
 #endif
-        { PhasesWarning::Warning, { Response::Continue } },
+        { PhasesWarning::Warning, { Response::Ok } },
 #if XL_ENCLOSURE_SUPPORT() || HAS_CHAMBER_FILTRATION_API()
         { PhasesWarning::EnclosureFilterExpiration, { Response::Ignore, Response::Postpone5Days, Response::Done } },
 #endif
@@ -940,7 +903,7 @@ inline constexpr EnumArray<PhasesWarning, PhaseResponses, CountPhases<PhasesWarn
         { PhasesWarning::FilamentSensorStuckHelpMMU, { Response::Ok } },
 #endif
 #if ENABLED(DETECT_PRINT_SHEET)
-        { PhasesWarning::SteelSheetNotDetected, { Response::Retry, Response::Ignore } },
+        { PhasesWarning::SteelSheetNotDetected, { Response::Retry, Response::Ignore, Response::Abort } },
 #endif
 #if HAS_CHAMBER_API()
         { PhasesWarning::FailedToReachChamberTemperature, { Response::Ok, Response::Skip } },
@@ -956,7 +919,7 @@ inline constexpr EnumArray<PhasesWarning, PhaseResponses, CountPhases<PhasesWarn
         { PhasesWarning::HomingRefinementFailed, { Response::Retry, Response::Abort, Response::Ignore } },
         { PhasesWarning::HomingCalibrationFromMenuNeeded, { Response::Abort, Response::Ignore } },
 #endif
-#if HAS_ILI9488_DISPLAY()
+#if HAS_ILI9488_DISPLAY() && HAS_HUMAN_INTERACTIONS()
         { PhasesWarning::DisplayProblemDetected, { Response::Yes, Response::No } },
 #endif
         { PhasesWarning::MetricsConfigChangePrompt, { Response::Yes, Response::No } },
@@ -1015,14 +978,14 @@ inline constexpr EnumArray<PhasesPhaseStepping, PhaseResponses, CountPhases<Phas
 
 #if HAS_INPUT_SHAPER_CALIBRATION()
 inline constexpr EnumArray<PhasesInputShaperCalibration, PhaseResponses, CountPhases<PhasesInputShaperCalibration>()> input_shaper_calibration_responses {
-    { PhasesInputShaperCalibration::info, { Response::Continue, Response::Abort } },
-        { PhasesInputShaperCalibration::parking, {} },
     #if HAS_ATTACHABLE_ACCELEROMETER()
+    { PhasesInputShaperCalibration::info, { Response::Continue, Response::Abort } },
         { PhasesInputShaperCalibration::connect_to_board, { Response::Abort } },
         { PhasesInputShaperCalibration::wait_for_extruder_temperature, { Response::Abort } },
         { PhasesInputShaperCalibration::attach_to_extruder, { Response::Continue, Response::Abort } },
         { PhasesInputShaperCalibration::attach_to_bed, { Response::Continue, Response::Abort } },
     #endif
+        { PhasesInputShaperCalibration::parking, {} },
         { PhasesInputShaperCalibration::measuring_x_axis, { Response::Abort } },
         { PhasesInputShaperCalibration::measuring_y_axis, { Response::Abort } },
         { PhasesInputShaperCalibration::measurement_failed, { Response::Retry, Response::Abort } },
@@ -1030,22 +993,6 @@ inline constexpr EnumArray<PhasesInputShaperCalibration, PhaseResponses, CountPh
         { PhasesInputShaperCalibration::bad_results, { Response::Ok } },
         { PhasesInputShaperCalibration::results, { Response::Yes, Response::No } },
         { PhasesInputShaperCalibration::finish, {} },
-};
-#endif
-
-#if HAS_BELT_TUNING()
-inline constexpr EnumArray<PhaseBeltTuning, PhaseResponses, CountPhases<PhaseBeltTuning>()> belt_tuning_responses {
-    { PhaseBeltTuning::init, {} },
-    { PhaseBeltTuning::ask_for_gantry_align, { Response::Done, Response::Abort } },
-    { PhaseBeltTuning::preparing, { Response::Abort } },
-    { PhaseBeltTuning::ask_for_dampeners_installation, { Response::Done, Response::Abort } },
-    { PhaseBeltTuning::calibrating_accelerometer, { Response::Abort } },
-    { PhaseBeltTuning::measuring, { Response::Abort } },
-    { PhaseBeltTuning::vibration_check, { Response::Yes, Response::No } },
-    { PhaseBeltTuning::results, { Response::Retry, Response::Finish } },
-    { PhaseBeltTuning::ask_for_dampeners_uninstallation, { Response::Done } },
-    { PhaseBeltTuning::error, { Response::Abort, Response::Retry } },
-    { PhaseBeltTuning::finish, {} },
 };
 #endif
 
@@ -1073,6 +1020,8 @@ inline constexpr EnumArray<PhaseDoorSensorCalibration, PhaseResponses, CountPhas
     { PhaseDoorSensorCalibration::loosen_screw_half, { Response::Continue, Response::Abort } },
     { PhaseDoorSensorCalibration::finger_test, { Response::Continue, Response::Abort } },
     { PhaseDoorSensorCalibration::loosen_screw_quarter, { Response::Continue, Response::Abort } },
+    { PhaseDoorSensorCalibration::ask_enable_safety_features, { Response::Yes, Response::No } },
+    { PhaseDoorSensorCalibration::warn_disabled_sensor, { Response::Cancel, Response::Disable } }, // Cancel is first to have it selected (temporary solution till we rewrite the frames used to have radio button in as well to be able to change focus from inside the frame)
     { PhaseDoorSensorCalibration::done, { Response::Continue } },
     { PhaseDoorSensorCalibration::finish, {} },
 };
@@ -1137,9 +1086,6 @@ enum class SelftestParts {
     #endif
     CalibZ,
     Heaters,
-    #if FILAMENT_SENSOR_IS_ADC()
-    FSensor,
-    #endif
     FirstLayer,
     FirstLayerQuestions,
     #if HAS_TOOLCHANGER()
@@ -1158,10 +1104,6 @@ inline constexpr PhasesSelftest SelftestGetFirstPhaseFromPart(SelftestParts part
     #if HAS_LOADCELL()
     case SelftestParts::Loadcell:
         return PhasesSelftest::_first_Loadcell;
-    #endif
-    #if FILAMENT_SENSOR_IS_ADC()
-    case SelftestParts::FSensor:
-        return PhasesSelftest::_first_FSensor;
     #endif
     case SelftestParts::CalibZ:
         return PhasesSelftest::_first_CalibZ;
@@ -1193,10 +1135,6 @@ inline constexpr PhasesSelftest SelftestGetLastPhaseFromPart(SelftestParts part)
     #if HAS_LOADCELL()
     case SelftestParts::Loadcell:
         return PhasesSelftest::_last_Loadcell;
-    #endif
-    #if FILAMENT_SENSOR_IS_ADC()
-    case SelftestParts::FSensor:
-        return PhasesSelftest::_last_FSensor;
     #endif
     case SelftestParts::CalibZ:
         return PhasesSelftest::_last_CalibZ;
@@ -1240,11 +1178,6 @@ inline constexpr SelftestParts SelftestGetPartFromPhase(PhasesSelftest ph) {
     }
     #endif
 
-    #if FILAMENT_SENSOR_IS_ADC()
-    if (SelftestPartContainsPhase(SelftestParts::FSensor, ph)) {
-        return SelftestParts::FSensor;
-    }
-    #endif
     if (SelftestPartContainsPhase(SelftestParts::Axis, ph)) {
         return SelftestParts::Axis;
     }

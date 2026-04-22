@@ -322,11 +322,12 @@ private:
     /// - typically after MMU's start or after some HW issue on the MMU.
     /// It must ensure, that calls to @ref ReportProgress and/or @ref ReportError are
     /// only executed after @ref BeginReport has been called first.
-    void OnMMUProgressMsg(ProgressCode pc);
+    /// @returns true when manage_response is to be prematurely exited in favour of speeding up the consecutive printer moves
+    bool OnMMUProgressMsg(ProgressCode pc);
     /// Progress code changed - act accordingly
-    void OnMMUProgressMsgChanged(ProgressCode pc);
+    bool OnMMUProgressMsgChanged(ProgressCode pc);
     /// Repeated calls when progress code remains the same
-    void OnMMUProgressMsgSame(ProgressCode pc);
+    bool OnMMUProgressMsgSame(ProgressCode pc);
 
     /// @brief Save hotend temperature and set flag to cooldown hotend after 60 minutes
     /// @param turn_off_nozzle if true, the hotend temperature will be set to 0degC after 60 minutes
@@ -334,6 +335,9 @@ private:
 
     /// Save print and park the print head
     void SaveAndPark(bool move_axes);
+
+    /// Prepare parking position at the beginning of every command which may park due to an error
+    void SaveResumePos();
 
     /// Resume hotend temperature, if it was cooled. Safe to call if we aren't saved.
     void ResumeHotendTemp();
@@ -383,7 +387,9 @@ private:
         Nothing,
         Ramming,
         RelieveFilament,
-        ExtraRelieveFilament, // longer retraction for E-stall enabled printers
+        ExtraRelieveHotFilament, ///< longer retraction for E-stall enabled printers
+                                 ///< + the move must be slow, because the filament might actually be present in the melt zone
+                                 ///< -> it must cool down while pulling out
     };
     void UnloadObeyAutoRetracted();
     void UnloadInner(PreUnloadPolicy preUnloadPolicy);
@@ -436,6 +442,11 @@ private:
     uint8_t failNextLoadToExtr = 0;
 
     bool CheckFailLoadToExtr(bool b);
+
+    /// controls whether it is allowed to exit an MMU operation before its finish
+    /// thus making the toolchange faster. In some cases (like unload after a failed load)
+    /// it is necessary to wait for the Tn command to finish before issuing the U0 command.
+    bool allowPrematureFinish;
 };
 
 /// following Marlin's way of doing stuff - one and only instance of MMU implementation in the code base

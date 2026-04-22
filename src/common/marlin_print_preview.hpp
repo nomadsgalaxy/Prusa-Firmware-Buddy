@@ -50,6 +50,9 @@ public:
         wrong_filament_wait_user,
         wrong_filament_change,
 
+#if HAS_E2EE_SUPPORT()
+        untrusted_identity,
+#endif
         file_error_wait_user, ///< Reports that something is wrong with the gcode file. The user is shwon an error message (and nothing is printed).
 
         checks_done,

@@ -2,7 +2,7 @@
 
 #include <bit>
 
-#include "RAII.hpp"
+#include <raii/auto_restore.hpp>
 
 ScreenMenuInputShaper::ScreenMenuInputShaper()
     : detail::ScreenMenuInputShaper(_(label)) {

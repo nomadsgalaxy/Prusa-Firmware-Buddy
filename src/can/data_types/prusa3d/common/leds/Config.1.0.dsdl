@@ -1,0 +1,16 @@
+# RGBW LED configuration for AC Controller
+# Controls LED state and visual effects
+
+@union
+
+uavcan.primitive.Empty.1.0 off   # RGBW LED is turned off
+
+prusa3d.common.leds.RGBWColor.1.0 color # RGBW LED single static color
+
+# Various effects
+prusa3d.common.leds.Progress.1.0 progress # Progress bar configuration
+prusa3d.common.leds.RGBWColor.1.0 kitt # Knight Rider (color should be red)
+prusa3d.common.leds.RGBWColor.1.0 follow_head # Follow extruder X
+prusa3d.common.leds.RGBWColor.1.0 error # Can be used for warning if color is yellow
+
+@sealed

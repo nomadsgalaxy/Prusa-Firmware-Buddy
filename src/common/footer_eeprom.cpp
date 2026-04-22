@@ -12,23 +12,7 @@
 namespace footer::eeprom {
 
 Record stored_settings_as_record() {
-    return {
-#if FOOTER_ITEMS_PER_LINE__ > 0
-        config_store().footer_setting_0.get(),
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 1
-            config_store().footer_setting_1.get(),
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 2
-            config_store().footer_setting_2.get(),
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 3
-            config_store().footer_setting_3.get(),
-#endif
-#if FOOTER_ITEMS_PER_LINE__ > 4
-            config_store().footer_setting_4.get(),
-#endif
-    };
+    return config_store().footer_setting.get_all();
 }
 
 namespace {
@@ -210,9 +194,10 @@ static_assert(std::to_underlying(Item::none) == 0
         && std::to_underlying(Item::nozzle_diameter) == 22
         && std::to_underlying(Item::nozzle_pwm) == 23
         && std::to_underlying(Item::chamber_temp) == 24
+        && std::to_underlying(Item::f_s_value_side) == 25
         && true, // So that we don't have to move the ',' around
     "Numbers assigned to items should never change and always be available (not ifdefed)!!");
 
-static_assert(std::to_underlying(Item::_count) == 25, "When adding a new item, increment this counter and add it to the static_assert above");
+static_assert(std::to_underlying(Item::_count) == 26, "When adding a new item, increment this counter and add it to the static_assert above");
 
 } // namespace footer::eeprom

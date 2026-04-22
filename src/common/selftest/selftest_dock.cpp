@@ -25,7 +25,7 @@ CSelftestPart_Dock::CSelftestPart_Dock(IPartHandler &state_machine, const DockCo
     , dwarf(prusa_toolchanger.getTool(config.dock_id)) {}
 
 CSelftestPart_Dock::~CSelftestPart_Dock() {
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         prusa_toolchanger.getTool(e).set_cheese_led(); // Default LED config
     }
     prusa_toolchanger.init(false); // Ensure picked/active tool matches the reality

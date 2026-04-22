@@ -69,6 +69,9 @@ public:
      */
     void reset_filters();
 
+    /// Resets endstops to not triggered state
+    void reset_endstops();
+
     float GetScale() const;
 
     void set_xy_endstop(const bool enabled);
@@ -92,9 +95,7 @@ public:
     bool GetXYEndstop() const;
 
     // return loadcell load in grams
-    inline float get_tared_z_load() const { return (scale * (loadcellRaw - offset)); }
-    inline float get_filtered_z_load() const { return z_filter.get_output() * scale; }
-    inline float get_filtered_xy() const { return xy_filter.get_output() * scale; }
+    inline static float get_tared_z_load(int32_t raw_sample, float scale, float offset) { return (scale * (raw_sample - offset)); }
 
     int32_t get_raw_value() const;
 
@@ -107,6 +108,7 @@ public:
     inline void DisableHighPrecision() {
         assert(highPrecision); // ensure HP is not recursively disabled
         highPrecision = false;
+        reset_endstops();
     }
     inline bool IsHighPrecisionEnabled() const { return highPrecision; }
 
@@ -197,7 +199,7 @@ private:
             initialized_ = false;
         }
 
-        inline float filter(float input) {
+        [[nodiscard]] inline float filter(float input) {
             static_assert(NZEROS == 4, "This code works only for NZEROS == 4");
             static_assert(NPOLES == 4, "This code works only for NPOLES == 4");
             static_assert(A[0] == 1, "This code works only A[0] == 1");
@@ -243,10 +245,6 @@ private:
             return yv[4];
         }
 
-        inline float get_output() const {
-            return yv[std::size(yv) - 1];
-        }
-
         inline bool initialized() const {
             return initialized_;
         }
@@ -267,8 +265,8 @@ private:
     int32_t loadcellRaw; // current sample
     int undefinedCnt; // undefined sample run length
 
-    bool endstop;
-    std::atomic<bool> xy_endstop;
+    bool endstop = false;
+    std::atomic<bool> xy_endstop = false;
     static_assert(std::atomic<decltype(xy_endstop)::value_type>::is_always_lock_free, "Lock free type must be used from ISR.");
     bool highPrecision;
 

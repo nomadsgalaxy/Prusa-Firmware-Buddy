@@ -9,6 +9,10 @@
     #include <fsm/nozzle_cleaning_failed_phases.hpp>
 #endif
 
+#if HAS_SELFTEST()
+    #include "fsm/selftest_fsensors_phases.hpp"
+#endif
+
 namespace ClientResponses {
 
 constinit const EnumArray<ClientFSM, std::span<const PhaseResponses>, ClientFSM::_count> fsm_phase_responses {
@@ -18,8 +22,11 @@ constinit const EnumArray<ClientFSM, std::span<const PhaseResponses>, ClientFSM:
 #if HAS_SELFTEST()
         { ClientFSM::Selftest, SelftestResponses },
         { ClientFSM::FansSelftest, FanSelftestResponses },
+        { ClientFSM::SelftestFSensors, selftest_fsensors_responses },
 #endif
+#if HAS_ESP()
         { ClientFSM::NetworkSetup, network_setup_responses },
+#endif
         { ClientFSM::Printing, {} },
 #if ENABLED(CRASH_RECOVERY)
         { ClientFSM::CrashRecovery, CrashRecoveryResponses },
@@ -38,9 +45,6 @@ constinit const EnumArray<ClientFSM, std::span<const PhaseResponses>, ClientFSM:
 #endif
 #if HAS_INPUT_SHAPER_CALIBRATION()
         { ClientFSM::InputShaperCalibration, input_shaper_calibration_responses },
-#endif
-#if HAS_BELT_TUNING()
-        { ClientFSM::BeltTuning, belt_tuning_responses },
 #endif
 #if HAS_GEARBOX_ALIGNMENT()
         { ClientFSM::GearboxAlignment, gearbox_alignment_responses },

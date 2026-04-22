@@ -4,7 +4,7 @@
 
 #include "screen_prusa_link.hpp"
 #include "ScreenHandler.hpp"
-#include "RAII.hpp"
+#include <raii/auto_restore.hpp>
 
 #include "../../lib/WUI/wui.h"
 

@@ -23,7 +23,7 @@ namespace file {
     static_assert(sizeof(BufferChunk) == 32);
 
     struct Data {
-        AtomicCircularQueue<BufferChunk, uint8_t, 16> buffer;
+        AtomicCircularQueue<BufferChunk, uint8_t, 32> buffer;
         AsyncJob write_job;
         unique_file_ptr file;
 
@@ -64,6 +64,12 @@ static void file_log_write(AsyncJobExecutionControl &) {
     const bool was_overflow = data->buffer.isFull();
 
     data->write_buffer();
+
+    if (was_overflow) {
+        // Write a newline on overflow - it was likely chopped
+        // You know what, write two to visually separate the sections
+        fwrite("\n\n", 1, 2, data->file.get());
+    }
 
     // If we fail writing, disable the logger
     if (ferror(data->file.get())) {

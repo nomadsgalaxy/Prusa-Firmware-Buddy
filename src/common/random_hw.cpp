@@ -1,4 +1,5 @@
-// HW RNG implementation of random.h
+/// @file
+/// @brief HW RNG implementation of random.h
 
 #include "random.h"
 
@@ -28,13 +29,6 @@ RAND_DECL uint32_t rand_u() {
     // Production -> try to keep things working
     return rand_u_sw();
 #endif
-}
-
-static volatile uint32_t rng_ctx = 0x2a57ead0; // Chosen by fair dice roll. Guaranteed to be random.
-
-RAND_DECL uint32_t rand_u_sw() {
-    rng_ctx = (rng_ctx * 1103515245 + 12345); // glibc LCG constants, much bad, don't use for anything important
-    return rng_ctx;
 }
 
 RAND_DECL bool rand_u_secure(uint32_t *result) {

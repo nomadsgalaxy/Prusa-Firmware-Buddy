@@ -7,6 +7,8 @@
 #include "MItem_tools.hpp"
 #include "MItem_network.hpp"
 
+#include <option/has_esp.h>
+
 // ------------------- ETHERNET -----------------------
 using ScreenMenuEthernetSettings_ = ScreenMenu<EFooter::Off, MI_RETURN, //
     MI_NET_IP_VER_t,
@@ -25,6 +27,7 @@ public:
     ScreenMenuEthernetSettings();
 };
 
+#if HAS_ESP()
 // ------------------------ WIFI -----------------------------------
 using ScreenMenuWifiSettings_ = ScreenMenu<EFooter::Off, MI_RETURN, //
     MI_WIFI_STATUS_t,
@@ -45,3 +48,4 @@ class ScreenMenuWifiSettings final : public ScreenMenuWifiSettings_ {
 public:
     ScreenMenuWifiSettings();
 };
+#endif

@@ -4,6 +4,10 @@
 
 using namespace buddy;
 
+std::ostream &operator<<(std::ostream &os, const FanCooling::FanPWM &pwm) {
+    return os << "FanPWM{" << static_cast<int>(pwm.value) << "}";
+}
+
 TEST_CASE("Cooling PWM") {
     buddy::FanCooling cooling;
     static constexpr buddy::FanCooling::FanPWM max_auto_pwm { 100 };
@@ -54,38 +58,33 @@ TEST_CASE("Cooling PWM") {
 
     SECTION("Auto cooling, really hot") {
         const std::optional<Temperature> target_temperature = 20;
+        const Temperature current_temperature = 55;
 
-        // it is not possible reach soft_max_pwm in one step within operational temperatures
-        // so controll loop needs to be called several times before check
-        const auto result = step(true, 60, target_temperature, pwm_auto);
-        REQUIRE(result < max_auto_pwm);
+        const auto result = step(true, current_temperature, target_temperature, pwm_auto);
         REQUIRE(result > PWM255 { 0 });
         for (uint32_t i = 0; i < 10; i++) {
-            step(true, 60, target_temperature, pwm_auto);
+            step(true, current_temperature, target_temperature, pwm_auto);
         }
-        REQUIRE(step(true, 60, target_temperature, pwm_auto) == max_auto_pwm);
+        REQUIRE(step(true, current_temperature, target_temperature, pwm_auto) == max_auto_pwm);
     }
 
     SECTION("Nonsense range test") {
-        REQUIRE(step(true, 61, -100, pwm_auto) == max_auto_pwm);
+        const Temperature current_temperature = 55;
+
+        REQUIRE(step(true, current_temperature, -100, pwm_auto) == max_auto_pwm);
 
         // due to previous regulation cycle, the target value must be multiplied
-        REQUIRE(step(true, 61, 300, pwm_auto) == PWM255 { 0 });
+        REQUIRE(step(true, current_temperature, 300, pwm_auto) == PWM255 { 0 });
     }
 
     SECTION("Fan kick up speed") {
-        // note: this test must follow a test, which has 0 as an output of compute_pwm_step
         Temperature target_temperature = 20;
-        step(true, 20, 20, pwm_auto); // set last_regulation_output to 0
 
-        REQUIRE(step(false, 0.5 + target_temperature + cooling.min_pwm.value / cooling.integration_constant, target_temperature, pwm_auto) == cooling.spin_up_pwm);
+        // Use a small error that gets clamped to min_pwm
+        // Error of 4°C * ramp_slope(10) = 40 PWM, which equals min_pwm after apply_pwm_overrides
+        REQUIRE(step(false, 4.0 + target_temperature, target_temperature, pwm_auto) == cooling.spin_up_pwm);
 
-        target_temperature = 300.0; // reset the regulation output to 0
-        step(true, 20, target_temperature, pwm_auto);
-        target_temperature = 20;
-        step(true, 20, target_temperature, pwm_auto); // set last_regulation_output to 0
-
-        REQUIRE(step(true, 0.5 + target_temperature + cooling.min_pwm.value / cooling.integration_constant, target_temperature, pwm_auto) == cooling.min_pwm);
+        REQUIRE(step(true, 4.0 + target_temperature, target_temperature, pwm_auto) == cooling.min_pwm);
     }
 
     SECTION("Overheating cooling") {

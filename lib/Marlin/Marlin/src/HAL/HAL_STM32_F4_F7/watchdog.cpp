@@ -35,12 +35,7 @@
     hiwdg.Init.Prescaler = IWDG_PRESCALER_32; //32kHz LSI clock and 32x prescalar = 1024Hz IWDG clock
     hiwdg.Init.Reload = 4095;           //4095 counts = 4 seconds at 1024Hz
     if (HAL_IWDG_Init(&hiwdg) != HAL_OK) {
-      //Error_Handler();
-    }
-    else {
-      #if PIN_EXISTS(LED) && !ENABLED(PINS_DEBUGGING)
-        TOGGLE(LED_PIN);  // heartbeat indicator
-      #endif
+      bsod_system();
     }
   }
 
@@ -48,7 +43,7 @@
     /* Refresh IWDG: reload counter */
     if (HAL_IWDG_Refresh(&hiwdg) != HAL_OK) {
       /* Refresh Error */
-      //Error_Handler();
+      bsod_system();
     }
   }
 

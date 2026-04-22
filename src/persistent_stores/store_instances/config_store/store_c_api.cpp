@@ -252,6 +252,8 @@ bool get_has_400step_xy_motors() {
     return false;
 #elif PRINTER_IS_PRUSA_COREONE()
     return true;
+#elif PRINTER_IS_PRUSA_COREONEL()
+    return false;
 #else
     #error
 #endif

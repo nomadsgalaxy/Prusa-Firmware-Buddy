@@ -66,7 +66,7 @@ static void report_state() {
 /**
  *### M970: Enable/Disable Phase Stepping <a href="https://reprap.org/wiki/G-code#M970:_Enable.2FDisable_Phase_Stepping">M970: Enable/Disable Phase Stepping</a>
  *
- * Only XL/iX/COREONE
+ * Only XL/iX/COREONE/COREONEL
  *
  *#### Usage
  *
@@ -234,7 +234,7 @@ static void M971_write(const OptionsM971 &options) {
 /**
  *### M971: Read/reset/write phase-stepping motor current correction
  *
- * Only XL/iX/COREONE
+ * Only XL/iX/COREONE/COREONEL
  *
  *#### Usage
  *
@@ -326,7 +326,7 @@ public:
 /**
  *### M972: Calibrate motor
  *
- * Only XL/iX/COREONE
+ * Only XL/iX/COREONE/COREONEL
  *
  *#### Usage
  *
@@ -370,7 +370,8 @@ void GcodeSuite::M972() {
     Planner::synchronize();
 
     CalibrateAxisHooks hooks;
-    auto result = phase_stepping::calibrate_axis(axis, hooks);
+    phase_stepping::CalibrateAxisResult result;
+    phase_stepping::calibrate_axis(axis, hooks, result);
 
     if (!result.has_value()) {
         SERIAL_ECHO(to_string(result.error()));

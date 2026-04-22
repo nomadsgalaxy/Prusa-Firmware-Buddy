@@ -334,7 +334,7 @@ typedef struct {
     bool read;
 } tmc_reg_t;
 
-extern tmc_reg_t tmc_reg_map[]; //< Null terminated array of known registers
+const extern tmc_reg_t tmc_reg_map[]; //< Null terminated array of known registers
 
 void init_tmc();
 void tmc_get_sgt();

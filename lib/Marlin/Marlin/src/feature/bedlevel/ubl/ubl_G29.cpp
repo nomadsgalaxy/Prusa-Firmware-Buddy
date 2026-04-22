@@ -40,7 +40,7 @@
   #include "../../../feature/print_area.h"
   #include <fanctl.hpp>
   #include <option/has_love_board.h>
-  #include <scope_guard.hpp>
+  #include <raii/scope_guard.hpp>
 
   #if BOARD_IS_XBUDDY()
     #include <hw_configuration.hpp>
@@ -52,10 +52,6 @@
 
   #if ENABLED(NOZZLE_LOAD_CELL)
     #include "loadcell.hpp"
-  #endif
-
-  #if ENABLED(DUAL_X_CARRIAGE)
-    #include "../../../module/tool_change.h"
   #endif
 
   #define DEBUG_OUT ENABLED(DEBUG_LEVELING_FEATURE)
@@ -309,14 +305,14 @@
   #if PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_MINI()
 
   // Apply weighted correction on each point based on it's location.
-  // The whole correction is then conversed from µm to mm. 
+  // The whole correction is then converted from µm to mm.
 
   float x_axis_correction(int x, int y) {
     int32_t left_correction_um{config_store().left_bed_correction.get()};
     int32_t right_correction_um{config_store().right_bed_correction.get()};
 
     int32_t x_len{GRID_MAX_POINTS_X-1};
-    
+
     return ( (left_correction_um*(x_len-x)) + (right_correction_um*(x)) ) / static_cast<float>(x_len);
   }
 
@@ -367,9 +363,6 @@
       if (axes_need_homing()) {
         gcode.process_subcommands_now_P(PSTR("G28 O"));
       }
-      #if ENABLED(DUAL_X_CARRIAGE)
-        if (active_extruder != 0) tool_change(0);
-      #endif
     }
 
     // Invalidate Mesh Points. This command is a little bit asymmetrical because
@@ -489,14 +482,13 @@
               crash_s.set_gcode_replay_flags(Crash_s::RECOVER_AXIS_STATE);
             #endif
 
-            if (xy_seen && g29_size_seen) {
-              probe_major_points(g29_pos, g29_pos + g29_size, parser.seen('T'), parser.seen('E'), extend_mesh);
-            } else {
-              /// probe area is print area enlarged by one major point
-              auto probe_area = print_area.get_bounding_rect().inset(-MESH_X_DIST * GRID_MAJOR_STEP,
-                                                                     -MESH_Y_DIST * GRID_MAJOR_STEP);
-              probe_major_points(probe_area.a, probe_area.b, parser.seen('T'), parser.seen('E'), extend_mesh);
-            }
+            const auto probe_area = (xy_seen && g29_size_seen) ?
+              PrintArea::rect_t(g29_pos, g29_pos + g29_size) :
+              // probe area is print area enlarged by one major point
+              print_area.get_bounding_rect().inset(-MESH_X_DIST * GRID_MAJOR_STEP,
+                                                   -MESH_Y_DIST * GRID_MAJOR_STEP);
+
+            probe_major_points(probe_area, parser.seen('T'), parser.seen('E'), extend_mesh);
 
             report_current_position();
             probe_deployed = true;
@@ -694,7 +686,7 @@
   }
 
 #if HAS_BED_PROBE
-  void unified_bed_leveling::probe_major_points(const xy_pos_t area_a, const xy_pos_t area_b, const bool do_ubl_mesh_map, const bool stow_probe, const bool extend_mesh) {
+  void unified_bed_leveling::probe_major_points(const PrintArea::rect_t &probe_area, const bool do_ubl_mesh_map, const bool stow_probe, const bool extend_mesh) {
     save_ubl_active_state_and_disable();  // No bed level correction so only raw data is obtained
     pressure_advance::PressureAdvanceDisabler pa_disabler; // Reduce move delays as we don't extrude
 
@@ -712,7 +704,6 @@
       }
     #endif
 
-    PrintArea::rect_t probe_area(area_a, area_b);
     PrintStatusMessageGuard statusGuard;
 
     /**

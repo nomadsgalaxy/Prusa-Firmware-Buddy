@@ -6,9 +6,9 @@ from collections import defaultdict
 
 def process_yaml_dict(root, result):
     for ec in root['Errors']:
-        approved = ec['approved']
         code = ec['code']
         printers = ec.get('printers', [])
+        approved = ec.get('approved', False)
         if not approved:
             result[code].extend(printers)
 

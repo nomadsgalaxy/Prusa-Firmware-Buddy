@@ -39,13 +39,8 @@
 #endif
 
 #ifndef SG14_INPLACE_VECTOR_THROW
-    #ifndef UNITTESTS
-        // Our custom exception handling. Since we don't use them, lets bsod().
-        #include <bsod.h>
-        #define SG14_INPLACE_VECTOR_THROW(x) bsod("%s", (x).what())
-    #else
-        #define SG14_INPLACE_VECTOR_THROW(x) throw((x))
-    #endif
+    #include <bsod/bsod.h>
+    #define SG14_INPLACE_VECTOR_THROW(x) bsod(#x)
 #endif
 
 #ifndef SG14_INPLACE_VECTOR_TRIVIALLY_RELOCATABLE_IF

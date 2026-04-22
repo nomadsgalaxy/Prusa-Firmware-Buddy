@@ -139,7 +139,6 @@ void migrate(old_eeprom::current::vars_body_t &body, journal::Backend &backend) 
         backend.save(id, { buffer.data(), length });
     };
 
-    migrate_one(journal::hash("Run Selftest"), body.RUN_SELFTEST);
     migrate_one(journal::hash("Run XYZ Calibration"), body.RUN_XYZCALIB);
     migrate_one(journal::hash("Run First Layer"), body.RUN_FIRSTLAY);
 

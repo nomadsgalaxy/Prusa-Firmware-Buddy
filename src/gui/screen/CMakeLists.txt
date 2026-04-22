@@ -19,7 +19,7 @@ if(HAS_CANCEL_OBJECT)
 endif()
 
 if(HAS_MMU2)
-  target_sources(firmware PRIVATE screen_hw_mmu.cpp)
+  target_sources(firmware PRIVATE screen_hw_mmu.cpp screen_menu_mmu_preload_all.cpp)
 endif()
 
 if(HAS_LEDS_MENU)

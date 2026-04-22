@@ -2,12 +2,10 @@ target_sources(
   firmware
   PRIVATE G123.cpp
           G26.cpp
-          G64.cpp
           gcode.cpp
           M104_1.cpp
           M123.cpp
           M1702.cpp
-          M1703.cpp
           M300.cpp
           M330.cpp
           M340.cpp
@@ -54,7 +52,7 @@ if(HAS_NOZZLE_CLEANER)
 endif()
 
 if(HAS_SELFTEST)
-  target_sources(firmware PRIVATE G162.cpp G163.cpp M1978.cpp)
+  target_sources(firmware PRIVATE G162.cpp G163.cpp M1978.cpp M1981.cpp)
 endif()
 
 if(HAS_LEDS)
@@ -77,10 +75,6 @@ if(HAS_INPUT_SHAPER_CALIBRATION)
   target_sources(firmware PRIVATE M1959.cpp)
 endif()
 
-if(HAS_BELT_TUNING)
-  target_sources(firmware PRIVATE M960.cpp)
-endif()
-
 if(HAS_MANUAL_BELT_TUNING)
   target_sources(firmware PRIVATE M961.cpp)
 endif()
@@ -99,6 +93,10 @@ endif()
 
 if(HAS_PRECISE_HOMING_COREXY)
   target_sources(firmware PRIVATE M9202.cpp)
+endif()
+
+if(HAS_ESP)
+  target_sources(firmware PRIVATE M1703.cpp)
 endif()
 
 if(HAS_CHAMBER_VENTS)

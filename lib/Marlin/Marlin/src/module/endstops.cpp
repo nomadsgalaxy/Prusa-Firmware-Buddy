@@ -54,11 +54,6 @@ volatile uint8_t Endstops::hit_state;
 
 Endstops::esbits_t Endstops::live_state = 0;
 
-#if ENDSTOP_NOISE_THRESHOLD
-  Endstops::esbits_t Endstops::validated_live_state;
-  uint8_t Endstops::endstop_poll_count;
-#endif
-
 #if HAS_BED_PROBE
   std::atomic<bool> Endstops::z_probe_enabled { false };
 #endif
@@ -268,15 +263,8 @@ void Endstops::init() {
 
 // Called at ~1KHz from Temperature ISR: Poll endstop state if required
 void Endstops::poll() {
-
-  #if ENABLED(PINS_DEBUGGING)
-    run_monitor();  // report changes in endstop status
-  #endif
-
   #if DISABLED(ENDSTOP_INTERRUPTS_FEATURE)
     update();
-  #elif ENDSTOP_NOISE_THRESHOLD
-    if (endstop_poll_count) update();
   #endif
 
   // Call Loadcell::HomingSafetyCheck when homing (safeguard to stop homing when loadcell samples stop comming)
@@ -340,20 +328,7 @@ void Endstops::resync() {
   #else
     safe_delay(2);  // Wait for Temperature ISR to run at least once (runs at 1KHz)
   #endif
-  #if ENDSTOP_NOISE_THRESHOLD
-    while (endstop_poll_count) safe_delay(1);
-  #endif
 }
-
-#if ENABLED(PINS_DEBUGGING)
-  void Endstops::run_monitor() {
-    if (!monitor_flag) return;
-    static uint8_t monitor_count = 16;  // offset this check from the others
-    monitor_count += _BV(1);            //  15 Hz
-    monitor_count &= 0x7F;
-    if (!monitor_count) monitor();      // report changes in endstop status
-  }
-#endif
 
 void Endstops::event_handler() {
   static uint8_t prev_hit_state; // = 0
@@ -489,9 +464,7 @@ void __O2 Endstops::M119() {
 // Check endstops - Could be called from Temperature ISR!
 void Endstops::update() {
 
-  #if !ENDSTOP_NOISE_THRESHOLD
     if (!abort_enabled()) return;
-  #endif
 
   #define UPDATE_ENDSTOP_BIT(AXIS, MINMAX) SET_BIT_TO(live_state, _ENDSTOP(AXIS, MINMAX), (READ(_ENDSTOP_PIN(AXIS, MINMAX)) != _ENDSTOP_INVERTING(AXIS, MINMAX)))
   #define COPY_LIVE_STATE(SRC_BIT, DST_BIT) SET_BIT_TO(live_state, DST_BIT, TEST(live_state, SRC_BIT))
@@ -501,15 +474,8 @@ void Endstops::update() {
     if (G38_move) UPDATE_ENDSTOP_BIT(Z, MIN_PROBE);
   #endif
 
-  // With Dual X, endstops are only checked in the homing direction for the active extruder
-  #if ENABLED(DUAL_X_CARRIAGE)
-    #define E0_ACTIVE stepper.movement_extruder() == 0
-    #define X_MIN_TEST ((X_HOME_DIR < 0 && E0_ACTIVE) || (X2_HOME_DIR < 0 && !E0_ACTIVE))
-    #define X_MAX_TEST ((X_HOME_DIR > 0 && E0_ACTIVE) || (X2_HOME_DIR > 0 && !E0_ACTIVE))
-  #else
-    #define X_MIN_TEST true
-    #define X_MAX_TEST true
-  #endif
+  #define X_MIN_TEST true
+  #define X_MAX_TEST true
 
   // Use HEAD for core axes, AXIS for others
   #if CORE_IS_XY || CORE_IS_XZ
@@ -618,30 +584,6 @@ void Endstops::update() {
       // If this pin isn't the bed probe it's the Z endstop
       UPDATE_ENDSTOP_BIT(Z, MAX);
     #endif
-  #endif
-
-  #if ENDSTOP_NOISE_THRESHOLD
-
-    /**
-     * Filtering out noise on endstops requires a delayed decision. Let's assume, due to noise,
-     * that 50% of endstop signal samples are good and 50% are bad (assuming normal distribution
-     * of random noise). Then the first sample has a 50% chance to be good or bad. The 2nd sample
-     * also has a 50% chance to be good or bad. The chances of 2 samples both being bad becomes
-     * 50% of 50%, or 25%. That was the previous implementation of Marlin endstop handling. It
-     * reduces chances of bad readings in half, at the cost of 1 extra sample period, but chances
-     * still exist. The only way to reduce them further is to increase the number of samples.
-     * To reduce the chance to 1% (1/128th) requires 7 samples (adding 7ms of delay).
-     */
-    static esbits_t old_live_state;
-    if (old_live_state != live_state) {
-      endstop_poll_count = ENDSTOP_NOISE_THRESHOLD;
-      old_live_state = live_state;
-    }
-    else if (endstop_poll_count && !--endstop_poll_count)
-      validated_live_state = live_state;
-
-    if (!abort_enabled()) return;
-
   #endif
 
   // Test the current status of an endstop
@@ -800,149 +742,3 @@ void Endstops::update() {
     }
   }
 } // Endstops::update()
-
-void Endstops::trigger_endstop(EndstopEnum endstop) {
-  hit_state |= (1 << endstop);
-  switch(endstop) {
-  case X_MIN:
-  case X_MAX:
-    planner.endstop_triggered(X_AXIS);
-    break;
-  case Y_MIN:
-  case Y_MAX:
-    planner.endstop_triggered(Y_AXIS);
-    break;
-  case Z_MIN:
-  case Z_MAX:
-  case Z_MIN_PROBE:
-    planner.endstop_triggered(Z_AXIS);
-    break;
-  default:
-    bsod("unhandled endstop triggered");
-  };
-}
-
-#if ENABLED(PINS_DEBUGGING)
-
-  bool Endstops::monitor_flag = false;
-
-  /**
-   * Monitor Endstops and Z Probe for changes
-   *
-   * If a change is detected then the LED is toggled and
-   * a message is sent out the serial port.
-   *
-   * Yes, we could miss a rapid back & forth change but
-   * that won't matter because this is all manual.
-   */
-  void Endstops::monitor() {
-
-    static uint16_t old_live_state_local = 0;
-    static uint8_t local_LED_status = 0;
-    uint16_t live_state_local = 0;
-
-    #define ES_GET_STATE(S) if (READ(S##_PIN)) SBI(live_state_local, S)
-
-    #if HAS_X_MIN
-      ES_GET_STATE(X_MIN);
-    #endif
-    #if HAS_X_MAX
-      ES_GET_STATE(X_MAX);
-    #endif
-    #if HAS_Y_MIN
-      ES_GET_STATE(Y_MIN);
-    #endif
-    #if HAS_Y_MAX
-      ES_GET_STATE(Y_MAX);
-    #endif
-    #if HAS_Z_MIN
-      ES_GET_STATE(Z_MIN);
-    #endif
-    #if HAS_Z_MAX
-      ES_GET_STATE(Z_MAX);
-    #endif
-    #if HAS_Z_MIN_PROBE_PIN
-      ES_GET_STATE(Z_MIN_PROBE);
-    #endif
-    #if HAS_X2_MIN
-      ES_GET_STATE(X2_MIN);
-    #endif
-    #if HAS_X2_MAX
-      ES_GET_STATE(X2_MAX);
-    #endif
-    #if HAS_Y2_MIN
-      ES_GET_STATE(Y2_MIN);
-    #endif
-    #if HAS_Y2_MAX
-      ES_GET_STATE(Y2_MAX);
-    #endif
-    #if HAS_Z2_MIN
-      ES_GET_STATE(Z2_MIN);
-    #endif
-    #if HAS_Z2_MAX
-      ES_GET_STATE(Z2_MAX);
-    #endif
-    #if HAS_Z3_MIN
-      ES_GET_STATE(Z3_MIN);
-    #endif
-    #if HAS_Z3_MAX
-      ES_GET_STATE(Z3_MAX);
-    #endif
-
-    uint16_t endstop_change = live_state_local ^ old_live_state_local;
-    #define ES_REPORT_CHANGE(S) if (TEST(endstop_change, S)) SERIAL_ECHOPAIR("  " STRINGIFY(S) ":", TEST(live_state_local, S))
-
-    if (endstop_change) {
-      #if HAS_X_MIN
-        ES_REPORT_CHANGE(X_MIN);
-      #endif
-      #if HAS_X_MAX
-        ES_REPORT_CHANGE(X_MAX);
-      #endif
-      #if HAS_Y_MIN
-        ES_REPORT_CHANGE(Y_MIN);
-      #endif
-      #if HAS_Y_MAX
-        ES_REPORT_CHANGE(Y_MAX);
-      #endif
-      #if HAS_Z_MIN
-        ES_REPORT_CHANGE(Z_MIN);
-      #endif
-      #if HAS_Z_MAX
-        ES_REPORT_CHANGE(Z_MAX);
-      #endif
-      #if HAS_Z_MIN_PROBE_PIN
-        ES_REPORT_CHANGE(Z_MIN_PROBE);
-      #endif
-      #if HAS_X2_MIN
-        ES_REPORT_CHANGE(X2_MIN);
-      #endif
-      #if HAS_X2_MAX
-        ES_REPORT_CHANGE(X2_MAX);
-      #endif
-      #if HAS_Y2_MIN
-        ES_REPORT_CHANGE(Y2_MIN);
-      #endif
-      #if HAS_Y2_MAX
-        ES_REPORT_CHANGE(Y2_MAX);
-      #endif
-      #if HAS_Z2_MIN
-        ES_REPORT_CHANGE(Z2_MIN);
-      #endif
-      #if HAS_Z2_MAX
-        ES_REPORT_CHANGE(Z2_MAX);
-      #endif
-      #if HAS_Z3_MIN
-        ES_REPORT_CHANGE(Z3_MIN);
-      #endif
-      #if HAS_Z3_MAX
-        ES_REPORT_CHANGE(Z3_MAX);
-      #endif
-      SERIAL_ECHOLNPGM("\n");
-      analogWrite(pin_t(LED_PIN), local_LED_status);
-      local_LED_status ^= 255;
-      old_live_state_local = live_state_local;
-    }
-  }
-
-#endif // PINS_DEBUGGING

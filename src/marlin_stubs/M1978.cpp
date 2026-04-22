@@ -34,17 +34,27 @@
     #include <feature/chamber_filtration/chamber_filtration.hpp>
 #endif
 
-#include <option/xbuddy_extension_variant_standard.h>
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#include <option/xbuddy_extension_variant.h>
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     #include <feature/xbuddy_extension/xbuddy_extension.hpp>
     #include <puppies/xbuddy_extension.hpp> // For FAN_CNT
 #endif
 #include <logging/log.hpp>
 
+#include <option/has_bed_fan.h>
+#if HAS_BED_FAN()
+    #include <feature/bed_fan/controller.hpp>
+    #include <feature/bed_fan/selftest_result.hpp>
+#endif
+
+#include <option/has_psu_fan.h>
+#if HAS_PSU_FAN()
+    #include <puppies/ac_controller.hpp>
+#endif
+
 LOG_COMPONENT_REF(Selftest);
 
 using namespace fan_selftest;
-using namespace buddy;
 using marlin_server::wait_for_response;
 
 namespace {
@@ -199,12 +209,6 @@ private:
 
     void evaluate() {
         for (auto *fan : fans) {
-#if PRINTER_IS_PRUSA_iX()
-            // On iX we do not evaluate HB fan to make it always pass
-            if (fan->get_type() == FanType::heatbreak) {
-                continue;
-            }
-#endif
             fan->evaluate();
         }
     }
@@ -284,24 +288,30 @@ private:
         config_store().selftest_result.set(result);
 
 #if HAS_CHAMBER_API()
-        switch (chamber().backend()) {
+        switch (buddy::chamber().backend()) {
 
     #if XL_ENCLOSURE_SUPPORT()
-        case Chamber::Backend::xl_enclosure:
+        case buddy::Chamber::Backend::xl_enclosure:
             config_store().xl_enclosure_fan_selftest_result.set(TestResult_Unknown);
             break;
     #endif /* XL_ENCLOSURE_SUPPORT() */
 
-    #if XBUDDY_EXTENSION_VARIANT_STANDARD()
-        case Chamber::Backend::xbuddy_extension:
+    #if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
+        case buddy::Chamber::Backend::xbuddy_extension:
             config_store().xbe_fan_test_results.set({});
             break;
     #endif
 
-        case Chamber::Backend::none:
+        case buddy::Chamber::Backend::none:
             break;
         }
 #endif /* HAS_CHAMBER_API() */
+#if HAS_BED_FAN()
+        config_store().bed_fan_selftest_result.set(bed_fan::SelftestResult {});
+#endif
+#if HAS_PSU_FAN()
+        config_store().psu_fan_selftest_result.set(TestResult_Unknown);
+#endif
     }
 
     void set_low_speed_fan_range() {
@@ -330,14 +340,29 @@ private:
                 config_store().xl_enclosure_fan_selftest_result.set(fan->test_result());
                 break;
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
             case FanType::xbe_chamber: {
-                assert(fan->get_desc_num() < puppies::XBuddyExtension::FAN_CNT);
+                assert(fan->get_desc_num() < buddy::puppies::XBuddyExtension::FAN_CNT);
                 auto res = config_store().xbe_fan_test_results.get();
                 res.fans[fan->get_desc_num()] = fan->test_result();
                 config_store().xbe_fan_test_results.set(res);
                 break;
             }
+#endif
+#if HAS_BED_FAN()
+            case FanType::bed: {
+                static_assert(bed_fan::SelftestResult::fan_count == 2, "Adjust the fan result structure");
+                assert(fan->get_desc_num() < bed_fan::SelftestResult::fan_count);
+                auto res = config_store().bed_fan_selftest_result.get();
+                res.fans[fan->get_desc_num()] = fan->test_result();
+                config_store().bed_fan_selftest_result.set(res);
+                break;
+            }
+#endif
+#if HAS_PSU_FAN()
+            case FanType::psu:
+                config_store().psu_fan_selftest_result.set(fan->test_result());
+                break;
 #endif
             case FanType::_count:
                 assert(false);
@@ -394,7 +419,7 @@ void M1978() {
         };
     }(std::make_index_sequence<HOTENDS>());
 
-    std::array<FanHandler *, HOTENDS * 2 + 5 /* enclosure/chamber fans with reserve */> fan_container;
+    std::array<FanHandler *, HOTENDS * 2 + 5 /* enclosure/chamber fans (1-2) + AC fans (2) + reserve */> fan_container;
     std::array<std::pair<FanHandler *, FanHandler *>, HOTENDS> tool_fan_pairs;
 
     size_t container_index = 0;
@@ -413,29 +438,29 @@ void M1978() {
 #if XL_ENCLOSURE_SUPPORT()
     CommonFanHandler xl_enclosure_fan(FanType::xl_enclosure, 0, benevolent_fan_range, &Fans::enclosure());
 #endif
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     std::array xbe_fans {
         XBEFanHandler(FanType::xbe_chamber, 0, chamber_fan_range),
         XBEFanHandler(FanType::xbe_chamber, 1, chamber_fan_range),
         XBEFanHandler(FanType::xbe_chamber, 2, filtration_fan_range),
     };
-    static_assert(puppies::XBuddyExtension::FAN_CNT == 3);
+    static_assert(buddy::puppies::XBuddyExtension::FAN_CNT == 3);
 #endif
 
 #if HAS_CHAMBER_API()
-    switch (chamber().backend()) {
+    switch (buddy::chamber().backend()) {
 
     #if XL_ENCLOSURE_SUPPORT()
-    case Chamber::Backend::xl_enclosure: {
+    case buddy::Chamber::Backend::xl_enclosure: {
         fan_container[container_index++] = &xl_enclosure_fan;
         break;
     }
     #endif /* XL_ENCLOSURE_SUPPORT() */
 
-    #if XBUDDY_EXTENSION_VARIANT_STANDARD()
+    #if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
         static_assert(HAS_CHAMBER_FILTRATION_API());
-    case Chamber::Backend::xbuddy_extension:
-        if (xbuddy_extension().using_filtration_fan_instead_of_cooling_fans()) {
+    case buddy::Chamber::Backend::xbuddy_extension:
+        if (buddy::xbuddy_extension().using_filtration_fan_instead_of_cooling_fans()) {
             fan_container[container_index++] = &xbe_fans[2];
         } else {
             fan_container[container_index++] = &xbe_fans[0];
@@ -444,10 +469,25 @@ void M1978() {
         break;
     #endif
 
-    case Chamber::Backend::none:
+    case buddy::Chamber::Backend::none:
         break;
     }
 #endif /* HAS_CHAMBER_API() */
+
+#if HAS_BED_FAN()
+    static constexpr auto HIGH_BED_FAN_RANGE = fan_selftest::FanRPMRange { .rpm_min = 5400, .rpm_max = 6700 };
+    static constexpr auto LOW_BED_FAN_RANGE = fan_selftest::FanRPMRange { .rpm_min = 2100, .rpm_max = 2600 };
+    BedFanHandler bed_fan_0 { 0, HIGH_BED_FAN_RANGE, LOW_BED_FAN_RANGE };
+    fan_container[container_index++] = &bed_fan_0;
+    BedFanHandler bed_fan_1 { 1, HIGH_BED_FAN_RANGE, LOW_BED_FAN_RANGE };
+    fan_container[container_index++] = &bed_fan_1;
+#endif
+#if HAS_PSU_FAN()
+    static constexpr auto HIGH_PSU_FAN_RANGE = fan_selftest::FanRPMRange { .rpm_min = 4500, .rpm_max = 5500 };
+    static constexpr auto LOW_PSU_FAN_RANGE = fan_selftest::FanRPMRange { .rpm_min = 1800, .rpm_max = 2500 };
+    PSUFanHandler psu_fan { HIGH_PSU_FAN_RANGE, LOW_PSU_FAN_RANGE };
+    fan_container[container_index++] = &psu_fan;
+#endif
 
     assert(container_index && container_index <= fan_container.size());
 

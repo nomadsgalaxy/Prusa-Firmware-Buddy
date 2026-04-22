@@ -120,9 +120,8 @@ void WindowButton::windowEvent(window_t *sender, GUI_event_t event, void *param)
     }
 }
 
-WindowBlinkingText::WindowBlinkingText(window_t *parent, Rect16 rect, const string_view_utf8 &txt, uint16_t blink_step)
+WindowBlinkingText::WindowBlinkingText(window_t *parent, Rect16 rect, const string_view_utf8 &txt)
     : window_text_t(parent, rect, is_multiline::no, is_closed_on_click_t::no, txt)
-    , blink_step(blink_step)
     , blink_enable(false) {
     SetPadding({ 0, 0, 0, 0 });
 }
@@ -143,11 +142,7 @@ void WindowBlinkingText::unconditionalDraw() {
 
 void WindowBlinkingText::windowEvent(window_t *sender, GUI_event_t event, void *param) {
     const uint8_t prev_blink_phase = blink_phase;
-    if (blink_enable && blink_step) {
-        blink_phase = (gui::GetTick() / uint32_t(blink_step)) & 0b1;
-    } else {
-        blink_phase = 0;
-    }
+    blink_phase = blink_enable && ((gui::GetTick() / uint32_t(500)) & 0b1);
 
     if (blink_phase != prev_blink_phase) {
         Invalidate();

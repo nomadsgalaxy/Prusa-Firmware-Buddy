@@ -40,3 +40,7 @@
 bool sys_debugger_attached() {
     return CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk;
 }
+
+bool sys_is_interrupt() {
+    return (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0;
+}

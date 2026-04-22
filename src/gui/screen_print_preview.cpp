@@ -4,7 +4,7 @@
 #include "screen_print_preview.hpp"
 #include <logging/log.hpp>
 #include "marlin_client.hpp"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include <stdarg.h>
 #include "sound.hpp"
 #include "img_resources.hpp"
@@ -13,9 +13,9 @@
 #include "print_utils.hpp"
 #include "client_response.hpp"
 #include "printers.h"
-#include "RAII.hpp"
-#include "window_msgbox_wrong_printer.hpp"
 #include <selftest_result_evaluation.hpp>
+#include <window_msgbox_wrong_printer.hpp>
+#include <raii/auto_restore.hpp>
 #include <option/has_toolchanger.h>
 #include <option/has_mmu2.h>
 #include <device/board.h>
@@ -107,6 +107,13 @@ void ScreenPrintPreview::Change(fsm::BaseData data) {
         pMsgbox = makeMsgBox(_(label_wrong_filament), _(txt_wrong_fil_type));
         break;
 
+#if HAS_E2EE_SUPPORT()
+    case PhasesPrintPreview::untrusted_identity:
+        // TODO: The hash does not fit all 64 chars!! Do we need that big of a hash, wouldn't SHA128 be enough?
+        // Also the message and options should be different, if the identity is just one time
+        pMsgbox = makeMsgBox(_(label_untrusted_identity), _(txt_untrusted_identity).formatted(params, gcode.get_identity_info().identity_name.data(), gcode.get_identity_info().key_hash_str.data()), img::error_16x16);
+        break;
+#endif
     case PhasesPrintPreview::file_error:
         pMsgbox = makeMsgBox(_(label_file_error), _(gcode.error_str()), img::error_16x16);
         break;

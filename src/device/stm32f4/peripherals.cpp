@@ -15,6 +15,7 @@
 #include <logging/log.hpp>
 #include "timing_precise.hpp"
 #include <option/has_burst_stepping.h>
+#include <option/has_local_accelerometer.h>
 #include <option/has_i2c_expander.h>
 #include <printers.h>
 
@@ -84,25 +85,6 @@ PCA9557 io_expander1(I2C_HANDLE_FOR(io_expander1), 0x1);
 // Initialization
 //
 
-#if PRINTER_IS_PRUSA_iX()
-// called at earliest possible time after system/core inits to set turbine PWM pin (heatbed PWM pin) high and disable it
-void hw_preinit_turbine_disable() {
-    uint32_t offset = 0;
-    uint32_t pin = BED_HEAT_Pin;
-    while (!(pin & 0x1)) {
-        pin >>= 1;
-        offset++;
-    }
-    uint32_t temp = BED_HEAT_GPIO_Port->MODER;
-    temp &= ~(GPIO_MODER_MODER0 << (offset * 2U));
-    temp |= ((GPIO_MODE_OUTPUT_PP) << (offset * 2U));
-    BED_HEAT_GPIO_Port->MODER = temp;
-    temp = BED_HEAT_GPIO_Port->ODR;
-    temp |= BED_HEAT_Pin;
-    BED_HEAT_GPIO_Port->ODR = temp;
-}
-#endif
-
 void hw_rtc_init() {
     hrtc.Instance = RTC;
     hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
@@ -112,7 +94,7 @@ void hw_rtc_init() {
     hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
     hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
     if (HAL_RTC_Init(&hrtc) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_B);
@@ -124,7 +106,7 @@ void hw_rtc_init() {
 void hw_rng_init() {
     hrng.Instance = RNG;
     if (HAL_RNG_Init(&hrng) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 
@@ -142,35 +124,32 @@ void hw_gpio_init() {
     __HAL_RCC_GPIOH_CLK_ENABLE();
 
     // Configure GPIO pins : USB_OVERC_Pin ESP_GPIO0_Pin BED_MON_Pin WP1_Pin
+#if HAS_ESP()
     GPIO_InitStruct.Pin = USB_OVERC_Pin | ESP_GPIO0_Pin | BED_MON_Pin | WP1_Pin;
+#else
+    GPIO_InitStruct.Pin = USB_OVERC_Pin | BED_MON_Pin | WP1_Pin;
+#endif
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+#if HAS_ESP()
     // NOTE: Configuring GPIO causes a short drop of pin output to low. This is
     //       avoided by first setting the pin and then initilizing the GPIO. In case
     //       this does not work we first initilize ESP GPIO0 to avoid reset low
-    //       followed by ESP GPIO low as this sequence can switch esp to boot mode */
+    //       followed by ESP GPIO low as this sequence can switch esp to boot mode
+    //
+    // NOTE on NOTE: We configure ESP_GPIO0_Pin as an input pin and we claim we
+    //               avoid some behavior by writing to it first before
+    //               configuring it again as an output pin... Sounds rather
+    //               suspect, we should try to get rid of this.
 
     // Configure ESP GPIO0 (PROG, High for ESP module boot from Flash)
-    GPIO_InitStruct.Pin =
-#if (BOARD_IS_XBUDDY() || BOARD_IS_XLBUDDY())
-        GPIO_PIN_15
-#else
-        GPIO_PIN_6
-#endif
-        ;
+    GPIO_InitStruct.Pin = ESP_GPIO0_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_WritePin(GPIOE,
-#if (BOARD_IS_XBUDDY() || BOARD_IS_XLBUDDY())
-        GPIO_PIN_15
-#else
-        GPIO_PIN_6
-#endif
-        ,
-        GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOE, ESP_GPIO0_Pin, GPIO_PIN_SET);
     HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
     // Configure GPIO pins : ESP_RST_Pin
@@ -180,6 +159,7 @@ void hw_gpio_init() {
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_WritePin(GPIOC, ESP_RST_Pin, GPIO_PIN_SET);
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+#endif
 
     // Configure GPIO pins : WP2_Pin
     GPIO_InitStruct.Pin = WP2_Pin;
@@ -239,7 +219,7 @@ void hw_dma_init() {
     HAL_NVIC_SetPriority(DMA2_Stream5_IRQn, ISR_PRIORITY_DEFAULT, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream5_IRQn);
     // DMA2_Stream7_IRQn interrupt configuration
-    #if PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE()
+    #if PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
     HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, ISR_PRIORITY_PUPPIES_USART, 0);
     #else
     HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, ISR_PRIORITY_DEFAULT, 0);
@@ -273,7 +253,7 @@ void hw_dma_init() {
     HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, ISR_PRIORITY_DEFAULT, 0);
     HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 // DMA2_Stream2_IRQn interrupt configuration
-#if (PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE())
+#if (PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL())
     HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, ISR_PRIORITY_PUPPIES_USART, 0);
 #else
     HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, ISR_PRIORITY_DEFAULT, 0);
@@ -301,7 +281,7 @@ void static config_adc(ADC_HandleTypeDef *hadc, ADC_TypeDef *ADC_NUM, uint32_t N
     hadc->Init.DMAContinuousRequests = ENABLE;
     hadc->Init.EOCSelection = ADC_EOC_SINGLE_CONV;
     if (HAL_ADC_Init(hadc) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 
@@ -319,7 +299,7 @@ static void config_adc_ch(ADC_HandleTypeDef *hadc, uint32_t Channel, uint32_t Ra
     Rank++; // Channel rank starts at 1, but for array indexing, we need to start from 0.
     ADC_ChannelConfTypeDef sConfig = { Channel, Rank, sample_time, 0 };
     if (HAL_ADC_ConfigChannel(hadc, &sConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 
@@ -378,7 +358,7 @@ void hw_adc3_init() {
     config_adc_ch(&hadc3, ADC_CHANNEL_14, AdcChannel::board_I);
         #if PRINTER_IS_PRUSA_iX()
     config_adc_ch(&hadc3, ADC_CHANNEL_15, AdcChannel::case_T);
-        #elif PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_MK4()
+        #elif PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL() || PRINTER_IS_PRUSA_MK4()
     config_adc_ch(&hadc3, ADC_CHANNEL_15, AdcChannel::door_sensor);
         #endif
     #elif BOARD_IS_XLBUDDY()
@@ -540,17 +520,17 @@ void hw_i2c1_init() {
     hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
     if (HAL_I2C_Init(&hi2c1) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     #if defined(I2C_FLTR_ANOFF) && defined(I2C_FLTR_DNF)
     // Configure Analog filter
     if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Digital filter
     if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     #endif
 }
@@ -592,17 +572,17 @@ void hw_i2c2_init() {
     hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
     if (HAL_I2C_Init(&hi2c2) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     #if defined(I2C_FLTR_ANOFF) && defined(I2C_FLTR_DNF)
     // Configure Analog filter
     if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Digital filter to maximum (tHD:STA 0.357us delay)
     if (HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0x0F) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     #endif
 }
@@ -647,17 +627,17 @@ void hw_i2c3_init() {
     hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
     if (HAL_I2C_Init(&hi2c3) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     #if defined(I2C_FLTR_ANOFF) && defined(I2C_FLTR_DNF)
     // Configure Analogue filter
     if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     // Configure Digital filter
     if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     #endif
 }
@@ -684,7 +664,7 @@ void hw_spi2_init() {
     hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hspi2.Init.CRCPolynomial = 10;
     if (HAL_SPI_Init(&hspi2) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 
@@ -706,7 +686,7 @@ void hw_spi3_init() {
     hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hspi3.Init.CRCPolynomial = 10;
     if (HAL_SPI_Init(&hspi3) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 
@@ -726,7 +706,7 @@ void hw_spi4_init() {
     hspi4.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hspi4.Init.CRCPolynomial = 10;
     if (HAL_SPI_Init(&hspi4) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 #endif
@@ -746,7 +726,7 @@ void hw_spi5_init() {
     hspi5.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hspi5.Init.CRCPolynomial = 10;
     if (HAL_SPI_Init(&hspi5) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 #endif
@@ -766,7 +746,7 @@ void hw_spi6_init() {
     hspi6.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hspi6.Init.CRCPolynomial = 10;
     if (HAL_SPI_Init(&hspi6) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 #endif
@@ -784,19 +764,19 @@ void hw_tim1_init() {
     htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim1.Init.RepetitionCounter = 0;
     if (HAL_TIM_Base_Init(&htim1) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
     if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     if (HAL_TIM_PWM_Init(&htim1) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
     sConfigOC.Pulse = 0;
@@ -806,10 +786,10 @@ void hw_tim1_init() {
     sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
     sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
     if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) { //_PWM_FAN1
-        Error_Handler();
+        bsod_system();
     }
     if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK) { //_PWM_FAN
-        Error_Handler();
+        bsod_system();
     }
     sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
     sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
@@ -819,7 +799,7 @@ void hw_tim1_init() {
     sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
     sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
     if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     __HAL_TIM_ENABLE(&htim1);
 }
@@ -835,26 +815,26 @@ void hw_tim2_init() {
     htim2.Init.Period = 42000;
     htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
     if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     if (HAL_TIM_PWM_Init(&htim2) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
     sConfigOC.Pulse = 21000;
     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
     if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     HAL_TIM_MspPostInit(&htim2);
@@ -880,35 +860,36 @@ void hw_tim3_init() {
     htim3.Init.Period = TIM3_default_Period; // 0xff was 42000
     htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     if (HAL_TIM_Base_Init(&htim3) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
     if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     if (HAL_TIM_PWM_Init(&htim3) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     sConfigOC.OCMode = TIM_OCMODE_PWM1;
     sConfigOC.Pulse = 21000;
     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
     if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK) { //_PWM_HEATER_BED
-        Error_Handler();
+        bsod_system();
     }
     if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK) { //_PWM_HEATER_0
-        Error_Handler();
+        bsod_system();
     }
 
     HAL_TIM_MspPostInit(&htim3);
     __HAL_TIM_ENABLE(&htim3);
 }
 
+#if HAS_BURST_STEPPING()
 void hw_tim8_init() {
     TIM_ClockConfigTypeDef sClockSourceConfig {};
     TIM_MasterConfigTypeDef sMasterConfig {};
@@ -927,23 +908,25 @@ void hw_tim8_init() {
     htim8.Init.Period = period;
     htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     if (HAL_TIM_Base_Init(&htim8) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
     if (HAL_TIM_ConfigClockSource(&htim8, &sClockSourceConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     HAL_TIM_MspPostInit(&htim8);
 }
+#endif // HAS_BURST_STEPPING()
 
+#if HAS_LOCAL_ACCELEROMETER()
 void hw_tim9_init() {
     TIM_ClockConfigTypeDef sClockSourceConfig {};
     TIM_MasterConfigTypeDef sMasterConfig {};
@@ -957,22 +940,23 @@ void hw_tim9_init() {
     htim9.Init.Period = 33 - 1; // ~3 kHz
     htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     if (HAL_TIM_Base_Init(&htim9) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
     if (HAL_TIM_ConfigClockSource(&htim9, &sClockSourceConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
     sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     if (HAL_TIMEx_MasterConfigSynchronization(&htim9, &sMasterConfig) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     HAL_TIM_MspPostInit(&htim9);
 }
+#endif // HAS_LOCAL_ACCELEROMETER()
 
 void hw_tim13_init() {
     htim13.Instance = TIM13;
@@ -982,7 +966,7 @@ void hw_tim13_init() {
     htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Init(&htim13) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 
@@ -993,7 +977,7 @@ void hw_tim14_init() {
     htim14.Init.Period = 1000;
     htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     if (HAL_TIM_Base_Init(&htim14) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
     HAL_TIM_Base_Start_IT(&htim14);
 }

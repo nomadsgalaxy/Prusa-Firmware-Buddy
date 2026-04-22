@@ -14,8 +14,8 @@
 #include <stddef.h>
 #include <gcode/inject_queue_actions.hpp>
 #include <marlin_server_shared.h>
-#include <utils/callback_hook.hpp>
 #include <marlin_server_request.hpp>
+#include <utils/publisher.hpp>
 
 #include <serial_printing.hpp>
 
@@ -226,7 +226,7 @@ inline Response get_response_from_phase(FSMAndPhase fsm_and_phase, bool consume_
 Response wait_for_response(FSMAndPhase fsm_and_phase, uint32_t timeout_ms = 0);
 
 /// Replacement for the FSM_Notifier. Hooked callbacks will get called in marlin idle()
-extern CallbackHookPoint<> idle_hook_point;
+extern Publisher<> idle_publisher;
 
 void fsm_create(FSMAndPhase fsm_and_phase, fsm::PhaseData data = {});
 

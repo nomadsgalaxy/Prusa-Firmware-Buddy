@@ -2,7 +2,6 @@
 #include <cassert>
 #include <crc32.h>
 #include <algorithm>
-#include <bsod.h>
 
 #ifndef UNITTESTS
     #include <metric.h>
@@ -211,7 +210,7 @@ void Backend::load_version_migrated_data(const UpdateFunction &update_function) 
     load_items(next_bank_transactions_start_address, len_of_transactions, update_function);
 }
 
-void Backend::load_all(const UpdateFunction &update_function, std::span<const MigrationFunction> migration_functions) {
+void Backend::load_all(const UpdateFunction &update_function, const std::span<const MigrationFunction> &migration_functions) {
     auto l = lock();
 
     const auto [primary_bank, primary_address, secondary_header, secondary_address] = [this]() {
@@ -559,7 +558,7 @@ Backend::CRCType Backend::calculate_crc(const Backend::ItemHeader &header, const
     crc = crc32_calc_ex(crc, data.data(), data.size());
     return crc;
 }
-void Backend::save(uint16_t id, std::span<const uint8_t> data) {
+void Backend::save(uint16_t id, const std::span<const uint8_t> &data) {
     if (bank_migration.has_value()) {
         bank_migration->store_item(id, data);
     } else if (transaction.has_value()) {

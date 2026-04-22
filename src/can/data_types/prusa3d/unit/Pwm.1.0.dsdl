@@ -1,0 +1,8 @@
+# Pulse Width Modulation
+
+float32 pwm # PWM value as ratio of 0 to 1
+
+float32 MIN = 0 # Minimal value
+float32 MAX = 1 # Maximal value, fully on
+
+@sealed

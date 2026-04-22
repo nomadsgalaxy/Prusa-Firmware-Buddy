@@ -2,8 +2,6 @@
 // hwio.h - hardware input output abstraction
 #pragma once
 
-#include <device/board.h>
-#include <printers.h>
 #include <inttypes.h>
 #include <option/has_local_bed.h>
 
@@ -21,11 +19,6 @@ extern void hwio_beeper_notone(void);
 
 // cycle 1ms
 extern void hwio_update_1ms(void);
-
-// data from loveboard eeprom
-#if (BOARD_IS_XBUDDY() && HAS_TEMP_HEATBREAK)
-extern uint8_t hwio_get_loveboard_bomid();
-#endif
 
 #if HAS_LOCAL_BED()
 void analogWrite_HEATER_BED(uint32_t);

@@ -28,129 +28,14 @@
 
 #define ANY_THERMISTOR_IS(n) (THERMISTOR_HEATER_0 == n || THERMISTOR_HEATER_1 == n || THERMISTOR_HEATER_2 == n || THERMISTOR_HEATER_3 == n || THERMISTOR_HEATER_4 == n || THERMISTOR_HEATER_5 == n || THERMISTORBED == n || THERMISTORCHAMBER == n || TEMP_SENSOR_HEATBREAK == n  || TEMP_SENSOR_BOARD == n)
 
-// Pt1000 and Pt100 handling
-//
-// Rt=R0*(1+a*T+b*T*T) [for T>0]
-// a=3.9083E-3, b=-5.775E-7
-#define PtA 3.9083E-3
-#define PtB -5.775E-7
-#define PtRt(T,R0) ((R0) * (1.0 + (PtA) * (T) + (PtB) * (T) * (T)))
-#define PtAdVal(T,R0,Rup) (short)(1024 / (Rup / PtRt(T, R0) + 1))
-#define PtLine(T,R0,Rup) { OV(PtAdVal(T, R0, Rup)), T }
-
 #if ANY_THERMISTOR_IS(1) // beta25 = 4092 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "EPCOS"
   #include "thermistor_1.h"
-#endif
-#if ANY_THERMISTOR_IS(2) // 4338 K, R25 = 200 kOhm, Pull-up = 4.7 kOhm, "ATC Semitec 204GT-2"
-  #include "thermistor_2.h"
-#endif
-#if ANY_THERMISTOR_IS(3) // beta25 = 4120 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "Mendel-parts"
-  #include "thermistor_3.h"
-#endif
-#if ANY_THERMISTOR_IS(4) // beta25 = 3950 K, R25 = 10 kOhm, Pull-up = 4.7 kOhm, "Generic"
-  #include "thermistor_4.h"
 #endif
 #if ANY_THERMISTOR_IS(5) // beta25 = 4267 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "ParCan, ATC 104GT-2"
   #include "thermistor_5.h"
 #endif
-#if ANY_THERMISTOR_IS(501) // 100K Zonestar thermistor
-  #include "thermistor_501.h"
-#endif
-#if ANY_THERMISTOR_IS(512) // 100k thermistor in RPW-Ultra hotend, Pull-up = 4.7 kOhm, "unknown model"
-  #include "thermistor_512.h"
-#endif
-#if ANY_THERMISTOR_IS(6) // beta25 = 4092 K, R25 = 100 kOhm, Pull-up = 8.2 kOhm, "EPCOS ?"
-  #include "thermistor_6.h"
-#endif
-#if ANY_THERMISTOR_IS(7) // beta25 = 3974 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "Honeywell 135-104LAG-J01"
-  #include "thermistor_7.h"
-#endif
-#if ANY_THERMISTOR_IS(71) // beta25 = 3974 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "Honeywell 135-104LAF-J01"
-  #include "thermistor_71.h"
-#endif
-#if ANY_THERMISTOR_IS(8) // beta25 = 3950 K, R25 = 100 kOhm, Pull-up = 10 kOhm, "Vishay E3104FHT"
-  #include "thermistor_8.h"
-#endif
-#if ANY_THERMISTOR_IS(9) // beta25 = 3960 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "GE Sensing AL03006-58.2K-97-G1"
-  #include "thermistor_9.h"
-#endif
-#if ANY_THERMISTOR_IS(10) // beta25 = 3960 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "RS 198-961"
-  #include "thermistor_10.h"
-#endif
-#if ANY_THERMISTOR_IS(11) // beta25 = 3950 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "QU-BD silicone bed, QWG-104F-3950"
-  #include "thermistor_11.h"
-#endif
-#if ANY_THERMISTOR_IS(13) // beta25 = 4100 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "Hisens"
-  #include "thermistor_13.h"
-#endif
-#if ANY_THERMISTOR_IS(15) // JGAurora A5 thermistor calibration
-  #include "thermistor_15.h"
-#endif
-#if ANY_THERMISTOR_IS(18) // ATC Semitec 204GT-2 (4.7k pullup) Dagoma.Fr - MKS_Base_DKU001327
-  #include "thermistor_18.h"
-#endif
-#if ANY_THERMISTOR_IS(20) // Pt100 with INA826 amp on Ultimaker v2.0 electronics
-  #include "thermistor_20.h"
-#endif
-#if ANY_THERMISTOR_IS(21) // PT100 with HX717 ADC convertor
-  #include "thermistor_21.h"
-#endif
-#if ANY_THERMISTOR_IS(22) // PT100 with LMV358IDT preamp 3.3V MCU only
-  #include "thermistor_22.h"
-#endif
-#if ANY_THERMISTOR_IS(51) // beta25 = 4092 K, R25 = 100 kOhm, Pull-up = 1 kOhm, "EPCOS"
-  #include "thermistor_51.h"
-#endif
-#if ANY_THERMISTOR_IS(52) // beta25 = 4338 K, R25 = 200 kOhm, Pull-up = 1 kOhm, "ATC Semitec 204GT-2"
-  #include "thermistor_52.h"
-#endif
 #if ANY_THERMISTOR_IS(55) // beta25 = 4267 K, R25 = 100 kOhm, Pull-up = 1 kOhm, "ATC Semitec 104GT-2 (Used on ParCan)"
   #include "thermistor_55.h"
-#endif
-#if ANY_THERMISTOR_IS(60) // beta25 = 3950 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "Maker's Tool Works Kapton Bed"
-  #include "thermistor_60.h"
-#endif
-#if ANY_THERMISTOR_IS(61) // beta25 = 3950 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "Formbot 350°C Thermistor"
-  #include "thermistor_61.h"
-#endif
-#if ANY_THERMISTOR_IS(66) // beta25 = 4500 K, R25 = 2.5 MOhm, Pull-up = 4.7 kOhm, "DyzeDesign 500 °C Thermistor"
-  #include "thermistor_66.h"
-#endif
-#if ANY_THERMISTOR_IS(67) // R25 = 500 KOhm, beta25 = 3800 K, 4.7 kOhm pull-up, SliceEngineering 450 °C Thermistor
-  #include "thermistor_67.h"
-#endif
-#if ANY_THERMISTOR_IS(12) // beta25 = 4700 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "Personal calibration for Makibox hot bed"
-  #include "thermistor_12.h"
-#endif
-#if ANY_THERMISTOR_IS(70) // beta25 = 4100 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "Hephestos 2, bqh2 stock thermistor"
-  #include "thermistor_70.h"
-#endif
-#if ANY_THERMISTOR_IS(75) // beta25 = 4100 K, R25 = 100 kOhm, Pull-up = 4.7 kOhm, "MGB18-104F39050L32 thermistor"
-  #include "thermistor_75.h"
-#endif
-#if ANY_THERMISTOR_IS(99) // 100k bed thermistor with a 10K pull-up resistor (on some Wanhao i3 models)
-  #include "thermistor_99.h"
-#endif
-#if ANY_THERMISTOR_IS(110) // Pt100 with 1k0 pullup
-  #include "thermistor_110.h"
-#endif
-#if ANY_THERMISTOR_IS(147) // Pt100 with 4k7 pullup
-  #include "thermistor_147.h"
-#endif
-#if ANY_THERMISTOR_IS(201) // Pt100 with LMV324 Overlord
-  #include "thermistor_201.h"
-#endif
-#if ANY_THERMISTOR_IS(331) // Like table 1, but with 3V3 as input voltage
-  #include "thermistor_331.h"
-#endif
-#if ANY_THERMISTOR_IS(666) // beta25 = UNK, R25 = 200K, Pull-up = 10 kOhm, "Unidentified 200K NTC thermistor (Einstart S)"
-  #include "thermistor_666.h"
-#endif
-#if ANY_THERMISTOR_IS(1010) // Pt1000 with 1k0 pullup
-  #include "thermistor_1010.h"
-#endif
-#if ANY_THERMISTOR_IS(1047) // Pt1000 with 4k7 pullup
-  #include "thermistor_1047.h"
 #endif
 #if ANY_THERMISTOR_IS(2000) // 100k TDK NTC Chip Thermistor NTCG104LH104JT1 with 4k7 pullup
   #include "thermistor_2000.h"
@@ -161,17 +46,8 @@
 #if ANY_THERMISTOR_IS(2005) // 100k TDK NTC Chip Thermistor NTCG104LH104JT1 with 4k7 pullup
   #include "thermistor_2005.h"
 #endif
-#if ANY_THERMISTOR_IS(2007) // XL prototype termistor, TODO: FIX
-  #include "thermistor_2007.h"
-#endif
 #if ANY_THERMISTOR_IS(2008) // XL prototype termistor, TODO: FIX
   #include "thermistor_2008.h"
-#endif
-#if ANY_THERMISTOR_IS(998) // User-defined table 1
-  #include "thermistor_998.h"
-#endif
-#if ANY_THERMISTOR_IS(999) // User-defined table 2
-  #include "thermistor_999.h"
 #endif
 
 #define _TT_NAME(_N) temptable_ ## _N

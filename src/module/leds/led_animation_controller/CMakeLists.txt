@@ -1,0 +1,3 @@
+add_library(led_animation_controller STATIC simple_transition_controller.cpp)
+target_include_directories(led_animation_controller PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(led_animation_controller PUBLIC buddy_utils freertos)

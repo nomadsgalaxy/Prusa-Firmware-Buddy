@@ -24,11 +24,17 @@ class ScreenPrintPreview : public ScreenPrintPreviewBase {
 #if HAS_MMU2()
     constexpr static const char *label_fil_detected_mmu = find_error(ErrCode::CONNECT_PRINT_PREVIEW_MMU_FILAMENT_INSERTED).err_title;
 #endif
+#if HAS_E2EE_SUPPORT()
+    constexpr static const char *label_untrusted_identity = find_error(ErrCode::CONNECT_UNTRUSTED_IDENTITY).err_title;
+#endif
     constexpr static const char *label_file_error = find_error(ErrCode::CONNECT_PRINT_PREVIEW_FILE_ERROR).err_title;
     constexpr static const char *label_wrong_printer = find_error(ErrCode::CONNECT_PRINT_PREVIEW_WRONG_PRINTER).err_title;
     constexpr static const char *label_wrong_filament = find_error(ErrCode::CONNECT_PRINT_PREVIEW_WRONG_FILAMENT).err_title;
 
     static constexpr const char *txt_unfinished_selftest = find_error(ErrCode::CONNECT_UNFINISHED_SELFTEST).err_text;
+#if HAS_E2EE_SUPPORT()
+    static constexpr const char *txt_untrusted_identity = find_error(ErrCode::CONNECT_UNTRUSTED_IDENTITY).err_text;
+#endif
     static constexpr const char *txt_fil_not_detected = find_error(ErrCode::CONNECT_PRINT_PREVIEW_NO_FILAMENT).err_text;
 #if HAS_MMU2()
     static constexpr const char *txt_fil_detected_mmu = find_error(ErrCode::CONNECT_PRINT_PREVIEW_MMU_FILAMENT_INSERTED).err_text;
@@ -40,6 +46,9 @@ class ScreenPrintPreview : public ScreenPrintPreviewBase {
     static ScreenPrintPreview *ths; // to be accessible in dialog handler
 
     GCodeInfo &gcode;
+#if HAS_E2EE_SUPPORT()
+    StringViewUtf8Parameters<e2ee::IDENTITY_NAME_LEN + e2ee::KEY_HASH_STR_BUFFER_LEN> params;
+#endif
     GCodeInfoWithDescription gcode_description; // cannot be first
     WindowPreviewThumbnail thumbnail; // draws preview image
 

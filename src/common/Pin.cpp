@@ -63,7 +63,7 @@ void InterruptPin::configure() const {
         }
 #elif MCU_IS_STM32G0()
         // TODO: this is not yet implemented
-        system_core_error_handler();
+        bsod_system();
 #else
     #error InterruptPin::configure() is not defined for this MCU
 #endif

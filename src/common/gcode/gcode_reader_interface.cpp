@@ -7,6 +7,8 @@
 #include "transfers/transfer.hpp"
 #include "lang/i18n.h"
 
+void IGcodeReader::generate_index(Index &, bool) {}
+
 IGcodeReader::Result_t GcodeReaderCommon::stream_get_line_common(GcodeBuffer &b, Continuations line_continuations) {
     b.line.begin = begin(b.buffer);
     b.line.end = begin(b.buffer);

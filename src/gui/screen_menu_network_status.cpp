@@ -16,8 +16,10 @@ ScreenMenuNetworkStatus::ScreenMenuNetworkStatus()
     : MenuBase(_(label))
     , ping_manager_(std::to_underlying(StatSlot::_cnt)) {
 
+#if HAS_ESP()
     Item<MI_WIFI_STATUS_t>().set_is_hidden(netdev_get_active_id() != NETDEV_ESP_ID);
     Item<MI_WIFI_SIGNAL_t>().set_is_hidden(netdev_get_active_id() != NETDEV_ESP_ID);
+#endif
 
 #if BUDDY_ENABLE_CONNECT()
     Item<MI_CONNECT_HOST>().SetLabel(_("Connect Host"));

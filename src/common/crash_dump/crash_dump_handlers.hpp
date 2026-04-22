@@ -1,5 +1,5 @@
 #pragma once
-#include "crash_dump_distribute.hpp"
+#include "crash_dump/dump.hpp"
 #include <device/board.h>
 #include <option/has_puppies.h>
 #if HAS_PUPPIES()
@@ -8,12 +8,10 @@
 
 namespace crash_dump {
 inline constexpr const char *buddy_dump_usb_path { "/usb/dump_buddy.bin" };
-void upload_buddy_dump_to_server();
 
 struct DumpHandler {
     bool (*presence_check)();
     void (*usb_save)();
-    void (*server_upload)();
     void (*remove)();
 };
 
@@ -22,14 +20,12 @@ inline constexpr auto dump_handlers { std::to_array<DumpHandler>({
     {
         .presence_check = buddy::puppies::crash_dump::is_a_dump_in_filesystem,
         .usb_save = []() { buddy::puppies::crash_dump::save_dumps_to_usb(); },
-        .server_upload = []() { buddy::puppies::crash_dump::upload_dumps_to_server(); },
         .remove = []() { buddy::puppies::crash_dump::remove_dumps_from_filesystem(); },
     },
 #endif
         {
             .presence_check = []() { return dump_is_valid() && !dump_is_exported(); },
             .usb_save = []() { save_dump_to_usb(buddy_dump_usb_path); },
-            .server_upload = []() { upload_buddy_dump_to_server(); },
             .remove = []() {
                 // dump is intentinaly not removed, just marked as exported. User can later export it from menu.
                 dump_set_exported(); },
@@ -38,7 +34,7 @@ inline constexpr auto dump_handlers { std::to_array<DumpHandler>({
 
 inline constexpr auto dump_handlers_have_valid_pointers { []() {
     for (const auto &handle : dump_handlers) {
-        if (!handle.presence_check || !handle.usb_save || !handle.server_upload || !handle.remove) {
+        if (!handle.presence_check || !handle.usb_save || !handle.remove) {
             return false;
         }
     }

@@ -1,10 +1,11 @@
 #include "catch2/catch.hpp"
-#include "filament_sensor_adc_eval.hpp"
+#include <feature/filament_sensor/filament_sensor_adc_eval.hpp>
 #include <fstream>
 #include <string>
 #include <regex>
 #include <optional>
 #include <filters/median_filter.hpp>
+#include <test_utils/formatters.hpp>
 
 using TimeStamp = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
 using DataPoint = std::pair<TimeStamp, uint32_t>;
@@ -70,24 +71,24 @@ bool LoadCSV(const char *fpath, DataPointsDeq &dataPoints) {
 FilamentSensorState FilterAndEvaluate(int32_t fs_raw_value, int32_t fs_ref_nins_value, int32_t fs_ref_ins_value) {
     static MedianFilter filter;
     if (filter.filter(fs_raw_value)) { // fs_raw_value is rewritten - passed by reference ... WTF?
-        return evaluate_state(fs_raw_value, fs_ref_nins_value, fs_ref_ins_value, FilamentSensorState::NotConnected, 0);
+        return evaluate_state(fs_raw_value, fs_ref_nins_value, fs_ref_ins_value, FilamentSensorState::NotConnected);
     } else {
-        return evaluate_state(filtered_value_not_ready, fs_ref_nins_value, fs_ref_ins_value, FilamentSensorState::NotConnected, 0);
+        return evaluate_state(filtered_value_not_ready, fs_ref_nins_value, fs_ref_ins_value, FilamentSensorState::NotConnected);
     }
 }
 
 void FSBasicTest(int32_t fsRefNins, int32_t fsRefIns, int32_t noFil, int32_t hasFil) {
     CAPTURE(fsRefNins, fsRefIns, noFil, hasFil);
 
-    CHECK(evaluate_state(noFil, fsRefNins, fsRefIns, FilamentSensorState::HasFilament, 0) == FilamentSensorState::NoFilament);
-    CHECK(evaluate_state(hasFil, fsRefNins, fsRefIns, FilamentSensorState::NoFilament, 0) == FilamentSensorState::HasFilament);
+    CHECK(evaluate_state(noFil, fsRefNins, fsRefIns, FilamentSensorState::HasFilament) == FilamentSensorState::NoFilament);
+    CHECK(evaluate_state(hasFil, fsRefNins, fsRefIns, FilamentSensorState::NoFilament) == FilamentSensorState::HasFilament);
 
-    CHECK(evaluate_state(noFil, fsRefNins, fsRefIns, FilamentSensorState::NoFilament, 0) == FilamentSensorState::NoFilament);
-    CHECK(evaluate_state(hasFil, fsRefNins, fsRefIns, FilamentSensorState::HasFilament, 0) == FilamentSensorState::HasFilament);
+    CHECK(evaluate_state(noFil, fsRefNins, fsRefIns, FilamentSensorState::NoFilament) == FilamentSensorState::NoFilament);
+    CHECK(evaluate_state(hasFil, fsRefNins, fsRefIns, FilamentSensorState::HasFilament) == FilamentSensorState::HasFilament);
 
-    CHECK(evaluate_state(filtered_value_not_ready, fsRefNins, fsRefIns, FilamentSensorState::HasFilament, 0) == FilamentSensorState::NotInitialized);
-    CHECK(evaluate_state(noFil, ref_value_not_calibrated, fsRefIns, FilamentSensorState::HasFilament, 0) == FilamentSensorState::NotCalibrated);
-    CHECK(evaluate_state(lower_limit - 1, fsRefNins, fsRefIns, FilamentSensorState::HasFilament, 0) == FilamentSensorState::NotConnected);
+    CHECK(evaluate_state(filtered_value_not_ready, fsRefNins, fsRefIns, FilamentSensorState::HasFilament) == FilamentSensorState::NotInitialized);
+    CHECK(evaluate_state(noFil, ref_value_not_calibrated, fsRefIns, FilamentSensorState::HasFilament) == FilamentSensorState::NotCalibrated);
+    CHECK(evaluate_state(lower_limit - 1, fsRefNins, fsRefIns, FilamentSensorState::HasFilament) == FilamentSensorState::NotConnected);
 }
 
 TEST_CASE("FilamentSensor basic test", "[filament_sensor]") {
@@ -105,7 +106,7 @@ TEST_CASE("FilamentSensor basic test inverted", "[filament_sensor]") {
 TEST_CASE("FilamentSensor flipped", "[filament_sensor]") {
     // false positive check - this needed to be fixed
     // filtered value out of interval range, but in the "correct" direction
-    CHECK(evaluate_state(200'000, 240'000, 400'000, FilamentSensorState::NotInitialized, 0) == FilamentSensorState::NoFilament);
+    CHECK(evaluate_state(200'000, 240'000, 400'000, FilamentSensorState::NotInitialized) == FilamentSensorState::NoFilament);
 }
 
 TEST_CASE("FilamentSensor flipped dataset1", "[filament_sensor]") {

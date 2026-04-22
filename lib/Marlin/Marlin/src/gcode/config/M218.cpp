@@ -27,10 +27,6 @@
 #include "../gcode.h"
 #include "../../module/motion.h"
 
-#if ENABLED(DELTA)
-  #include "../../module/planner.h"
-#endif
-
 /** \addtogroup G-Codes
  * @{
  */
@@ -64,7 +60,7 @@ void GcodeSuite::M218() {
   if (!parser.seen("XYZ")) {
     SERIAL_ECHO_START();
     SERIAL_ECHOPGM(MSG_HOTEND_OFFSET);
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
       SERIAL_CHAR(' ');
       SERIAL_ECHO(hotend_offset[e].x);
       SERIAL_CHAR(',');
@@ -74,11 +70,6 @@ void GcodeSuite::M218() {
     }
     SERIAL_EOL();
   }
-
-  #if ENABLED(DELTA)
-    if (target_extruder == active_extruder)
-      do_blocking_move_to_xy(current_position, planner.settings.max_feedrate_mm_s[X_AXIS]);
-  #endif
 }
 
 /** @}*/

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <option/has_dwarf.h>
+#include <option/has_esp.h>
 #include <option/has_gearbox_alignment.h>
 #include <option/has_toolchanger.h>
 #include <option/has_loadcell.h>
@@ -8,7 +9,6 @@
 #include <option/has_phase_stepping_calibration.h>
 #include <option/has_coldpull.h>
 #include <option/has_input_shaper_calibration.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_side_fsensor.h>
 #include <option/has_emergency_stop.h>
 #include <option/xl_enclosure_support.h>
@@ -34,8 +34,11 @@ enum class ClientFSM : uint8_t {
     #if HAS_SELFTEST()
     Selftest,
     FansSelftest,
+    SelftestFSensors,
     #endif
+    #if HAS_ESP()
     NetworkSetup,
+    #endif
     Printing, // not a dialog
     #if ENABLED(CRASH_RECOVERY)
     CrashRecovery,
@@ -54,9 +57,6 @@ enum class ClientFSM : uint8_t {
     #endif
     #if HAS_INPUT_SHAPER_CALIBRATION()
     InputShaperCalibration,
-    #endif
-    #if HAS_BELT_TUNING()
-    BeltTuning,
     #endif
     #if HAS_GEARBOX_ALIGNMENT()
     GearboxAlignment,

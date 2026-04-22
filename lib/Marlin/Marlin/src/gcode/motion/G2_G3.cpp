@@ -35,12 +35,6 @@
   #include <feature/cancel_object/cancel_object.hpp>
 #endif
 
-#if ENABLED(DELTA)
-  #include "../../module/delta.h"
-#elif ENABLED(SCARA)
-  #include "../../module/scara.h"
-#endif
-
 #if ENABLED(CRASH_RECOVERY)
   #include <feature/prusa/crash_recovery.hpp>
 #endif

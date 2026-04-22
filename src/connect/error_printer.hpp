@@ -5,7 +5,7 @@
 
 namespace connect_client {
 
-/// A replacement printer for redscreen/bluescreen cases.
+/// A replacement printer for the error screen.
 ///
 /// Does not do much, but doesn't access marlin or USB. It just reports an
 /// error state.

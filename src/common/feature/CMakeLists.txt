@@ -4,10 +4,6 @@ if(HAS_CANCEL_OBJECT)
   add_subdirectory(cancel_object)
 endif()
 
-if(HAS_BELT_TUNING)
-  add_subdirectory(belt_tuning)
-endif()
-
 if(HAS_MANUAL_BELT_TUNING)
   add_subdirectory(manual_belt_tuning)
 endif()
@@ -43,8 +39,20 @@ if(HAS_REMOTE_BED)
   add_subdirectory(remote_bed)
 endif()
 
+if(FILAMENT_SENSOR)
+  add_subdirectory(filament_sensor)
+endif()
+
 if(HAS_LOADCELL)
   add_subdirectory(nozzle_cleaning_failed)
+endif()
+
+if(HAS_BED_FAN)
+  add_subdirectory(bed_fan)
+endif()
+
+if(HAS_PSU_FAN)
+  add_subdirectory(psu_fan)
 endif()
 
 add_subdirectory(ramming)

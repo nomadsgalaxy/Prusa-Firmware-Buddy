@@ -159,7 +159,6 @@ public:
     virtual bool Abort() override;
 
 protected:
-    void phaseSelftestStart();
     void restoreAfterSelftest();
     virtual void next() override;
     bool phaseWaitUser(PhasesSelftest phase);
@@ -210,9 +209,6 @@ bool CSelftest::Start(const uint64_t test_mask, const selftest::TestData test_da
         m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmMoveZup)); // if Z is calibrated, move it up
     }
     if (m_Mask & stmFullSelftest) {
-        m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmSelftestStart)); // any selftest state will trigger selftest additional init
-    }
-    if (m_Mask & stmFullSelftest) {
         m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmSelftestStop)); // any selftest state will trigger selftest additional deinit
     }
 
@@ -237,9 +233,6 @@ void CSelftest::Loop() {
         return;
     case stsStart:
         phaseStart();
-        break;
-    case stsSelftestStart:
-        phaseSelftestStart();
         break;
     case stsZcalib: {
         // calib_Z(true) will move it back after calibration
@@ -361,11 +354,6 @@ void CSelftest::Loop() {
 void CSelftest::phaseDidSelftestPass() {
     m_result = config_store().selftest_result.get();
     SelftestResult_Log(m_result);
-
-    // dont run wizard again
-    if (SelftestResult_Passed_All(m_result)) {
-        config_store().run_selftest.set(false);
-    }
 }
 
 bool CSelftest::phaseWaitUser(PhasesSelftest phase) {
@@ -374,7 +362,6 @@ bool CSelftest::phaseWaitUser(PhasesSelftest phase) {
         Abort();
     }
     if (response == Response::Ignore) {
-        config_store().run_selftest.set(false);
         Abort();
     }
     return response == Response::_none;
@@ -397,37 +384,6 @@ bool CSelftest::Abort() {
 
     phaseFinish();
     return true;
-}
-
-void CSelftest::phaseSelftestStart() {
-    if (m_Mask & stmHeaters) {
-        // set bed to 35°C
-        // heater test will start after temperature pass tru 40°C (we dont want to entire bed and sheet to be tempered at it)
-        // so don't set 40°C, it could also trigger cooldown in case temperature is or similar 40.1°C
-        thermalManager.setTargetBed(35);
-        // no need to preheat nozzle, it heats up much faster than bed
-        thermalManager.setTargetHotend(0, 0);
-        marlin_server::set_temp_to_display(0, 0);
-    }
-
-    m_result = config_store().selftest_result.get(); // read previous result
-    if (m_Mask & stmXAxis) {
-        m_result.xaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmYAxis) {
-        m_result.yaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmZAxis) {
-        m_result.zaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmZcalib) {
-        m_result.zalign = TestResult_Unknown;
-    }
-    if (m_Mask & stmHeaters) {
-        m_result.tools[0].nozzle = TestResult_Unknown;
-        m_result.bed = TestResult_Unknown;
-    }
-    config_store().selftest_result.set(m_result); // reset status for all selftest parts in eeprom
 }
 
 void CSelftest::restoreAfterSelftest() {

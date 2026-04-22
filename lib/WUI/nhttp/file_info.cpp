@@ -45,11 +45,10 @@ struct FileMetadata {
     bool read_only {};
 };
 
-FileMetadata get_file_metadata(const char *path, struct stat &st, DIR *&dir) {
-    if (dir = opendir(path); dir) {
+FileMetadata get_file_metadata(const char *path, struct stat &st, Directory &dir) {
+    if (dir = Directory { path }; dir) {
         MutablePath mp(path);
         if (auto st_opt = transfers::Transfer::get_transfer_partial_file_stat(mp); st_opt.has_value()) {
-            closedir(dir);
             st = st_opt.value();
             return { FileType::File, true };
         } else {
@@ -98,7 +97,7 @@ JsonResult FileInfo::DirRenderer::renderStateV1(size_t resume_point, JsonOutput 
         }
         JSON_FIELD_STR("name", state.filename) JSON_COMMA;
         JSON_FIELD_ARR("children");
-        while (state.dir.get() && (state.ent = readdir(state.dir.get()))) {
+        while (state.dir && (state.ent = state.dir.read())) {
             if (const char *lfn = dirent_lfn(state.ent); lfn && lfn[0] == '.') {
                 continue;
             }
@@ -184,7 +183,7 @@ JsonResult FileInfo::DirRenderer::renderStateOctoprint(size_t resume_point, Json
 
                 // Note: ent, as the control variable, needs to be preserved inside the
                 // object, so it survives resumes.
-                while (state.dir.get() && (state.ent = readdir(state.dir.get()))) {
+                while (state.dir && (state.ent = state.dir.read())) {
                     if (!filename_is_printable(state.ent->d_name)) {
                         continue;
                     }
@@ -321,18 +320,18 @@ void FileInfo::step(std::string_view, bool, uint8_t *output, size_t output_size,
 
         struct stat finfo = {};
         first_packet = true;
-        DIR *dir_attempt = nullptr;
+        Directory dir_attempt;
 
         // Note: apart from just returning the type, it also fills
-        // either the DIR* or struct stat with the appropriate content,
+        // either the Directory or struct stat with the appropriate content,
         // so we don't have to call it twice (especially opendir() which
         // allocates).
         auto file_metadata = get_file_metadata(filepath, finfo, dir_attempt);
 
         switch (file_metadata.type) {
         case FileType::Directory:
-            assert(dir_attempt != nullptr);
-            renderer = DirRenderer(this, dir_attempt, api);
+            assert(static_cast<bool>(dir_attempt));
+            renderer = DirRenderer { this, std::move(dir_attempt), api };
             break;
         case FileType::File:
             renderer = FileRenderer(this, finfo.st_size, finfo.st_mtime, api, file_metadata.read_only);

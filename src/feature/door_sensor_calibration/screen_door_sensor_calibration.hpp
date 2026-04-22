@@ -4,12 +4,13 @@
 #include <option/has_door_sensor_calibration.h>
 
 class ScreenDoorSensorCalibration final : public ScreenFSM {
-private:
-    RadioButtonFSM radio;
-
 public:
     ScreenDoorSensorCalibration();
     ~ScreenDoorSensorCalibration();
+
+    inline PhaseDoorSensorCalibration get_phase() const {
+        return GetEnumFromPhaseIndex<PhaseDoorSensorCalibration>(fsm_base_data.GetPhase());
+    }
 
 protected:
     void create_frame() final;

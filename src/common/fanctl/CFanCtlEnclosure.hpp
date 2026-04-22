@@ -24,6 +24,8 @@ public:
     virtual bool set_pwm(uint16_t pwm) override;
     virtual uint16_t get_min_pwm() const override { return 0; }
 
+    void safe_state() override {}; // Enclosure doesn't need to do anything in safe_state
+
     virtual void enter_selftest_mode() override;
     virtual void exit_selftest_mode() override;
     virtual bool selftest_set_pwm(uint8_t pwm) override;

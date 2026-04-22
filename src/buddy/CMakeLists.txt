@@ -1,6 +1,9 @@
 target_sources(
   firmware
-  PRIVATE fatfs.cpp
+  PRIVATE bootstrap_state.cpp
+          cxa_guard.cpp
+          digest.cpp
+          fatfs.cpp
           filesystem.cpp
           filesystem_fatfs.cpp
           filesystem_littlefs.cpp
@@ -22,10 +25,8 @@ target_sources(
           usbh_diskio.cpp
   )
 
-if(HAS_ESP_FLASH_TASK)
+if(HAS_ESP)
   target_sources(firmware PRIVATE esp_flash_task.cpp)
-else()
-  target_sources(firmware PRIVATE esp_flash_task_trivial.cpp)
 endif()
 
 if(HAS_DOOR_SENSOR)

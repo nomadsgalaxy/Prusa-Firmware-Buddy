@@ -6,9 +6,10 @@
 #include "img_resources.hpp"
 #include "shared_config.h" //BOOTLOADER_VERSION_ADDRESS
 #include "../common/otp.hpp"
-#include "common/filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include <utils/string_builder.hpp>
 
+#include <option/bootloader.h>
 #include <option/has_mmu2.h>
 
 #if HAS_MMU2()
@@ -33,10 +34,13 @@ ScreenMenuVersionInfo::ScreenMenuVersionInfo()
     Item<MI_INFO_FW>().ChangeInformation(version::project_version_full);
 
     {
-        const version_t *bootloader_version = (const version_t *)BOOTLOADER_VERSION_ADDRESS;
-
         ArrayStringBuilder<12> sb;
+#if BOOTLOADER()
+        const version_t *bootloader_version = (const version_t *)BOOTLOADER_VERSION_ADDRESS;
         sb.append_printf("%d.%d.%d", bootloader_version->major, bootloader_version->minor, bootloader_version->patch);
+#else
+        sb.append_string("noboot");
+#endif
         Item<MI_INFO_BOOTLOADER>().ChangeInformation(sb.str());
     }
 

@@ -21,8 +21,70 @@
 #include "../Marlin/src/module/planner.h"
 #include "../Marlin/src/module/endstops.h"
 #include "feature/prusa/e-stall_detector.h"
+#include <metric_handlers.h>
 
 LOG_COMPONENT_DEF(Loadcell, logging::Severity::info);
+
+METRIC_DEF(metric_loadcell, "loadcell", METRIC_VALUE_CUSTOM, 0, METRIC_DISABLED);
+METRIC_DEF(metric_loadcell_hp, "loadcell_hp", METRIC_VALUE_FLOAT, 0, METRIC_DISABLED);
+METRIC_DEF(metric_loadcell_xy, "loadcell_xy", METRIC_VALUE_FLOAT, 0, METRIC_DISABLED);
+METRIC_DEF(metric_loadcell_age, "loadcell_age", METRIC_VALUE_INTEGER, 0, METRIC_DISABLED);
+METRIC_DEF(metric_loadcell_value, "loadcell_value", METRIC_VALUE_FLOAT, 0, METRIC_DISABLED);
+METRIC_DEF(mbl, "mbl", METRIC_VALUE_CUSTOM, 0, METRIC_DISABLED);
+
+LOG_COMPONENT_REF(Loadcell);
+
+namespace {
+
+struct MetricsData {
+    /// Timestamp of the data
+    uint32_t time_us;
+
+    int32_t raw_value;
+    int32_t offset;
+    float scale;
+
+    // Loads are in grams
+    float filtered_z_load;
+    float filtered_xy_load;
+
+    float z_pos;
+
+    constexpr inline float tared_z_load() const {
+        return Loadcell::get_tared_z_load(raw_value, scale, offset);
+    }
+};
+
+StaticTimer_t metrics_timer_storage;
+TimerHandle_t metrics_timer;
+
+AtomicCircularQueue<MetricsData, uint8_t, 8> metrics_queue;
+
+// Note - the queue is quite big
+// The only purpose of this assert is this comment
+static_assert(sizeof(metrics_queue) == 228);
+
+void report_loadcell_metrics(tmrTimerControl *) {
+    MetricsData d;
+
+    if (metrics_queue.isFull()) {
+        log_warning(Loadcell, "Loadcell metrics overflow");
+    }
+
+    while (metrics_queue.dequeue(d)) {
+        // Do the varargs passing around only if we have to
+        if (metric_record_is_due(&metric_loadcell)) {
+            metric_record_custom_at_time(&metric_loadcell, d.time_us, " r=%" PRId32 "i,o=%" PRId32 "i,s=%0.4f", d.raw_value, d.offset, static_cast<double>(d.scale));
+        }
+
+        metric_record_float_at_time(&metric_loadcell_hp, d.time_us, d.filtered_z_load);
+        metric_record_float_at_time(&metric_loadcell_xy, d.time_us, d.filtered_xy_load);
+        metric_record_integer_at_time(&metric_loadcell_age, d.time_us, ticks_diff(d.time_us, ticks_us()));
+        metric_record_float_at_time(&metric_loadcell_value, d.time_us, d.tared_z_load());
+        metric_record_custom(&mbl, " z=%0.3f,l=%0.3f", (double)d.z_pos, (double)d.tared_z_load());
+    }
+}
+} // namespace
 
 Loadcell loadcell;
 
@@ -34,6 +96,9 @@ Loadcell::Loadcell()
     , z_filter()
     , xy_filter() {
     Clear();
+
+    metrics_timer = xTimerCreateStatic("loadcell_metrics", 1, false, nullptr, &report_loadcell_metrics, &metrics_timer_storage);
+    assert(metrics_timer);
 }
 
 void Loadcell::WaitBarrier(uint32_t ticks_us) {
@@ -94,8 +159,7 @@ float Loadcell::Tare(TareMode mode) {
         WaitBarrier();
     }
 
-    endstop = false;
-    xy_endstop = false;
+    reset_endstops();
 
     return offset * scale; // Return offset scaled to output grams
 }
@@ -106,8 +170,7 @@ void Loadcell::Clear() {
     undefinedCnt = -UNDEFINED_INIT_MAX_CNT;
     offset = 0;
     reset_filters();
-    endstop = false;
-    xy_endstop = false;
+    reset_endstops();
 }
 
 void Loadcell::reset_filters() {
@@ -116,8 +179,21 @@ void Loadcell::reset_filters() {
     loadcell.analysis.Reset();
 }
 
+void Loadcell::reset_endstops() {
+    const bool changed = endstop || xy_endstop;
+
+    endstop = false;
+    xy_endstop = false;
+
+    if (changed) {
+        // Warning: Calling endstops from outside of ISR - needs to be reworked
+        // BFW-7674
+        buddy::hw::zMin.isr();
+    }
+}
+
 bool Loadcell::GetMinZEndstop() const {
-    return endstop && endstops.is_z_probe_enabled();
+    return endstop;
 }
 
 bool Loadcell::GetXYEndstop() const {
@@ -165,69 +241,89 @@ void Loadcell::ProcessSample(int32_t loadcellRaw, uint32_t time_us) {
         }
     }
 
+    const float tared_z_load = get_tared_z_load(loadcellRaw, scale, offset);
+
+    float filtered_z_load = NAN;
+    float filtered_xy_load = NAN;
+
     // handle filters only in high precision mode
     if (highPrecision) {
-        z_filter.filter(this->loadcellRaw);
-        xy_filter.filter(this->loadcellRaw);
+        filtered_z_load = z_filter.filter(this->loadcellRaw) * scale;
+        filtered_xy_load = xy_filter.filter(this->loadcellRaw) * scale;
+
+        if (tareCount != 0) {
+            // Undergoing tare process, only use valid samples
+            if (loadcellRaw != undefined_value) {
+                tareSum += loadcellRaw;
+                tareCount -= 1;
+            }
+        } else {
+            // Trigger Z endstop/probe
+            float loadForEndstops, threshold;
+            if (tareMode == TareMode::Static) {
+                loadForEndstops = tared_z_load;
+                threshold = thresholdStatic;
+            } else {
+                assert(!Endstops::is_z_probe_enabled() || z_filter.initialized());
+                loadForEndstops = filtered_z_load;
+                threshold = thresholdContinuous;
+            }
+
+            if (endstop && loadForEndstops >= (threshold + hysteresis)) {
+                endstop = false;
+                buddy::hw::zMin.isr();
+
+            } else if (!endstop && loadForEndstops <= threshold && endstops.is_z_probe_enabled()) {
+                endstop = true;
+                buddy::hw::zMin.isr();
+            }
+
+            // Trigger XY endstop/probe
+            if (xy_endstop_enabled) {
+                assert(xy_filter.initialized());
+
+                // Everything as absolute values, watch for changes.
+                // Load perpendicular to the sensor sense vector is not guaranteed to have defined sign.
+                if (abs(filtered_xy_load) > abs(XY_PROBE_THRESHOLD)) {
+                    xy_endstop = true;
+                    buddy::hw::zMin.isr();
+                }
+                if (abs(filtered_xy_load) < abs(XY_PROBE_THRESHOLD) - abs(XY_PROBE_HYSTERESIS)) {
+                    xy_endstop = false;
+                    buddy::hw::zMin.isr();
+                }
+            }
+        }
     }
 
     // save sample timestamp/age
     last_sample_time_us = time_us;
 
-    const float tared_z_load = get_tared_z_load();
+    const float z_pos = buddy::probePositionLookback.get_position_at(time_us);
+
+    const MetricsData metrics_data {
+        .time_us = time_us,
+        .raw_value = loadcellRaw,
+        .offset = offset,
+        .scale = scale,
+        .filtered_z_load = filtered_z_load,
+        .filtered_xy_load = filtered_xy_load,
+        .z_pos = z_pos,
+    };
+    if (are_metrics_enabled()) {
+        const bool needs_timer_start = metrics_queue.isEmpty();
+        if (!metrics_queue.enqueue(metrics_data)) {
+            metrics_queue.clear();
+        }
+        if (needs_timer_start && !xTimerStartFromISR(metrics_timer, nullptr)) {
+            // If we failed to start the timer, clear the queue so that we can try starting it again next time
+            metrics_queue.clear();
+        }
+    }
+
     sensor_data().loadCell = tared_z_load;
     if (!std::isfinite(tared_z_load)) {
         fatal_error(ErrCode::ERR_SYSTEM_LOADCELL_INFINITE_LOAD);
-    }
-
-    const float filtered_z_load = get_filtered_z_load();
-    const float filtered_xy_load = get_filtered_xy();
-
-    if (tareCount != 0) {
-        // Undergoing tare process, only use valid samples
-        if (loadcellRaw != undefined_value) {
-            tareSum += loadcellRaw;
-            tareCount -= 1;
-        }
-    } else {
-        // Trigger Z endstop/probe
-        float loadForEndstops, threshold;
-        if (tareMode == TareMode::Static) {
-            loadForEndstops = tared_z_load;
-            threshold = thresholdStatic;
-        } else {
-            assert(!Endstops::is_z_probe_enabled() || z_filter.initialized());
-            loadForEndstops = filtered_z_load;
-            threshold = thresholdContinuous;
-        }
-
-        if (endstop) {
-            if (loadForEndstops >= (threshold + hysteresis)) {
-                endstop = false;
-            }
-            buddy::hw::zMin.isr();
-        } else {
-            if (loadForEndstops <= threshold) {
-                endstop = true;
-                buddy::hw::zMin.isr();
-            }
-        }
-
-        // Trigger XY endstop/probe
-        if (xy_endstop_enabled) {
-            assert(xy_filter.initialized());
-
-            // Everything as absolute values, watch for changes.
-            // Load perpendicular to the sensor sense vector is not guaranteed to have defined sign.
-            if (abs(filtered_xy_load) > abs(XY_PROBE_THRESHOLD)) {
-                xy_endstop = true;
-                buddy::hw::zMin.isr();
-            }
-            if (abs(filtered_xy_load) < abs(XY_PROBE_THRESHOLD) - abs(XY_PROBE_HYSTERESIS)) {
-                xy_endstop = false;
-                buddy::hw::zMin.isr();
-            }
-        }
     }
 
     if (Endstops::is_z_probe_enabled()) {
@@ -241,10 +337,10 @@ void Loadcell::ProcessSample(int32_t loadcellRaw, uint32_t time_us) {
     }
 
     // push sample for analysis
-    float z_pos = buddy::probePositionLookback.get_position_at(time_us, []() { return planner.get_axis_position_mm(AxisEnum::Z_AXIS); });
-    if (!std::isnan(z_pos)) {
-        analysis.StoreSample(time_us, z_pos, tared_z_load);
-    } else {
+    // If the sample is nan, the analysis should detect it and fail
+    analysis.StoreSample(time_us, z_pos, tared_z_load);
+
+    if (std::isnan(z_pos)) {
         // Temporary disabled as this causes positive feedback loop by blocking the calling thread if the logs are
         // being uploaded to a remote server. This does not solve the problem entirely. There are other logs that
         // can block. Still this should fix most of the issues and allow us to test the rest of the functionality

@@ -2,7 +2,7 @@
 #include "ScreenShot.hpp"
 #include "display.hpp"
 #include <unique_file_ptr.hpp>
-#include <scope_guard.hpp>
+#include <raii/scope_guard.hpp>
 #include <inttypes.h>
 #include <dirent.h>
 #include <stdio.h>

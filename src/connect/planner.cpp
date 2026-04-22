@@ -15,8 +15,8 @@
     #include <xl_enclosure.hpp>
 #endif
 
-#include <option/xbuddy_extension_variant_standard.h>
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#include <option/xbuddy_extension_variant.h>
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     #include <feature/chamber/chamber.hpp>
     #include <feature/xbuddy_extension/xbuddy_extension.hpp>
     #include <feature/xbuddy_extension/cooling.hpp>
@@ -84,19 +84,27 @@ namespace {
     //
     // All timestamps and durations are in milliseconds.
 
-    // Don't send telemetry more often than this even if things change.
-    const constexpr Duration TELEMETRY_INTERVAL_MIN = 750;
-#if WEBSOCKET()
-    // ~~~Max of 2 minutes of telemetry silence.~~~
-    //
-    // Switching to 4 seconds for expreminent too.
+    // iX prefers shorter intervals:
+    // * LAN communication, so it's mostly for free.
+    // * We wand to avoid delays during pick-up.
+#if PRINTER_IS_PRUSA_iX()
     const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 4;
-#else
-    // Telemetry every 4 seconds. We may want to have something more clever later on.
-    const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 4;
-#endif
-    // Except when we are printing or processing something, we want it more often.
     const constexpr Duration TELEMETRY_INTERVAL_SHORT = 1000;
+    const constexpr Duration TELEMETRY_INTERVAL_MIN = 750;
+#else
+    #if WEBSOCKET()
+    // Telemetry every 15 seconds at least.
+    const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 15;
+    #else
+    // Telemetry every 4 seconds (unlike websocket, we can't receive a command
+    // asynchronously).
+    const constexpr Duration TELEMETRY_INTERVAL_LONG = 1000 * 5;
+    #endif
+    // Except when we are printing or processing something, we want it more often.
+    const constexpr Duration TELEMETRY_INTERVAL_SHORT = 1000 * 5;
+    // Never send more often than this, even if there are changes.
+    const constexpr Duration TELEMETRY_INTERVAL_MIN = 1000 * 2;
+#endif
     // Make sure to send a full telemetry once in a while, even if there are no
     // relevant changes. That's because the server might forget the telemetry sometimes.
     const constexpr Duration TELEMETRY_INTERVAL_FULL = 1000 * 60 * 5;
@@ -349,7 +357,7 @@ Sleep Planner::sleep(Duration amount, http::Connection *wake_on_readable, bool c
         wake_on_readable = nullptr;
     }
 
-    // Don't do anything "extra" during bluescreen/redscreen.
+    // Don't do anything "extra" in error screen.
     if (printer.is_in_error()) {
         return Sleep(amount, nullptr, nullptr, wake_on_readable, false, false);
     }
@@ -1026,7 +1034,7 @@ void Planner::command(const Command &command, const SetValue &params) {
             slot.nozzle_diameter = get<float>(params.value);
         });
         break;
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     case connect_client::PropertyName::ChamberTargetTemp: {
         auto target_temp = get<uint32_t>(params.value);
         buddy::chamber().set_target_temperature(target_temp == connect_client::Printer::ChamberInfo::target_temp_unset ? nullopt : std::make_optional(target_temp));

@@ -4,6 +4,7 @@
 #include <WindowItemFormatableLabel.hpp>
 #include <i18n.h>
 #include <wui_api.h>
+#include <option/has_esp.h>
 
 struct NetDeviceID {
 
@@ -38,6 +39,7 @@ public:
         : Parent(device_id) {}
 };
 
+#if HAS_ESP()
 class MI_WIFI_STATUS_t : public WI_INFO_t {
     constexpr static const char *const label = HAS_MINI_DISPLAY() ? N_("Status") : N_("Wi-Fi Status");
 
@@ -74,6 +76,7 @@ public:
     MI_NET_INTERFACE_t();
     virtual void OnChange(size_t old_index) override;
 };
+#endif
 
 class MI_HOSTNAME : public WiInfo<HAS_MINI_DISPLAY() ? 16 : config_store_ns::lan_hostname_max_len + 1> {
     // Printer's name within network

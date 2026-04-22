@@ -140,7 +140,7 @@ WinsCheckAxis::WinsCheckAxis(ScreenCrashRecovery &screen)
     , text_y_axis(&screen, text_y_axis_rc, is_multiline::no, is_closed_on_click_t::no, _(en_text_Y_axis))
     , icon_y_axis(&screen, { col_2, row_5 }) {
 
-    line.SetBackColor(COLOR_ORANGE);
+    line.SetBackColor(COLOR_BRAND);
     text_long.SetAlignment(Align_t::Center());
     icon_x_axis.SetState(SelftestSubtestState_t::running);
     #if HAS_SIDE_LEDS()
@@ -156,7 +156,7 @@ WinsHome::WinsHome(ScreenCrashRecovery &screen)
     , text_home_axes(&screen, text_x_axis_rc, is_multiline::no, is_closed_on_click_t::no, _(en_text_home_axes))
     , icon_home_axes(&screen, { col_2, row_4 }) {
 
-    line.SetBackColor(COLOR_ORANGE);
+    line.SetBackColor(COLOR_BRAND);
     text_long.SetAlignment(Align_t::Center());
     icon_home_axes.SetState(SelftestSubtestState_t::running);
     #if HAS_SIDE_LEDS()
@@ -173,7 +173,7 @@ WinsAxisNok::WinsAxisNok(ScreenCrashRecovery &screen)
     , icon_y_axis(&screen, { col_2, row_5 + row_nok_shift })
     , radio(&screen, GuiDefaults::GetButtonRect_AvoidFooter(screen.GetRect()), ClientResponses::get_available_responses(PhasesCrashRecovery::axis_NOK), &texts) {
 
-    line.SetBackColor(COLOR_ORANGE);
+    line.SetBackColor(COLOR_BRAND);
     text_long.SetAlignment(Align_t::Center());
     #if HAS_SIDE_LEDS()
     leds::SideStripHandler::instance().set_custom_color(leds::ColorRGBW(255, 0, 0), 400, 100);

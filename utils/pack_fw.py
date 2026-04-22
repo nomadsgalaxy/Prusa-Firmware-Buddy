@@ -33,6 +33,7 @@ class PrinterType(Enum):
     MK3point5 = 5
     # 6 taken by HT90
     COREONE = 7
+    COREONEL = 8
 
 
 class TLVType(Enum):

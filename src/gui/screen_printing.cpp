@@ -753,7 +753,6 @@ void screen_printing_data_t::change_print_state() {
     printing_state_t st = [&] {
         switch (marlin_vars().print_state) {
         case State::Idle:
-        case State::WaitGui:
         case State::PrintPreviewInit:
         case State::PrintPreviewImage:
         case State::PrintPreviewConfirmed:

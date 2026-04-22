@@ -12,6 +12,10 @@
 #include "gcode_reader_restore_info.hpp"
 #include "gcode_reader_result.hpp"
 
+#if HAS_E2EE_SUPPORT()
+    #include <e2ee/e2ee.hpp>
+#endif
+
 class IGcodeReader {
 public:
     enum class Continuations {
@@ -34,22 +38,11 @@ public:
         QOI,
     };
 
-    enum class FileVerificationLevel {
-        /// Quick verification, does not perform full CRC check,
-        /// just checks for some markers that the file is valid (for exapmle GCDE at the beginning)
-        quick,
-
-        /// Everything from quick verify plus full CRC check, if the format supports it
-        full,
-    };
-
-    struct FileVerificationResult {
-        bool is_ok = false;
-        const char *error_str = nullptr; ///< Oblitagory error message
-
-        inline explicit operator bool() const {
-            return is_ok;
-        }
+    struct ThumbnailDetails {
+        uint16_t width;
+        uint16_t height;
+        unsigned long num_bytes;
+        ImgType type;
     };
 
     using StreamRestoreInfo = GCodeReaderStreamRestoreInfo;
@@ -62,11 +55,61 @@ public:
         thumbnail,
     };
 
+    /// Positions where things start.
+    struct Index {
+        /// A position, or not_indexed.
+        ///
+        /// std::optional would be better, but takes more space.
+        ///
+        /// Note: This is raw file offset (bytes), not anything related to
+        /// stream positions.
+        using Position = uint32_t;
+
+        /// Not found, but we are not 100% sure.
+        ///
+        /// We may have looked or not.
+        static constexpr Position not_indexed = 0xFFFFFFFF;
+
+        /// We are sure it is not there. No reason to look again.
+        static constexpr Position not_present = not_indexed - 1;
+
+        static constexpr size_t thumbnail_slots = 3;
+
+        Position gcode = not_indexed;
+        Position metadata = not_indexed;
+
+        struct Thumbnail {
+            // Request section
+            uint16_t w = 0;
+            uint16_t h = 0;
+            ImgType type = ImgType::Unknown;
+            // Output
+            Position position = not_indexed;
+        };
+
+        std::array<Thumbnail, thumbnail_slots> thumbnails;
+
+        bool indexed() const {
+            // Simplified. We don't bother with formats that index only thumbnails.
+            return gcode != not_indexed || metadata != not_indexed;
+        }
+
+        static bool present(Position position) {
+            return position != not_indexed && position != not_present;
+        }
+    };
+
 public:
+    /// Pre-index the file.
+    ///
+    /// If the file / type doesn't support indexing, it doesn't modify the out
+    /// parameter at all.
+    virtual void generate_index(Index &out, bool ignore_crc = false);
+
     /**
      * @brief Start streaming metadata from gcode
      */
-    virtual bool stream_metadata_start() = 0;
+    virtual bool stream_metadata_start(const Index *index = nullptr) = 0;
 
     /**
      * @brief Start streaming gcodes from .gcode or .bgcode file
@@ -78,10 +121,15 @@ public:
      *   times, this one is called at the start of print).
      * - The damage from a corrupt metadata or thumbnail is significantly
      *   smaller than a corruption in print instructions.
+     * - As per popular demand, we now include option to ignore CRC, which
+     *   significantly speeds up print preview screen.
      *
      * @param offset if non-zero will skip to specified offset (after powerpanic, pause etc)
+     * @param ignore_crc if non-zero will ignore CRC, which should be used with caution
+     * @param index (if present) - preindexed to look up things faster. If not
+     *   nullptr, must come from previous call into index() on the same reader.
      */
-    virtual Result_t stream_gcode_start(uint32_t offset = 0) = 0;
+    virtual Result_t stream_gcode_start(uint32_t offset = 0, bool ignore_crc = false, const Index *index = nullptr) = 0;
 
     /**
      * @brief Find thumbnail with specified parameters and start streaming it.
@@ -94,6 +142,15 @@ public:
      * Errors are not indicated specially.
      */
     virtual AbstractByteReader *stream_thumbnail_start(uint16_t expected_width, uint16_t expected_height, ImgType expected_type, bool allow_larger = false) = 0;
+#if 0
+    // TODO: Once we need it (do we? Will we?)
+    /**
+     * Start streaming a thumbnail on given position.
+     *
+     * Overload for the above, but with a position previously returned as part of index.
+     */
+    virtual AbstractByteReader *stream_thumbnail_start(Index::Position position);
+#endif
 
     /**
      * @brief Get line from stream specified before by start_xx function
@@ -117,12 +174,6 @@ public:
     virtual void set_restore_info(const StreamRestoreInfo &) = 0;
 
     /**
-     * @brief Verify file contents validity (CRC and such). Not available for all formats.
-     * @returns nullptr on success, error message on failure
-     */
-    virtual FileVerificationResult verify_file(FileVerificationLevel level, std::span<uint8_t> crc_calc_buffer = std::span<uint8_t>()) const = 0;
-
-    /**
      * @brief Get one character from current stream
      * @param out Character that was read
      * @return Result_t status of reading
@@ -131,8 +182,12 @@ public:
 
     /**
      * @brief Returns whenever file is valid enough to begin printing it (has metadata and some gcodes)
+     *
+     * Also checks the sequence of the blocks is correct. For encrypted gcodes it also checks if it is encrypted for this printer,
+     * that it does not have anything between the blocks. If the full check is true it also verifies the identity block signature
+     * and the hashes of metadata and keyblocks are correct.
      */
-    virtual bool valid_for_print() = 0;
+    virtual bool valid_for_print(bool full_check) = 0;
 
     /**
      * @brief Load latest validity information from current transfer
@@ -149,6 +204,11 @@ public:
 
     /// Returns error message if has_error() is true
     virtual const char *error_str() const = 0;
+
+#if HAS_E2EE_SUPPORT()
+    virtual e2ee::IdentityInfo get_identity_info() const = 0;
+    virtual bool has_identity_info() const = 0;
+#endif
 };
 
 /**
@@ -161,8 +221,8 @@ protected:
     // For unittest purposes only.
     GcodeReaderCommon() {}
 
-    GcodeReaderCommon(FILE &f)
-        : file(&f) {}
+    GcodeReaderCommon(unique_file_ptr &&f)
+        : file(std::move(f)) {}
 
     GcodeReaderCommon(GcodeReaderCommon &&other) = default;
 
@@ -193,11 +253,28 @@ public:
         return error_str_;
     }
 
+#if HAS_E2EE_SUPPORT()
+    bool has_identity_info() const override {
+        return identity_info.has_value();
+    }
+
+    e2ee::IdentityInfo get_identity_info() const override {
+        assert(identity_info.has_value());
+        return identity_info.value();
+    }
+#endif
+
 protected:
     inline void set_error(const char *msg) {
         assert(msg);
         error_str_ = msg;
     }
+
+#if HAS_E2EE_SUPPORT()
+    void set_identity_info(const e2ee::IdentityInfo &info) {
+        identity_info = info;
+    }
+#endif
 
     IGcodeReader::Result_t stream_get_line_common(GcodeBuffer &b, Continuations line_continuations);
 
@@ -240,4 +317,8 @@ protected:
 private:
     /// If set to not null, the reader is considered to be in an unrecoverable error state
     const char *error_str_ = nullptr;
+
+#if HAS_E2EE_SUPPORT()
+    std::optional<e2ee::IdentityInfo> identity_info;
+#endif
 };

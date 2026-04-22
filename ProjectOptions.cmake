@@ -10,6 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(PRINTER_VALID_OPTS
     "COREONE"
+    "COREONEL"
     "MINI"
     "MK4"
     "MK3.5"
@@ -84,6 +85,14 @@ set(CUSTOM_COMPILE_OPTIONS
     ""
     CACHE STRING "Allows adding custom C/C++ flags"
     )
+set(SIGNATURE_OAK
+    "OFF"
+    CACHE BOOL "Build Signature Oak variant (luxury limited edition with brass UI theme)"
+    )
+if(SIGNATURE_OAK AND NOT PRINTER STREQUAL "COREONE")
+  message(FATAL_ERROR "SIGNATURE_OAK is only supported for COREONE builds")
+endif()
+define_boolean_option(SIGNATURE_OAK ${SIGNATURE_OAK})
 
 if(${BOARD} STREQUAL "XL_DEV_KIT_XLB")
   set(WUI
@@ -220,6 +229,8 @@ function(set_feature_for_printers FEATURE_NAME)
   elseif(${PRINTER} IN_LIST FEATURE_PRINTER_LIST)
     # set from feature list
     set(FEATURE_VALUE YES)
+  elseif("UNITTESTS" IN_LIST FEATURE_PRINTER_LIST AND UNITTESTS_ENABLE)
+    set(FEATURE_VALUE YES)
   else()
     set(FEATURE_VALUE NO)
   endif()
@@ -240,6 +251,8 @@ function(set_feature_for_printers_master_board FEATURE_NAME)
     elseif(${PRINTER} IN_LIST FEATURE_PRINTER_LIST)
       # set from feature list
       set(FEATURE_VALUE YES)
+    elseif("UNITTESTS" IN_LIST FEATURE_PRINTER_LIST AND UNITTESTS_ENABLE)
+      set(FEATURE_VALUE YES)
     else()
       set(FEATURE_VALUE NO)
     endif()
@@ -254,7 +267,7 @@ function(set_feature_for_printers_master_board FEATURE_NAME)
 endfunction()
 
 set(PRINTERS_WITH_FILAMENT_SENSOR_BINARY "MINI" "MK3.5")
-set(PRINTERS_WITH_FILAMENT_SENSOR_ADC "MK4" "XL" "iX" "XL_DEV_KIT" "COREONE")
+set(PRINTERS_WITH_FILAMENT_SENSOR_ADC "MK4" "XL" "iX" "XL_DEV_KIT" "COREONE" "COREONEL")
 
 set_feature_for_printers(
   HAS_TRINAMIC
@@ -265,6 +278,7 @@ set_feature_for_printers(
   "XL"
   "XL_DEV_KIT"
   "COREONE"
+  "COREONEL"
   )
 set_feature_for_printers_master_board(
   HAS_PAUSE
@@ -275,6 +289,7 @@ set_feature_for_printers_master_board(
   "XL"
   "XL_DEV_KIT"
   "COREONE"
+  "COREONEL"
   )
 # CRASH_DETECTION requires SELFTEST to work
 set_feature_for_printers_master_board(
@@ -285,20 +300,35 @@ set_feature_for_printers_master_board(
   "iX"
   "XL"
   "COREONE"
+  "COREONEL"
   )
 # POWER_PANIC requires SELFTEST and CRASH_DETECTION to work
-set_feature_for_printers_master_board(HAS_POWER_PANIC "MK4" "MK3.5" "iX" "XL" "COREONE")
-define_enum_option(NAME POWER_PANIC_STORAGE VALUE FLASH ALL_VALUES "FLASH;BKPSRAM")
-
-set_feature_for_printers(HAS_PRECISE_HOMING "MK4" "MK3.5")
-set_feature_for_printers(HAS_PRECISE_HOMING_COREXY "iX" "XL" "XL_DEV_KIT" "COREONE")
-set_feature_for_printers_master_board(HAS_PHASE_STEPPING "XL" "iX" "COREONE")
-set_feature_for_printers_master_board(HAS_PHASE_STEPPING_TOGGLE "XL")
-set_feature_for_printers_master_board(HAS_PHASE_STEPPING_SELFTEST "iX" "XL")
-set_feature_for_printers_master_board(HAS_PHASE_STEPPING_CALIBRATION "XL" "iX" "COREONE")
-set(PRINTERS_WITH_BURST_STEPPING "XL" "MK4" "iX" "COREONE")
 set_feature_for_printers_master_board(
-  HAS_INPUT_SHAPER_CALIBRATION "MK4" "MK3.5" "XL" "XL_DEV_KIT" "COREONE"
+  HAS_POWER_PANIC
+  "MK4"
+  "MK3.5"
+  "iX"
+  "XL"
+  "COREONE"
+  "COREONEL"
+  )
+define_enum_option(NAME POWER_PANIC_STORAGE VALUE FLASH ALL_VALUES "FLASH;BKPSRAM")
+set_feature_for_printers(HAS_PRECISE_HOMING "MK4" "MK3.5")
+set_feature_for_printers(HAS_PRECISE_HOMING_COREXY "iX" "XL" "XL_DEV_KIT" "COREONE" "COREONEL")
+set_feature_for_printers_master_board(HAS_PHASE_STEPPING "XL" "iX" "COREONE" "COREONEL" "MK4")
+set_feature_for_printers_master_board(HAS_PHASE_STEPPING_SELFTEST "iX" "XL" "COREONEL")
+set_feature_for_printers_master_board(
+  HAS_PHASE_STEPPING_CALIBRATION "XL" "iX" "COREONE" "COREONEL" "MK4"
+  )
+set(PRINTERS_WITH_BURST_STEPPING "XL" "MK4" "iX" "COREONE" "COREONEL")
+set_feature_for_printers_master_board(
+  HAS_INPUT_SHAPER_CALIBRATION
+  "MK4"
+  "MK3.5"
+  "XL"
+  "XL_DEV_KIT"
+  "COREONE"
+  "COREONEL"
   )
 set_feature_for_printers(
   HAS_SELFTEST
@@ -308,80 +338,178 @@ set_feature_for_printers(
   "iX"
   "MINI"
   "COREONE"
+  "COREONEL"
   )
-set_feature_for_printers(HAS_HUMAN_INTERACTIONS "MINI" "MK4" "MK3.5" "XL" "COREONE")
-set_feature_for_printers_master_board(HAS_LOADCELL "MK4" "iX" "XL" "XL_DEV_KIT" "COREONE")
+set_feature_for_printers(
+  HAS_HUMAN_INTERACTIONS
+  "MINI"
+  "MK4"
+  "MK3.5"
+  "XL"
+  "COREONE"
+  "COREONEL"
+  )
+set_feature_for_printers_master_board(
+  HAS_LOADCELL
+  "MK4"
+  "iX"
+  "XL"
+  "XL_DEV_KIT"
+  "COREONE"
+  "COREONEL"
+  )
+set_feature_for_printers_master_board(
+  HAS_NEXTRUDER
+  "MK4"
+  "iX"
+  "XL"
+  "XL_DEV_KIT"
+  "COREONE"
+  "COREONEL"
+  )
 set_feature_for_printers_master_board(HAS_SHEET_PROFILES "MK3.5" "MINI")
-set_feature_for_printers_master_board(HAS_HEATBREAK_TEMP "MK4" "iX" "XL" "XL_DEV_KIT" "COREONE")
+set_feature_for_printers_master_board(
+  HAS_HEATBREAK_TEMP
+  "MK4"
+  "iX"
+  "XL"
+  "XL_DEV_KIT"
+  "COREONE"
+  "COREONEL"
+  )
 set_feature_for_printers_master_board(HAS_FILAMENT_HEATBREAK_PARAM "iX")
-set(PRINTERS_WITH_RESOURCES "MINI" "MK4" "MK3.5" "XL" "iX" "COREONE")
+set(PRINTERS_WITH_RESOURCES
+    "MINI"
+    "MK4"
+    "MK3.5"
+    "XL"
+    "iX"
+    "COREONE"
+    "COREONEL"
+    )
 set_feature_for_printers(HAS_BOWDEN "MINI")
-set(PRINTERS_WITH_PUPPIES_BOOTLOADER "XL" "iX" "XL_DEV_KIT" "COREONE")
+set(PRINTERS_WITH_PUPPIES_BOOTLOADER "XL" "iX" "XL_DEV_KIT" "COREONE" "COREONEL")
 set(PRINTERS_WITH_DWARF "XL" "XL_DEV_KIT")
 
 # MODULAR_BED is a bed consisting of several bedlets
 set_feature_for_printers_master_board(HAS_MODULAR_BED "iX" "XL" "XL_DEV_KIT")
 # REMOTE_BED means there is a daughterboard controlling the bed
-set_feature_for_printers_master_board(HAS_REMOTE_BED "iX" "XL" "XL_DEV_KIT")
+set_feature_for_printers_master_board(HAS_REMOTE_BED "iX" "XL" "XL_DEV_KIT" "COREONEL")
 # LOCAL_BED means the motherboard is directly controlling the bed
 set_feature_for_printers_master_board(HAS_LOCAL_BED "COREONE" "MINI" "MK4" "MK3.5")
 # PUPPY_MODULARBED is remote modular bed implemented as a puppy, i.e. communicating over modbus
 set_feature_for_printers_master_board(HAS_PUPPY_MODULARBED "iX" "XL" "XL_DEV_KIT")
 
-set_feature_for_printers_master_board(HAS_XBUDDY_EXTENSION "COREONE")
-set_feature_for_printers_master_board(XBUDDY_EXTENSION_VARIANT_STANDARD "COREONE")
+set_feature_for_printers_master_board(HAS_XBUDDY_EXTENSION "COREONE" "COREONEL" "iX")
+if(NOT DEFINED XBUDDY_EXTENSION_VARIANT)
+  set(XBUDDY_EXTENSION_VARIANT "NONE")
+endif()
+define_enum_option(
+  NAME XBUDDY_EXTENSION_VARIANT VALUE "${XBUDDY_EXTENSION_VARIANT}" ALL_VALUES "NONE;STANDARD;iX"
+  )
 
 # MK4 technically doesn't have door sensor but needs to check valid FW-HW
-set_feature_for_printers_master_board(HAS_DOOR_SENSOR "COREONE" "MK4")
-set_feature_for_printers(HAS_TOOLCHANGER "XL" "XL_DEV_KIT")
-set_feature_for_printers(HAS_SIDE_FSENSOR "iX" "XL" "COREONE")
-set_feature_for_printers(HAS_ADC_SIDE_FSENSOR "XL")
-set_feature_for_printers(HAS_FILAMENT_SENSORS_MENU "XL" "COREONE")
+set_feature_for_printers_master_board(HAS_DOOR_SENSOR "COREONE" "COREONEL" "MK4")
 
-# iX does not need ESP flashing
-set_feature_for_printers(HAS_ESP_FLASH_TASK "MK4" "MK3.5" "XL" "MINI" "COREONE")
+set_feature_for_printers(HAS_TOOLCHANGER "XL" "XL_DEV_KIT")
+set_feature_for_printers(HAS_SIDE_FSENSOR "iX" "XL" "COREONE" "COREONEL")
+set_feature_for_printers(HAS_ADC_SIDE_FSENSOR "XL")
+set_feature_for_printers(HAS_FILAMENT_SENSORS_MENU "XL" "COREONE" "COREONEL")
+
+set_feature_for_printers(
+  HAS_ESP
+  "MK4"
+  "MK3.5"
+  "XL"
+  "MINI"
+  "COREONE"
+  "COREONEL"
+  )
 
 set_feature_for_printers(HAS_EMBEDDED_ESP32 "XL")
-set(PRINTERS_WITH_SIDE_LEDS "XL" "iX" "COREONE")
-set(PRINTERS_WITH_TRANSLATIONS "COREONE" "MK4" "MK3.5" "XL" "MINI")
+set(PRINTERS_WITH_SIDE_LEDS "XL" "COREONE" "COREONEL")
+set(PRINTERS_WITH_TRANSLATIONS "COREONE" "COREONEL" "MK4" "MK3.5" "XL" "MINI")
 set(PRINTERS_WITH_EXTFLASH_TRANSLATIONS "MINI")
-set_feature_for_printers(HAS_LOVE_BOARD "MK4" "iX" "COREONE")
+set_feature_for_printers(HAS_LOVE_BOARD "MK4" "iX" "COREONE" "COREONEL")
 set_feature_for_printers(HAS_TMC_UART "MINI")
-set_feature_for_printers(HAS_XLCD "MK4" "MK3.5" "iX" "XL" "COREONE")
-set_feature_for_printers(HAS_MMU2 "MK4" "MK3.5" "COREONE")
+set_feature_for_printers(
+  HAS_XLCD
+  "MK4"
+  "MK3.5"
+  "iX"
+  "XL"
+  "COREONE"
+  "COREONEL"
+  )
+set_feature_for_printers(HAS_MMU2 "MK4" "MK3.5" "COREONE" "COREONEL")
 set_feature_for_printers(HAS_CONFIG_STORE_WO_BACKEND "XL_DEV_KIT")
-set_feature_for_printers_master_board(HAS_CHAMBER_API "XL" "COREONE")
-set_feature_for_printers_master_board(HAS_CHAMBER_FILTRATION_API "COREONE" "XL")
+set_feature_for_printers_master_board(HAS_CHAMBER_API "XL" "COREONE" "COREONEL")
+set_feature_for_printers_master_board(HAS_CHAMBER_FILTRATION_API "COREONE" "COREONEL" "XL")
 set_feature_for_printers_master_board(XL_ENCLOSURE_SUPPORT "XL")
-set_feature_for_printers(HAS_SWITCHED_FAN_TEST "MK4" "MK3.5" "COREONE")
-set_feature_for_printers_master_board(HAS_HOTEND_TYPE_SUPPORT "MK4" "MK3.5" "iX" "COREONE" "XL")
-set_feature_for_printers(HAS_EMERGENCY_STOP "COREONE")
-set_feature_for_printers(HAS_CEILING_CLEARANCE "COREONE")
+set_feature_for_printers(HAS_SWITCHED_FAN_TEST "MK4" "MK3.5" "COREONE" "COREONEL")
+set_feature_for_printers_master_board(
+  HAS_HOTEND_TYPE_SUPPORT
+  "MK4"
+  "MK3.5"
+  "iX"
+  "COREONE"
+  "COREONEL"
+  "XL"
+  )
+set_feature_for_printers(HAS_EMERGENCY_STOP "COREONE" "COREONEL")
+set_feature_for_printers(HAS_CEILING_CLEARANCE "COREONE" "COREONEL")
 set_feature_for_printers(
   HAS_CANCEL_OBJECT
   "MK4"
   "MK3.5"
   "iX"
   "COREONE"
+  "COREONEL"
   "XL"
   "MINI"
   )
-set_feature_for_printers(HAS_AUTO_RETRACT "COREONE" "MK4" "XL")
+set_feature_for_printers(HAS_AUTO_RETRACT "COREONE" "COREONEL" "MK4" "iX" "XL")
+set_feature_for_printers_master_board(
+  HAS_E2EE_SUPPORT
+  "MK4"
+  "MK3.5"
+  "iX"
+  "COREONE"
+  "COREONEL"
+  "XL"
+  "UNITTESTS"
+  )
 
 # Printers that support any form of backwards gcode compatibility modes
-set_feature_for_printers(HAS_GCODE_COMPATIBILITY "MK3.5" "MK4" "COREONE")
+set_feature_for_printers(HAS_GCODE_COMPATIBILITY "MK3.5" "MK4" "COREONE" "COREONEL")
 
 # Checks for bed evenness during G29 and if it's too uneven, offers Z alignment calibration.
 # Requires SELFTEST to work
-set_feature_for_printers(HAS_UNEVEN_BED_PROMPT "COREONE")
+set_feature_for_printers(HAS_UNEVEN_BED_PROMPT "COREONE" "COREONEL")
 
-set_feature_for_printers(HAS_DOOR_SENSOR_CALIBRATION "COREONE")
+set_feature_for_printers(HAS_DOOR_SENSOR_CALIBRATION "COREONE" "COREONEL")
 
 # Set GUI settings
-set(PRINTERS_WITH_GUI "COREONE" "MINI" "MK4" "MK3.5" "XL" "iX")
-set(PRINTERS_WITH_GUI_W480H320 "COREONE" "MK4" "MK3.5" "XL" "iX")
+set(PRINTERS_WITH_GUI
+    "COREONE"
+    "COREONEL"
+    "MINI"
+    "MK4"
+    "MK3.5"
+    "XL"
+    "iX"
+    )
+set(PRINTERS_WITH_GUI_W480H320 "COREONE" "COREONEL" "MK4" "MK3.5" "XL" "iX")
 set(PRINTERS_WITH_GUI_W240H320 "MINI")
-set_feature_for_printers(HAS_LEDS "MK4" "MK3.5" "XL" "iX" "COREONE")
+set_feature_for_printers(
+  HAS_LEDS
+  "MK4"
+  "MK3.5"
+  "XL"
+  "iX"
+  "COREONE"
+  "COREONEL"
+  )
 # disable serial printing for MINI to save flash
 set_feature_for_printers(
   HAS_SERIAL_PRINT
@@ -391,33 +519,54 @@ set_feature_for_printers(
   "iX"
   "MINI"
   "COREONE"
+  "COREONEL"
   )
 
 # Local accelerometer communicates directly over SPI
-set_feature_for_printers(HAS_LOCAL_ACCELEROMETER "MK3.5" "MK4" "iX" "COREONE")
+set_feature_for_printers(HAS_LOCAL_ACCELEROMETER "MK3.5" "MK4" "iX" "COREONE" "COREONEL")
 # Remote accelerometer communicates indirectly over MODBUS
 set_feature_for_printers(HAS_REMOTE_ACCELEROMETER "XL" "XL_DEV_KIT")
 # Some printers require manual mounting of accelerometer to the board, nozzle or bed
 set_feature_for_printers(HAS_ATTACHABLE_ACCELEROMETER "MK3.5" "MK4" "COREONE")
 
-set_feature_for_printers(HAS_COLDPULL "MK3.5" "MK4" "XL" "COREONE")
+set_feature_for_printers(HAS_COLDPULL "MK3.5" "MK4" "XL" "COREONE" "COREONEL")
 
 set_feature_for_printers(HAS_BED_LEVEL_CORRECTION "MK3.5" "MINI")
 
 set_feature_for_printers(HAS_SHEET_SUPPORT "MINI" "MK3.5")
 
-set_feature_for_printers(HAS_NFC "MK3.5" "MK4" "COREONE")
+set_feature_for_printers(HAS_NFC "MK3.5" "MK4" "COREONE" "COREONEL")
 
 set_feature_for_printers(HAS_NOZZLE_CLEANER "iX")
-# BELT_TUNING requires SELFTEST
-set_feature_for_printers(HAS_BELT_TUNING "iX")
-set_feature_for_printers(HAS_MANUAL_BELT_TUNING "COREONE")
-set_feature_for_printers_master_board(HAS_I2C_EXPANDER "MK3.5" "MK4" "COREONE")
+set_feature_for_printers(HAS_MANUAL_BELT_TUNING "COREONE" "COREONEL" "iX")
+set_feature_for_printers_master_board(HAS_I2C_EXPANDER "MK3.5" "MK4" "COREONE" "COREONEL")
 set_feature_for_printers(HAS_WASTEBIN "iX")
 set_feature_for_printers_master_board(HAS_PRINT_FAN_TYPE "XL")
 # GEARBOX_ALIGNMENT requires SELFTEST
-set_feature_for_printers_master_board(HAS_GEARBOX_ALIGNMENT "MK4" "COREONE" "XL")
-set_feature_for_printers_master_board(HAS_CHAMBER_VENTS "COREONE")
+set_feature_for_printers_master_board(HAS_GEARBOX_ALIGNMENT "MK4" "COREONE" "COREONEL" "XL")
+set_feature_for_printers_master_board(HAS_CHAMBER_VENTS "COREONE" "COREONEL")
+set_feature_for_printers_master_board(HAS_BED_FAN "COREONEL")
+set_feature_for_printers_master_board(HAS_PSU_FAN "COREONEL")
+set_feature_for_printers(HAS_AC_CONTROLLER "COREONEL")
+set_feature_for_printers(HAS_HEATBED_SCREWS_DURING_TRANSPORT "COREONEL")
+
+# Use websocket to talk to Connect instead of many http requests.
+#
+# iX can't have websockets yet because of AFS version of Connect, all other printers should have it
+# enabled.
+#
+# Eventually, this'll become the only used and supported way to talk to Connect. At that point, both
+# this option and the "old" code will be removed.
+set_feature_for_printers(
+  WEBSOCKET
+  "MINI"
+  "MK3.5"
+  "MK4"
+  "XL"
+  "COREONE"
+  "COREONEL"
+  "XL_DEV_KIT"
+  )
 
 # Set printer board
 set(BOARDS_WITH_ADVANCED_POWER "XBUDDY" "XLBUDDY" "DWARF")
@@ -741,6 +890,7 @@ define_boolean_option(HAS_LEDS_MENU ${HAS_LEDS_MENU})
 
 if(BOOTLOADER STREQUAL "YES"
    AND (PRINTER STREQUAL "COREONE"
+        OR PRINTER STREQUAL "COREONEL"
         OR PRINTER STREQUAL "MINI"
         OR PRINTER STREQUAL "MK4"
         OR PRINTER STREQUAL "MK3.5"
@@ -778,19 +928,6 @@ set(DEBUG_WITH_BEEPS
     )
 define_boolean_option(DEBUG_WITH_BEEPS ${DEBUG_WITH_BEEPS})
 
-# Use websocket to talk to Connect instead of many http requests.
-#
-# The server part is not ready and the protocol is in a flux too. For that reason, this is not
-# enabled in "real builds", but we need to be able to have the code around and be able to turn it on
-# for custom build - to allow debugging the server too.
-#
-# Eventually, this'll become the only used and supported way to talk to Connect. At that point, both
-# this option and the "old" code will be removed.
-set(WEBSOCKET
-    "ON"
-    CACHE BOOL "Use websocket to talk to connect. In development"
-    )
-define_boolean_option(WEBSOCKET ${WEBSOCKET})
 set(MDNS
     "ON"
     CACHE BOOL "Enable MDNS responder"

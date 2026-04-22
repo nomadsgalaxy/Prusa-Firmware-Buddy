@@ -1,0 +1,4 @@
+@union
+uavcan.primitive.Empty.1.0 not_set
+prusa3d.unit.Celsius.1.0 target_temp
+@sealed

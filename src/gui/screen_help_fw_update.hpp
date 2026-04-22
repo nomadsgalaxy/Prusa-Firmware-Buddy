@@ -5,7 +5,6 @@
 #include "gui.hpp"
 #include "screen.hpp"
 #include "window_text.hpp"
-#include "screen_reset_error.hpp"
 #include "window_header.hpp"
 #include "status_footer.hpp"
 #include "radio_button.hpp"

@@ -26,7 +26,6 @@
 #include "../gcode.h"
 
 #include "bsod.h"
-#include "homing_reporter.hpp"
 
 #include "../../module/endstops.h"
 #include "../../module/planner.h"
@@ -94,11 +93,11 @@
 
 #include <option/has_nozzle_cleaner.h>
 
-#if ENABLED(DELTA) || ENABLED(SCARA) || ENABLED(AXEL_TPARA) || ENABLED(DUAL_X_CARRIAGE) || ENABLED(FOAMCUTTER_XYUV)
+#if ENABLED(DELTA) || ENABLED(SCARA) || ENABLED(AXEL_TPARA) || ENABLED(FOAMCUTTER_XYUV)
   #error These babies are no longer welcome here. The relevants ifdefs were removed.
 #endif
 
-#include <scope_guard.hpp>
+#include <raii/scope_guard.hpp>
 #include <marlin_server.hpp>
 #include <feature/print_status_message/print_status_message_guard.hpp>
 #include <config_store/store_instance.hpp>
@@ -274,7 +273,11 @@ bool corexy_refine_during_G28(float fr_mm_s, const G28Flags &flags);
 
         do_blocking_move_to(destination);
         bool endstop_triggered;
-        run_z_probe(0 - (Z_PROBE_LOW_POINT) + DETECT_PRINT_SHEET_Z_POINT, true, &endstop_triggered);
+        run_z_probe({
+          .expected_trigger_z = 0 - (Z_PROBE_LOW_POINT) + DETECT_PRINT_SHEET_Z_POINT,
+          .single_only = true,
+          .endstop_triggered = &endstop_triggered
+        });
         if(!endstop_triggered) {
           return false;
         }
@@ -323,6 +326,7 @@ static void reenable_wavetable(AxisEnum axis)
  * - `L` - Force leveling state ON (if possible) or OFF after homing (Requires `RESTORE_LEVELING_AFTER_G28` or `ENABLE_LEVELING_AFTER_G28`)
  * - `N` - No-change mode (do not change any motion setting such as feedrate)
  * - `O` - Home only if the position is not known and trusted
+ * - `Q` - Same as `O`, but only for printers that are precise homing level-aware; otherwise home unconditionally (backwards compatibility reasons)
  * - `P` - Do not check print sheet presence
  * - `R` - <linear> Raise by n mm/inches before homing
  * - `S` - Simulated homing only in `MARLIN_DEV_MODE`
@@ -334,14 +338,15 @@ void GcodeSuite::G28() {
   BlockEStallDetection block_e_stall_detection;
 #endif
 
-  marlin_server::FSM_Holder fsm_holder(PhaseWait::homing);
-
   bool X = parser.seen('X');
   bool Y = parser.seen('Y');
   bool Z = parser.seen('Z');
 
   G28Flags flags;
-  flags.only_if_needed = parser.boolval('O');
+  flags.only_if_needed = parser.boolval('O')
+    // We will start emitting this new parameter into our gcodes, so that it would be applied only on the new firwmares, where the printers remember whether they are homed precisely or not
+    || parser.boolval('Q');
+
   flags.z_raise = parser.seenval('R') ? parser.value_linear_units() : Z_HOMING_HEIGHT;
   flags.no_change = parser.seen('N');
   flags.can_calibrate = !parser.seen('D');
@@ -433,6 +438,18 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
     requirements[Y_AXIS].expand(req);
   }
 
+#if HAS_TOOLCHANGER()
+  // For Z homing, we need a tool pick. That means that we need precise homing for the toolchange.
+  // !! This one is a MUST - without this, the toolchange would trigger a nested G28 internally, which would break things
+  if(should_home_at_all(Z_AXIS) && !prusa_toolchanger.is_any_tool_active()) {
+    static constexpr AxisHomingRequirement req {
+      .required_level = AxisHomeLevel::full,
+    };
+    requirements[X_AXIS].expand(req);
+    requirements[Y_AXIS].expand(req);
+  }
+#endif
+
   // On CODEPENDENT_XY_HOMING, we need to home both axes
   if constexpr(ENABLED(CODEPENDENT_XY_HOMING)) {
     requirements[X_AXIS].expand(requirements[Y_AXIS]);
@@ -467,7 +484,7 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
 
   PrintStatusMessageGuard statusGuard;
   statusGuard.update<PrintStatusMessage::homing>({});
-  HomingReporter reporter;
+  marlin_server::FSM_Holder fsm_holder{PhaseWait::homing};
 
   #if HAS_CEILING_CLEARANCE()
   buddy::CeilingClearanceCheckDisabler ccd;
@@ -641,10 +658,6 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
   // Always home with tool 0 active (but not with PRUSA_TOOLCHANGER)
   #if HAS_MULTI_HOTEND && DISABLED(PRUSA_TOOLCHANGER)
     const uint8_t old_tool_index = active_extruder;
-    // PARKING_EXTRUDER homing requires different handling of movement / solenoid activation, depending on the side of homing
-    #if ENABLED(PARKING_EXTRUDER)
-      const bool pe_final_change_must_unpark = parking_extruder_unpark_after_homing(old_tool_index, X_HOME_DIR + 1 == old_tool_index * 2);
-    #endif
     tool_change(0, tool_return_t::no_return);
   #endif
 
@@ -715,9 +728,10 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
   void (*reenable_wt_Y)(AxisEnum) = NULL;
 #endif
 
-  #if ENABLED(PRUSA_TOOLCHANGER)
-  if (!failed && should_home_at_all(X_AXIS) && should_home_at_all(Y_AXIS)) {
+  #if HAS_TOOLCHANGER()
+  if (!failed && should_home_to_level(X_AXIS, AxisHomeLevel::imprecise) && should_home_to_level(Y_AXIS, AxisHomeLevel::imprecise)) {
     // Bump right edge to align toolchanger locking plates
+    // We need to align them before the actual homing, because the align locks homing move could throw off the precise position
     if (!prusa_toolchanger.align_locks()) {
       ui.status_printf_P(0, "Toolchanger lock alignment failed");
       homing_failed([]() { fatal_error(ErrCode::ERR_ELECTRO_HOMING_ERROR_X); }); // The alignment happens in X axis
@@ -733,20 +747,20 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
 
   // Home Y (before X)
   if (ENABLED(HOME_Y_BEFORE_X) && !failed && should_home_to_level(Y_AXIS, AxisHomeLevel::imprecise)) {
-    failed = !homeaxis(Y_AXIS, fr_mm_s, false, reenable_wt_Y, flags.can_calibrate);
+    failed = !homeaxis(Y_AXIS, fr_mm_s, false, reenable_wt_Y, flags.can_calibrate, true, flags.throw_homing_failed);
   }
 
   // Home X
   if (!failed && should_home_to_level(X_AXIS, AxisHomeLevel::imprecise)) {
-#ifdef HOMING_PREEMPTIVE_MOVE_Y
+  #ifdef HOMING_PREEMPTIVE_MOVE_Y
     do_blocking_move_to_y(HOMING_PREEMPTIVE_MOVE_Y);
-#endif
-    failed = !homeaxis(X_AXIS, fr_mm_s, false, reenable_wt_X, flags.can_calibrate);
+  #endif
+    failed = !homeaxis(X_AXIS, fr_mm_s, false, reenable_wt_X, flags.can_calibrate, true, flags.throw_homing_failed);
   }
 
   // Home Y (after X)
   if (DISABLED(HOME_Y_BEFORE_X) && !failed && should_home_to_level(Y_AXIS, AxisHomeLevel::imprecise)) {
-    failed = !homeaxis(Y_AXIS, fr_mm_s, false, reenable_wt_Y, flags.can_calibrate);
+    failed = !homeaxis(Y_AXIS, fr_mm_s, false, reenable_wt_Y, flags.can_calibrate, true, flags.throw_homing_failed);
   }
 
   #if HAS_PRECISE_HOMING_COREXY()
@@ -777,6 +791,12 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
 
       #if ENABLED(PRUSA_TOOLCHANGER)
       if (active_extruder == PrusaToolChanger::MARLIN_NO_TOOL_PICKED) {
+        if(!prusa_toolchanger.can_move_safely()) {
+          // If !can_move_safely, the toolchange would trigger a nested G28
+          // That breaks things, because calling align_locks with a homing_move inside would actually screw up the current homing
+          bsod("Cannot toolchange");
+        }
+
         // When no tool is picked, make sure to pick one
         failed = !prusa_toolchanger.tool_change(0, tool_return_t::no_return, current_position, tool_change_lift_t::no_lift, false);
       }
@@ -829,6 +849,13 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
                 planner.synchronize();
                 ignore_fail = (response == Response::Ignore);
                 attempt = 0;
+                if (response == Response::Abort) {
+                  if (marlin_server::is_printing()) {
+                    marlin_server::quick_stop();
+                    marlin_server::print_abort();
+                  }
+                  return false;
+                }
               }
 
               // Raise the Z again to prevent crashing into the sheet
@@ -877,16 +904,11 @@ bool GcodeSuite::G28_no_parser(bool X, bool Y, bool Z, const G28Flags& flags) {
   // Restore previous phase stepping state before we move again
   phstep_disabler.release();
 
-  if (!failed) {
-    // Move to a height where we can use the full xy-area
-    TERN_(DELTA_HOME_TO_SAFE_ZONE, do_blocking_move_to_z(delta_clip_start_height));
-  }
-
   TERN_(CAN_SET_LEVELING_AFTER_G28, if (leveling_restore_state) set_bed_leveling_enabled());
 
   // Restore the active tool after homing
   #if HAS_MULTI_HOTEND && DISABLED(PRUSA_TOOLCHANGER)
-    tool_change(old_tool_index, TERN(PARKING_EXTRUDER, !pe_final_change_must_unpark, DISABLED(DUAL_X_CARRIAGE)));   // Do move if one of these
+    tool_change(old_tool_index, true);   // Do move if one of these
   #endif
 
   #if HAS_HOMING_CURRENT
@@ -988,7 +1010,7 @@ RefineResult corexy_calibrate_homing_during_G28(float xy_mm_s, const G28Flags &f
   // In both cases, we want a clean slate so that the user is not bothered with "please recalibrate" right away
   config_store().precise_homing_instability_history.set(0);
 
-  if(!calibration_approved) {
+  if(calibration_approved == false) {
     // User decided to not do the calibration at his own risk -> consider the point refined
     return RefineResult::success;
   }

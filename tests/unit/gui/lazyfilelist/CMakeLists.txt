@@ -5,6 +5,7 @@ add_executable(
   ourPosix.cpp
   tests.cpp
   missing_functions.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/directory.cpp
   ${CMAKE_SOURCE_DIR}/src/common/filename_type.cpp
   ${CMAKE_SOURCE_DIR}/src/gui/file_sort.cpp
   ${CMAKE_SOURCE_DIR}/src/gui/lazyfilelist.cpp

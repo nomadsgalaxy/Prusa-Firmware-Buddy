@@ -48,8 +48,3 @@ uint32_t gui::GetLoopCounter() {
 uint32_t gui::GetTick() {
     return current_tick;
 }
-
-uint32_t gui::GetTick_ForceActualization() {
-    gui::StartLoop();
-    return gui::GetTick();
-};

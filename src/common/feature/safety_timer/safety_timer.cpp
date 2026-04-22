@@ -1,13 +1,19 @@
 #include "safety_timer.hpp"
 
 #include <marlin_server.hpp>
-#include <RAII.hpp>
-#include <buddy/unreachable.hpp>
+#include <raii/auto_restore.hpp>
+#include <bsod/bsod.h>
 #include <feature/host_actions.h>
 #include <utils/progress.hpp>
 #include <fsm/safety_timer_phases.hpp>
 
 namespace {
+void clear_temp_to_display() {
+    for (uint8_t hotend = 0; hotend < HOTENDS; hotend++) {
+        marlin_server::set_temp_to_display(0, hotend);
+    }
+}
+
 void handle_resuming_abort() {
     // Abort right away if not printing
     if (marlin_server::is_printing()) {
@@ -22,7 +28,7 @@ void handle_resuming_abort() {
             break;
 
         default:
-            BUDDY_UNREACHABLE();
+            bsod_unreachable();
         }
     }
 
@@ -139,7 +145,7 @@ void SafetyTimer::trigger() {
 
     if (blocker_count_ > 0) {
         // Never call this when a blocker is active
-        BUDDY_UNREACHABLE();
+        bsod_unreachable();
     }
 
     // In case the trigger was called explicitly from somewhere
@@ -182,6 +188,7 @@ void SafetyTimer::trigger() {
                 Temperature::disable_hotend();
                 marlin_server::set_warning(WarningType::NozzleTimeout);
             }
+            clear_temp_to_display();
         }
         return;
     }
@@ -193,7 +200,7 @@ void SafetyTimer::trigger() {
     if (state_ == State::active) {
         // We should NEVER get to the state where we have heaters on when the SafetyTimer is marked as active.
         // setTargetHotend HAS to reset the safety timer before changing target temps
-        BUDDY_UNREACHABLE();
+        bsod_unreachable();
     }
 
     state_ = State::active;
@@ -207,6 +214,7 @@ void SafetyTimer::trigger() {
 #endif
 
     Temperature::disable_hotend();
+    clear_temp_to_display();
     marlin_server::set_warning(WarningType::NozzleTimeout);
 }
 

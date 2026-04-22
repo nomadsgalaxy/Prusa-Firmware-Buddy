@@ -21,7 +21,7 @@ void SelfTestViewSeparator::Draw(Rect16::Top_t top) const {
     display::fill_rect(rc, GuiDefaults::ColorBack);
     rc += Rect16::Top_t(rc.Height());
     rc = Rect16::Height_t(line_height);
-    display::fill_rect(rc, COLOR_ORANGE);
+    display::fill_rect(rc, COLOR_BRAND);
     rc += Rect16::Top_t(rc.Height());
     rc = bot_padding;
     display::fill_rect(rc, GuiDefaults::ColorBack);

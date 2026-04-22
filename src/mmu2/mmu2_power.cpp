@@ -10,6 +10,7 @@
 #if HAS_MMU2()
 
     #include <buddy/mmu_port.hpp>
+    #include <hw_configuration.hpp>
 
 namespace MMU2 {
 
@@ -18,7 +19,7 @@ using namespace buddy::hw;
     #if HAS_MMU2_OVER_UART()
 
 void power_on() {
-    mmu_port::setup_reset_pin();
+    Configuration::Instance().setup_ext_reset();
     mmu_port::power_on();
 }
 
@@ -27,9 +28,9 @@ void power_off() {
 }
 
 void reset() {
-    mmu_port::activate_reset();
+    Configuration::Instance().activate_ext_reset();
     HAL_Delay(5);
-    mmu_port::deactivate_reset();
+    Configuration::Instance().deactivate_ext_reset();
     HAL_Delay(5);
 }
 

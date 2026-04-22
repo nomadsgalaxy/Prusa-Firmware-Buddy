@@ -162,10 +162,6 @@ void Fsm::Loop() {
         *report);
 }
 
-Response Fsm::GetResponse() const {
-    return IsActive() ? marlin_server::get_response_from_phase(PhasesLoadUnload::MMU_ERRWaitingForUser) : Response::_none;
-}
-
 bool Fsm::Activate() {
     if (Pause::IsFsmActive()) {
         return false; // FSM not ours, avoid setting the created_this flag
@@ -176,7 +172,7 @@ bool Fsm::Activate() {
     }
 
     created_this = true;
-    marlin_server::fsm_create(PhasesLoadUnload::initial);
+    marlin_server::fsm_create(PhasesLoadUnload::MMUDummyStartNoAttention);
     return true;
 }
 

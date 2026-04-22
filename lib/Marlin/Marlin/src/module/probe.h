@@ -43,7 +43,15 @@
     PROBE_PT_RAISE, // Raise to "between" clearance after run_z_probe
     PROBE_PT_BIG_RAISE  // Raise to big clearance after run_z_probe
   };
-  float run_z_probe(float expected_trigger_z, bool single_only = false, bool *endstop_triggered = nullptr);
+
+  struct RunZProbeParams {
+    float expected_trigger_z;
+    bool single_only = false;
+    bool *endstop_triggered = nullptr;
+    bool is_nozzle_clean = false;
+  };
+
+  float run_z_probe(const RunZProbeParams& params);
   float probe_here(float z_down_limit);
   float probe_at_point(const xy_pos_t &pos, const ProbePtRaise raise_after=PROBE_PT_NONE, const uint8_t verbose_level=0, const bool probe_relative=true);
   #if ENABLED(NOZZLE_LOAD_CELL) && ENABLED(PROBE_CLEANUP_SUPPORT)

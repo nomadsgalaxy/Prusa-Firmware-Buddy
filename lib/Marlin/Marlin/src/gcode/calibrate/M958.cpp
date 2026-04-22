@@ -277,9 +277,9 @@ float get_accelerometer_sample_period(const SamplePeriodProgressHook &progress_h
     }
 
     for (int i = 0; i < request_samples_num;) {
-        PrusaAccelerometer::Acceleration measured_acceleration;
+        PrusaAccelerometer::RawAcceleration measured_acceleration;
         using GetSampleResult = PrusaAccelerometer::GetSampleResult;
-        switch (accelerometer.get_sample(measured_acceleration)) {
+        switch (accelerometer.get_sample_printer_coords(measured_acceleration)) {
 
         case GetSampleResult::ok:
             ++i;
@@ -546,9 +546,9 @@ std::optional<VibrateMeasureResult> vibrate_measure(const VibrateMeasureParams &
                 accelerometer.clear();
                 do_once = false;
             }
-            PrusaAccelerometer::Acceleration measured_acceleration;
+            PrusaAccelerometer::RawAcceleration sample;
             using GetSampleResult = PrusaAccelerometer::GetSampleResult;
-            const GetSampleResult get_sample_result = accelerometer.get_sample(measured_acceleration);
+            const GetSampleResult get_sample_result = accelerometer.get_sample_printer_coords(sample);
 
             if (get_sample_result == GetSampleResult::error) {
                 accelerometer.report_error(print_accelerometer_error);
@@ -566,7 +566,7 @@ std::optional<VibrateMeasureResult> vibrate_measure(const VibrateMeasureParams &
                 // So discard samples until we've queued enough steps to fill the entire stepper buffer (at which point we can be sure there is nothing remaining).
 
             } else if (!enough_samples_collected) {
-                enough_samples_collected = (fourier.add_sample(accelerometer_period_time, measured_acceleration) >= samples_to_collect);
+                enough_samples_collected = (fourier.add_sample(accelerometer_period_time, sample.to_acceleration()) >= samples_to_collect);
                 advance_and_wrap_time_within_period(accelerometer_period_time, accelerometer_sample_period, measurement_period);
             }
 
@@ -623,12 +623,12 @@ std::optional<VibrateMeasureResult> vibrate_measure(const VibrateMeasureParams &
         uint32_t duration_ms = 0;
 
         while (!enough_samples_collected) {
-            PrusaAccelerometer::Acceleration measured_acceleration;
+            PrusaAccelerometer::RawAcceleration sample;
             using GetSampleResult = PrusaAccelerometer::GetSampleResult;
-            switch (accelerometer.get_sample(measured_acceleration)) {
+            switch (accelerometer.get_sample_printer_coords(sample)) {
 
             case GetSampleResult::ok:
-                enough_samples_collected = (fourier.add_sample(accelerometer_period_time, measured_acceleration) >= samples_to_collect);
+                enough_samples_collected = (fourier.add_sample(accelerometer_period_time, sample.to_acceleration()) >= samples_to_collect);
                 advance_and_wrap_time_within_period(accelerometer_period_time, accelerometer_sample_period, measurement_period);
                 break;
 

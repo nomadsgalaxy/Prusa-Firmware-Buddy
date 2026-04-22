@@ -22,7 +22,7 @@
     #include <feature/xbuddy_extension/xbuddy_extension.hpp>
 #endif
 
-#if PRINTER_IS_PRUSA_COREONE()
+#if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
     #define HAS_CHAMBER_TEMPERATURE_THERMISTOR_POSITION_OFFSET() 1
 #elif PRINTER_IS_PRUSA_XL()
     #define HAS_CHAMBER_TEMPERATURE_THERMISTOR_POSITION_OFFSET() 0
@@ -37,6 +37,11 @@
 #if PRINTER_IS_PRUSA_COREONE()
 namespace {
 constexpr buddy::Temperature chamber_maxtemp = 60;
+constexpr buddy::Temperature chamber_maxtemp_safety_margin = 5;
+} // namespace
+#elif PRINTER_IS_PRUSA_COREONEL()
+namespace {
+constexpr buddy::Temperature chamber_maxtemp = 65;
 constexpr buddy::Temperature chamber_maxtemp_safety_margin = 5;
 } // namespace
 #endif
@@ -61,7 +66,7 @@ void Chamber::step() {
     thermistor_temperature_ = xbuddy_extension().chamber_temperature();
 #endif
 
-    METRIC_DEF(metric_chamber_temp, "chamber_temp", METRIC_VALUE_FLOAT, 1000, METRIC_DISABLED);
+    METRIC_DEF(metric_chamber_temp, "chamber_temp", METRIC_VALUE_FLOAT, 1000, METRIC_ENABLED);
     if (thermistor_temperature_.has_value()) {
         metric_record_float(&metric_chamber_temp, thermistor_temperature_.value());
     } else {
@@ -87,7 +92,7 @@ Chamber::Capabilities Chamber::capabilities_nolock() const {
             // Always show temperature control menu items, even if auto cooling is disabled
                 .always_show_temperature_control = true,
 
-    #if PRINTER_IS_PRUSA_COREONE()
+    #if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
             .max_temp = { chamber_maxtemp - chamber_maxtemp_safety_margin },
     #endif
         };
@@ -124,13 +129,17 @@ Chamber::Backend Chamber::backend() const {
 std::optional<Temperature> Chamber::current_temperature() const {
     const auto chamber_tempearture = thermistor_temperature();
 #if HAS_CHAMBER_TEMPERATURE_THERMISTOR_POSITION_OFFSET()
-    #if PRINTER_IS_PRUSA_COREONE()
+    #if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
     const auto bed_temperature = thermalManager.degBed();
     static constexpr Temperature min_temp = 20.f;
     if (chamber_tempearture.has_value() && bed_temperature > *chamber_tempearture && *chamber_tempearture > min_temp) {
         static constexpr Temperature bed_max = BED_MAXTEMP - BED_MAXTEMP_SAFETY_MARGIN;
         static constexpr Temperature chamber_max = chamber_maxtemp;
+        #if PRINTER_IS_PRUSA_COREONEL()
+        static constexpr Temperature offset = 8.f / ((bed_max - min_temp) * std::sqrt(chamber_max - min_temp));
+        #else
         static constexpr Temperature offset = 6.f / ((bed_max - min_temp) * std::sqrt(chamber_max - min_temp));
+        #endif
         return chamber_tempearture.value() + offset * (bed_temperature - chamber_tempearture.value()) * std::sqrt(chamber_tempearture.value() - min_temp);
     }
     #else
@@ -179,14 +188,13 @@ void Chamber::reset() {
 }
 
 #if HAS_CHAMBER_VENTS()
-void Chamber::manage_ventilation_state() {
+void Chamber::manage_ventilation_state(std::optional<Temperature> fil_target) {
 
     const auto control_state = config_store().get_vent_control();
     if (control_state == VentControl::off) {
         return;
     }
 
-    const auto fil_target = config_store().get_filament_type(0).parameters().chamber_target_temperature;
     constexpr uint8_t temp_limit = 45; // Limit for closed grills is chamber max temperature of PETG
 
     auto open = [&]() {

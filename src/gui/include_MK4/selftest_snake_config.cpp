@@ -57,20 +57,20 @@ uint64_t get_test_mask(Action action) {
         return stmZAxis;
     case Action::Heaters:
         return stmHeaters;
-    case Action::FilamentSensorCalibration:
-        return stmFSensor;
     case Action::Loadcell:
         return stmLoadcell;
     case Action::ZAlign:
         return stmZcalib;
+
+    case Action::FilamentSensorCalibration:
     case Action::Fans:
     case Action::Gears:
-        bsod("get_test_mask");
     case Action::_count:
-        break;
+        // These should have special handling
+        bsod_unreachable();
     }
-    assert(false);
-    return stmNone;
+
+    bsod_unreachable();
 }
 
 } // namespace SelftestSnake

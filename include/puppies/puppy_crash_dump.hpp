@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <puppies/BootloaderProtocol.hpp>
 #include <puppies/crash_dump_shared.hpp>
-#include <crash_dump/crash_dump_distribute.hpp>
 #include <span>
 
 namespace buddy::puppies::crash_dump {
@@ -37,12 +36,6 @@ bool download_dump_into_file(std::span<uint8_t> buffer, BootloaderProtocol &flas
  * @return true if at least one dump was uploaded
  */
 bool save_dumps_to_usb();
-
-/**
- * @brief Uploads crash dumps from filesystem to a server
- * @return true if at least one dump was uploaded
- */
-bool upload_dumps_to_server();
 
 /**
  * @brief Removes crash dumps from filesystem

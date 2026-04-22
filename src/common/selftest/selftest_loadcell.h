@@ -21,8 +21,6 @@ class CSelftestPart_Loadcell {
     IPartHandler &rStateMachine;
     const LoadcellConfig_t &rConfig;
     SelftestLoadcell_t &rResult;
-    float currentZ;
-    float targetZ;
     float begin_target_temp;
     uint32_t time_start;
     uint32_t time_start_countdown;
@@ -44,9 +42,9 @@ public:
         SelftestLoadcell_t &result);
     ~CSelftestPart_Loadcell();
 
-    LoopResult stateMoveUpInit();
-    LoopResult stateMoveUp();
-    LoopResult stateMoveUpWaitFinish();
+    LoopResult stateParkingInit();
+    LoopResult statePrepareParking();
+    LoopResult stateParking();
     LoopResult stateToolSelectInit();
     LoopResult stateToolSelectWaitFinish();
     LoopResult stateConnectionCheck();

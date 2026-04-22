@@ -17,6 +17,8 @@ public:
 
     void set_fsm_and_phase(FSMAndPhase target);
 
+    void set_fsm_and_phase(FSMAndPhase target, PhaseResponses responses);
+
     // TODO: Removeme
     // Ugly, for backwards compatibility reasons
     inline void Change(FSMAndPhase target) {

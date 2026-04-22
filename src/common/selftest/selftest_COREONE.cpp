@@ -8,8 +8,6 @@
 #include "selftest_axis.h"
 #include "selftest_axis_config.hpp"
 #include "selftest_axis_interface.hpp"
-#include "selftest_fsensor_config.hpp"
-#include "selftest_fsensor_interface.hpp"
 #include "selftest_heater_config.hpp"
 #include "selftest_heaters_interface.hpp"
 #include "selftest_loadcell_config.hpp"
@@ -147,16 +145,6 @@ static constexpr LoadcellConfig_t Config_Loadcell[] = { {
     .max_validation_time = 1000,
 } };
 
-static constexpr std::array<const FSensorConfig_t, HOTENDS> Config_FSensor = { {
-    { .extruder_id = 0 },
-} };
-
-#if HAS_MMU2()
-static constexpr std::array<const FSensorConfig_t, HOTENDS> Config_FSensorMMU = { {
-    { .extruder_id = 0 },
-} };
-#endif
-
 // class representing whole self-test
 class CSelftest : public ISelftest {
 public:
@@ -170,7 +158,6 @@ public:
     bool Abort() final;
 
 protected:
-    void phaseSelftestStart();
     void restoreAfterSelftest();
     void next() final;
     bool phaseWaitUser(PhasesSelftest phase);
@@ -238,9 +225,6 @@ void CSelftest::Loop() {
     case stsStart:
         phaseStart();
         break;
-    case stsSelftestStart:
-        phaseSelftestStart();
-        break;
     case stsLoadcell:
         if (selftest::phaseLoadcell(ToolMask::AllTools, m_pLoadcell, Config_Loadcell)) {
             return;
@@ -305,23 +289,6 @@ void CSelftest::Loop() {
             return;
         }
         break;
-    case stsFSensor_calibration:
-        if (selftest::phaseFSensor(ToolMask::AllTools, pFSensor, Config_FSensor)) {
-            return;
-        }
-        break;
-    case stsFSensor_flip_mmu_at_the_end:
-#if HAS_MMU2()
-        // enable/disable the MMU according to the MMU Rework toggle. Used from
-        // the menus when we need to calibrate the FS before enabling/disabling
-        // the rework or the MMU itself.
-
-        // We don't check the result here. If FS is calibrated and enabled
-        // at the end of the selftest, MMU will be enabled, otherwise not.
-        marlin_server::enqueue_gcode(config_store().is_mmu_rework.get() ? "M709 S1" : "M709 S0");
-#endif
-
-        break;
     case stsSelftestStop:
         restoreAfterSelftest();
         break;
@@ -338,11 +305,6 @@ void CSelftest::Loop() {
 void CSelftest::phaseDidSelftestPass() {
     m_result = config_store().selftest_result.get();
     SelftestResult_Log(m_result);
-
-    // dont run wizard again
-    if (SelftestResult_Passed_All(m_result)) {
-        config_store().run_selftest.set(false);
-    }
 }
 
 bool CSelftest::phaseWaitUser(PhasesSelftest phase) {
@@ -351,7 +313,6 @@ bool CSelftest::phaseWaitUser(PhasesSelftest phase) {
         Abort();
     }
     if (response == Response::Ignore) {
-        config_store().run_selftest.set(false);
         Abort();
     }
     return response == Response::_none;
@@ -376,37 +337,6 @@ bool CSelftest::Abort() {
 
     phaseFinish();
     return true;
-}
-
-void CSelftest::phaseSelftestStart() {
-    if (m_Mask & stmHeaters) {
-        // set bed to 35°C
-        // heater test will start after temperature pass tru 40°C (we dont want to entire bed and sheet to be tempered at it)
-        // so don't set 40°C, it could also trigger cooldown in case temperature is or similar 40.1°C
-        thermalManager.setTargetBed(35);
-        // no need to preheat nozzle, it heats up much faster than bed
-        thermalManager.setTargetHotend(0, 0);
-        marlin_server::set_temp_to_display(0, 0);
-    }
-
-    m_result = config_store().selftest_result.get(); // read previous result
-    if (m_Mask & stmXAxis) {
-        m_result.xaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmYAxis) {
-        m_result.yaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmZAxis) {
-        m_result.zaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmZcalib) {
-        m_result.zalign = TestResult_Unknown;
-    }
-    if (m_Mask & stmHeaters) {
-        m_result.tools[0].nozzle = TestResult_Unknown;
-        m_result.bed = TestResult_Unknown;
-    }
-    config_store().selftest_result.set(m_result); // reset status for all selftest parts in eeprom
 }
 
 void CSelftest::restoreAfterSelftest() {

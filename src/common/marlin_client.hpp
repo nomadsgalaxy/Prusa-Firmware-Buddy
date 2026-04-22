@@ -115,9 +115,6 @@ bool is_print_started();
 // effect and check for success.
 bool is_print_exited();
 
-void marlin_gui_ready_to_print();
-void marlin_gui_cant_print();
-
 void print_abort();
 
 void print_exit(); // close fsm

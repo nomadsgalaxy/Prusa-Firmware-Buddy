@@ -5,7 +5,6 @@
 #include <utils/enum_array.hpp>
 #include <i18n.h>
 
-#include <inc/MarlinConfig.h>
 #include <option/has_gcode_compatibility.h>
 
 enum class HWCheckSeverity : uint8_t {

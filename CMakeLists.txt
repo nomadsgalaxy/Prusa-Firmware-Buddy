@@ -6,6 +6,9 @@ include(cmake/ProjectVersion.cmake)
 include(cmake/Littlefs.cmake)
 include(cmake/Options.cmake)
 
+# Needded for nunavut
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 project(
   Buddy
   LANGUAGES C CXX ASM
@@ -25,6 +28,9 @@ if(NOT CMAKE_CROSSCOMPILING)
   add_subdirectory(utils)
 endif()
 
+if(NOT CMAKE_CROSSCOMPILING)
+  option(UNITTESTS_ENABLE "Enable building of unittest" ON)
+endif()
 include(ProjectOptions.cmake)
 
 # link time optimizations to disable LTO run cmake with -DDISABLE_LTO
@@ -36,9 +42,11 @@ if(NOT DEFINED DISABLE_LTO
    )
   set(COMPILE_WITH_LTO ON)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  message(STATUS "LTO: Enabled")
 else()
   set(COMPILE_WITH_LTO OFF)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+  message(STATUS "LTO: Disabled")
 endif()
 
 # Check GCC Version
@@ -73,8 +81,13 @@ add_compile_options(-frandom-seed=BuddyFW)
 
 add_compile_options(
   $<$<COMPILE_LANGUAGE:CXX>:-Wno-register> $<$<COMPILE_LANGUAGE:CXX>:-Wno-volatile>
-  $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
   )
+
+if(NOT UNITTESTS_ENABLE)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
+elseif(CMAKE_CROSSCOMPILING)
+  message(FATAL_ERROR "RTTI should be disabled when crosscompiling")
+endif()
 
 # append custom C/C++ flags
 if(CUSTOM_COMPILE_OPTIONS)
@@ -136,7 +149,7 @@ endif()
 
 target_include_directories(BuddyHeaders INTERFACE include)
 
-target_link_libraries(BuddyHeaders INTERFACE FreeRTOS::FreeRTOS FreeRTOS::CMSIS)
+target_link_libraries(BuddyHeaders INTERFACE FreeRTOS::FreeRTOS)
 
 # Define printer type and version
 set(PRINTER_VERSION "1") # default version
@@ -169,6 +182,9 @@ elseif(PRINTER STREQUAL "XL_DEV_KIT")
 elseif(PRINTER STREQUAL "COREONE")
   set(PRINTER_TYPE "7")
   set(PRINTER_CODE "31")
+elseif(PRINTER STREQUAL "COREONEL")
+  set(PRINTER_TYPE "8")
+  set(PRINTER_CODE "35")
 else()
   message(FATAL_ERROR "Unknown printer \"${PRINTER}\".")
 endif()
@@ -200,10 +216,12 @@ endif()
 #
 
 # STM32::USBHost
-add_library(STM32_USBHost_Config ALIAS BuddyHeaders)
+add_library(STM32_USBHost_Config INTERFACE)
+target_link_libraries(STM32_USBHost_Config INTERFACE BuddyHeaders FreeRTOS::CMSIS)
 
 # STM32::Utilities::CPU
-add_library(STM32_Utilities_CPU_Config ALIAS BuddyHeaders)
+add_library(STM32_Utilities_CPU_Config INTERFACE)
+target_link_libraries(STM32_Utilities_CPU_Config INTERFACE BuddyHeaders FreeRTOS::CMSIS)
 
 #
 # Configure SEGGER
@@ -217,14 +235,14 @@ target_link_libraries(Segger_Config INTERFACE BuddyHeaders)
 #
 
 add_library(LwIP_Config INTERFACE)
-target_link_libraries(LwIP_Config INTERFACE BuddyHeaders log_interface)
+target_link_libraries(LwIP_Config INTERFACE BuddyHeaders log_interface FreeRTOS::CMSIS)
 
 #
 # Configure FatFs
 #
 
 add_library(FatFs_Config INTERFACE)
-target_link_libraries(FatFs_Config INTERFACE BuddyHeaders logging STM32::USBHost)
+target_link_libraries(FatFs_Config INTERFACE BuddyHeaders logging STM32::USBHost FreeRTOS::CMSIS)
 
 #
 # Configure Marlin
@@ -236,14 +254,14 @@ target_include_directories(
   Marlin_Config INTERFACE include/marlin src/common src/gui src/marlin_stubs/include
   )
 target_include_directories(Marlin_Config INTERFACE src/common/selftest)
-target_link_libraries(Marlin_Config INTERFACE BuddyHeaders FreeRTOS::FreeRTOS)
+target_link_libraries(Marlin_Config INTERFACE BuddyHeaders FreeRTOS::FreeRTOS FreeRTOS::CMSIS)
 
 #
 # Configure tinyusb
 #
 add_library(tinyusb_dependencies INTERFACE)
 target_include_directories(tinyusb_dependencies INTERFACE include/tinyusb)
-target_link_libraries(tinyusb_dependencies INTERFACE FreeRTOS::FreeRTOS)
+target_link_libraries(tinyusb_dependencies INTERFACE FreeRTOS::FreeRTOS FreeRTOS::CMSIS)
 
 #
 # Global Compiler & Linker Configuration
@@ -262,6 +280,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
      OR PRINTER STREQUAL "XL"
      OR PRINTER STREQUAL "iX"
      OR PRINTER STREQUAL "COREONE"
+     OR PRINTER STREQUAL "COREONEL"
      )
     add_compile_options(-Og -ggdb3)
   else()
@@ -354,6 +373,7 @@ if(BOARD IN_LIST BUDDY_BOARDS AND HAS_PUPPIES_BOOTLOADER)
       CMAKE_ARGS
         --preset xl-dwarf_${CMAKE_BUILD_TYPE_lower}_boot -B "${DWARF_BINARY_DIR}"
         $<$<BOOL:${CUSTOM_COMPILE_OPTIONS}>:-DCUSTOM_COMPILE_OPTIONS=${CUSTOM_COMPILE_OPTIONS}>
+      BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target firmware
       INSTALL_COMMAND ${CMAKE_COMMAND} -E echo "Skipping install step"
       BUILD_BYPRODUCTS "${DWARF_BINARY_PATH}" "${DWARF_BINARY_DIR}/firmware"
       STEP_TARGETS build
@@ -378,6 +398,7 @@ if(BOARD IN_LIST BUDDY_BOARDS AND HAS_PUPPIES_BOOTLOADER)
         --preset ${PRINTER_lower}-modularbed_${CMAKE_BUILD_TYPE_lower}_boot -B
         "${MODULARBED_BINARY_DIR}"
         $<$<BOOL:${CUSTOM_COMPILE_OPTIONS}>:-DCUSTOM_COMPILE_OPTIONS=${CUSTOM_COMPILE_OPTIONS}>
+      BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target firmware
       INSTALL_COMMAND ${CMAKE_COMMAND} -E echo "Skipping install step"
       BUILD_BYPRODUCTS "${MODULARBED_BINARY_PATH}" "${MODULARBED_BINARY_DIR}/firmware"
       STEP_TARGETS build
@@ -397,13 +418,14 @@ if(BOARD IN_LIST BUDDY_BOARDS AND HAS_PUPPIES_BOOTLOADER)
       "${XBUDDY_EXTENSION_BINARY_DIR}"
       )
     ExternalProject_Add(
-      xbuddy_extension
+      xbuddy_extension_firmware
       SOURCE_DIR "${XBUDDY_EXTENSION_SOURCE_DIR}"
       BINARY_DIR "${XBUDDY_EXTENSION_BINARY_DIR}"
       CMAKE_ARGS
         --preset ${PRINTER_lower}-xbuddy-extension_${CMAKE_BUILD_TYPE_lower}_boot -B
         "${XBUDDY_EXTENSION_BINARY_DIR}"
         $<$<BOOL:${CUSTOM_COMPILE_OPTIONS}>:-DCUSTOM_COMPILE_OPTIONS=${CUSTOM_COMPILE_OPTIONS}>
+      BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target firmware
       INSTALL_COMMAND ${CMAKE_COMMAND} -E echo "Skipping install step"
       BUILD_BYPRODUCTS "${XBUDDY_EXTENSION_BINARY_PATH}" "${XBUDDY_EXTENSION_BINARY_DIR}/firmware"
       STEP_TARGETS build
@@ -415,21 +437,16 @@ if(BOARD IN_LIST BUDDY_BOARDS AND HAS_PUPPIES_BOOTLOADER)
 endif()
 
 # Unittests
-if(NOT CMAKE_CROSSCOMPILING)
-  option(UNITTESTS_ENABLE "Enable building of unittest" ON)
-  if(UNITTESTS_ENABLE)
-    enable_testing()
-    add_subdirectory(tests)
-  endif()
+if(UNITTESTS_ENABLE)
+  enable_testing()
+  add_subdirectory(tests)
 endif()
 
 # std::rand/random
 if(BOARD IN_LIST BUDDY_BOARDS)
   set(ENABLE_HW_STD_RAND TRUE)
-  set(RANDOM_CPP random_hw.cpp)
 else()
   set(ENABLE_HW_STD_RAND FALSE)
-  set(RANDOM_CPP random_sw.cpp)
 endif()
 
 #
@@ -567,6 +584,9 @@ if(GENERATE_DFU)
     "${CMAKE_CURRENT_BINARY_DIR}/firmware.dfu"
     )
 endif()
+
+# Library that does some magic to save resources. Link everywhere.
+target_link_libraries(firmware PRIVATE magic_optimizations)
 
 if(BOARD IN_LIST BUDDY_BOARDS)
   target_link_libraries(

@@ -35,7 +35,7 @@ uint32_t FourierSeries3d::add_sample(const float sample_time, const PrusaAcceler
     static_assert(std::tuple_size_v<decltype(m_sum)> == std::size(sample.val), "Dimension doesn't match.");
 #endif
 
-    metric_record_custom(&accel, " x=%.4f,y=%.4f,z=%.4f", (double)sample.val[0], (double)sample.val[1], (double)sample.val[2]);
+    metric_record_custom(&accel, " x=%.4f,y=%.4f,z=%.4f", (double)sample.val[X_AXIS], (double)sample.val[Y_AXIS], (double)sample.val[Z_AXIS]);
     const float accelerometer_time_2pi_measurement_freq = m_freq_2pi * sample_time;
     const std::complex<float> amplitude = { sinf(accelerometer_time_2pi_measurement_freq), cosf(accelerometer_time_2pi_measurement_freq) };
 

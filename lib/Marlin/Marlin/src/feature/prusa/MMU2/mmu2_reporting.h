@@ -226,4 +226,8 @@ void ScreenClear();
 
 void tuneIdlerStallguardThreshold();
 
+/// Make the caller code update the filament type which is either being unloaded or loaded into the nozzle
+/// Generally requires filament types vs. slot mapping to be functional
+void UpdateCurrentFilamentType(uint8_t slot);
+
 } // namespace MMU2

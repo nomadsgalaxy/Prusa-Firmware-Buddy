@@ -31,11 +31,8 @@
 #include <functional>
 
 #ifndef SG14_INPLACE_FUNCTION_THROW
-    #ifndef UNITTESTS
-        #define SG14_INPLACE_FUNCTION_THROW(x) std::abort()
-    #else
-        #define SG14_INPLACE_FUNCTION_THROW(x) throw((x))
-    #endif
+    #include <bsod/bsod.h>
+    #define SG14_INPLACE_FUNCTION_THROW(x) bsod(#x)
 #endif
 
 namespace stdext {

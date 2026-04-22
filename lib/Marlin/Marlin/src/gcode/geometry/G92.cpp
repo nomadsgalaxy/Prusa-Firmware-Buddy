@@ -73,7 +73,7 @@
 void GcodeSuite::G92() {
 
   bool didE = false;
-  #if IS_SCARA || !HAS_POSITION_SHIFT
+  #if !HAS_POSITION_SHIFT
     bool didXYZ = false;
   #else
     constexpr bool didXYZ = false;
@@ -87,17 +87,6 @@ void GcodeSuite::G92() {
 
   switch (subcode_G92) {
     default: break;
-    #if ENABLED(CNC_COORDINATE_SYSTEMS)
-      case 1: {
-        // Zero the G92 values and restore current position
-        #if !IS_SCARA
-          LOOP_XYZ(i) if (position_shift[i]) {
-            position_shift[i] = 0;
-            update_workspace_offset((AxisEnum)i);
-          }
-        #endif // Not SCARA
-      } return;
-    #endif
     case 0: {
       LOOP_XYZE(i) {
         if (parser.seenval(axis_codes[i])) {
@@ -105,7 +94,7 @@ void GcodeSuite::G92() {
                       v = i == E_AXIS ? l : LOGICAL_TO_NATIVE(l, i),
                       d = v - current_position[i];
           if (!NEAR_ZERO(d)) {
-            #if IS_SCARA || !HAS_POSITION_SHIFT
+            #if !HAS_POSITION_SHIFT
               if (i == E_AXIS) didE = true; else didXYZ = true;
               current_position[i] = v;        // Without workspaces revert to Marlin 1.0 behavior
             #elif HAS_POSITION_SHIFT
@@ -123,12 +112,6 @@ void GcodeSuite::G92() {
       }
     } break;
   }
-
-  #if ENABLED(CNC_COORDINATE_SYSTEMS)
-    // Apply workspace offset to the active coordinate system
-    if (WITHIN(active_coordinate_system, 0, MAX_COORDINATE_SYSTEMS - 1))
-      coordinate_system[active_coordinate_system] = position_shift;
-  #endif
 
   if    (didXYZ) sync_plan_position();
   else if (didE) sync_plan_position_e();

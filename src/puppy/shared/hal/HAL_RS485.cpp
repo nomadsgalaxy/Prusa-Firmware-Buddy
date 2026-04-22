@@ -3,8 +3,8 @@
 
 #include "stm32g0xx_hal.h"
 #include "cmsis_os.h"
-#include "HAL_Common.hpp"
 #include <cstring>
+#include <bsod/bsod.h>
 #include "buddy/priorities_config.h"
 
 #define USART  USART1
@@ -66,7 +66,7 @@ bool Init(uint8_t modbusAddress) {
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
     PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     // initialize USART

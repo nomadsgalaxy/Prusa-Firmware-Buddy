@@ -1,6 +1,8 @@
 #include <common/sensor_data.hpp>
 #include <printers.h>
 
+#include <option/has_ac_controller.h>
+#include <option/has_bed_fan.h>
 #include <option/has_door_sensor.h>
 #include <option/has_mmu2.h>
 #include <option/has_advanced_power.h>
@@ -11,6 +13,16 @@
 #include <adc.hpp>
 #include "../Marlin/src/module/temperature.h"
 #include <timing.h>
+
+#if HAS_AC_CONTROLLER()
+    #include <puppies/ac_controller.hpp>
+#endif
+#if HAS_BED_FAN()
+    #include <feature/bed_fan/bed_fan.hpp>
+#endif
+#if HAS_PSU_FAN()
+    #include <feature/psu_fan/psu_fan.hpp>
+#endif
 
 #if BOARD_IS_XLBUDDY()
     #include <Marlin/src/module/prusa/toolchanger.h>
@@ -66,17 +78,15 @@ void SensorData::update() {
 
 #if BOARD_IS_XBUDDY()
 
-    // Input voltage
-    inputVoltage = advancedpower.GetBedVoltage();
-
-    // Heater voltage
-    heaterVoltage = advancedpower.GetHeaterVoltage();
-
-    // Heater current
-    heaterCurrent = advancedpower.GetHeaterCurrent();
-
-    // Input current
-    inputCurrent = advancedpower.GetInputCurrent();
+    #if HAS_AC_CONTROLLER()
+    bedMCUTemperature = buddy::puppies::ac_controller.get_mcu_temp().value_or(0.0f);
+    bed_voltage = buddy::puppies::ac_controller.get_bed_voltage().value_or(0.0f);
+    #else
+    bed_voltage = advancedpower.bed_voltage();
+    #endif
+    heater_voltage = advancedpower.heater_voltage();
+    heater_current = advancedpower.heater_current();
+    input_current = advancedpower.input_current();
 
     #if HAS_MMU2()
 
@@ -107,5 +117,21 @@ void SensorData::update() {
     // Dwarf MCU temperature
     dwarfMCUTemperature = dwarf.get_mcu_temperature();
 
+#endif
+#if HAS_BED_FAN()
+    if (auto rpm = bed_fan::bed_fan().get_rpm()) {
+        bed_fan1_rpm = (*rpm)[0];
+        bed_fan2_rpm = (*rpm)[1];
+    } else {
+        bed_fan1_rpm = 0;
+        bed_fan2_rpm = 0;
+    }
+    bed_fan1_pwm = bed_fan::bed_fan().get_pwm().value_or(0);
+    bed_fan2_pwm = bed_fan::bed_fan().get_pwm().value_or(0);
+#endif
+#if HAS_PSU_FAN()
+    static_assert(HAS_AC_CONTROLLER());
+    psu_fan_rpm = psu_fan::psu_fan().get_rpm().value_or(0);
+    psu_fan_pwm = psu_fan::psu_fan().get_pwm().value_or(0);
 #endif
 }

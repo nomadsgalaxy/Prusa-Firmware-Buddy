@@ -49,8 +49,8 @@
 #if BOARD_IS_XLBUDDY()
     #include <puppies/Dwarf.hpp>
     #include <Marlin/src/module/prusa/toolchanger.h>
-    #include <filament_sensors_handler.hpp>
-    #include <filament_sensors_handler_XL_remap.hpp>
+    #include <feature/filament_sensor/filament_sensors_handler.hpp>
+    #include <feature/filament_sensor/filament_sensors_handler_XL_remap.hpp>
 #endif
 
 #include <option/has_loadcell.h>
@@ -83,6 +83,7 @@ LOG_COMPONENT_REF(Marlin);
 
 #include "probe_position_lookback.hpp"
 #include <config_store/store_instance.hpp>
+#include <utils/serial_logging_disabler.hpp>
 
 LOG_COMPONENT_DEF(Buddy, logging::Severity::debug);
 LOG_COMPONENT_DEF(Core, logging::Severity::info);
@@ -93,6 +94,10 @@ METRIC_DEF(metric_maintask_event, "maintask_loop", METRIC_VALUE_EVENT, 0, METRIC
 METRIC_DEF(metric_cpu_usage, "cpu_usage", METRIC_VALUE_INTEGER, 1000, METRIC_ENABLED);
 
 void app_marlin_serial_output_write_hook(const uint8_t *buffer, int size) {
+    if (SerialLoggingDisabler::is_logging_disabled()) {
+        return;
+    }
+
     while (size && (buffer[size - 1] == '\n' || buffer[size - 1] == '\r')) {
         size--;
     }
@@ -218,14 +223,6 @@ void app_run(void) {
     }
 }
 
-void app_error(void) {
-    bsod("app_error");
-}
-
-void app_assert([[maybe_unused]] uint8_t *file, [[maybe_unused]] uint32_t line) {
-    bsod("app_assert");
-}
-
 #if HAS_ADVANCED_POWER()
 static uint8_t cnt_advanced_power_update = 0;
 
@@ -303,7 +300,7 @@ void adc_tick_1ms(void) {
 #endif
 
 #if HAS_LOADCELL()
-    buddy::probePositionLookback.update(planner.get_axis_position_mm(AxisEnum::Z_AXIS));
+    buddy::probePositionLookback.update();
 #endif
 }
 

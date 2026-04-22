@@ -187,6 +187,31 @@ MsgBoxIconned::MsgBoxIconned(Rect16 rect, const PhaseResponses &resp, size_t def
     }
 }
 
+MsgBoxIconned::MsgBoxIconned(Rect16 rect, const point_ui16_t icon_point, const PhaseResponses &resp, size_t def_btn, const PhaseTexts *labels,
+    const string_view_utf8 &txt, is_multiline multiline, const img::Resource *icon_res, is_closed_on_click_t close)
+    : MsgBoxBase(rect, resp, def_btn, labels, txt, multiline, close)
+    , icon(this, icon_res, { int16_t(rect.Left()), int16_t(rect.Top()) }, GuiDefaults::Padding) {
+
+    text.SetAlignment(Align_t::LeftCenter());
+    Rect16 text_rect = Rect16(GuiDefaults::MsgBoxLayoutRect.Left(), 50, GuiDefaults::MsgBoxLayoutRect.Width(), GuiDefaults::ScreenHeight - 50 /* top */ - GuiDefaults::ButtonHeight);
+
+    if (icon_res) {
+        static constexpr uint8_t icon_text_spacing = 20;
+        icon.SetRect(Rect16(icon_point.x, icon_point.y, icon_res->w, icon_res->h));
+
+        // Big layout: Icon on the left and text next to it
+        // MINI layout: Icon on the left and text below
+        if (GuiDefaults::EnableDialogBigLayout) {
+            text_rect = Rect16::Left_t(icon_point.x + icon_res->w + icon_text_spacing);
+            text_rect = Rect16::Width_t(text_rect.Right() - (icon_point.x + icon_res->w + icon_text_spacing));
+        } else {
+            text_rect = Rect16::Top_t(icon_point.y + icon_res->h + icon_text_spacing);
+            text_rect = Rect16::Height_t(text_rect.Bottom() - (icon_point.y + icon_res->h + icon_text_spacing));
+        }
+    }
+    text.SetRect(text_rect);
+}
+
 Rect16 MsgBoxIconned::getIconRect() {
     return GuiDefaults::MessageIconRect;
 }
@@ -233,9 +258,9 @@ MsgBoxIconnedError::MsgBoxIconnedError(Rect16 rect, const PhaseResponses &resp, 
     text.SetAlignment(Align_t::LeftCenter());
     icon.SetRect(getIconRect());
     AdjustLayout(text, icon);
-    SetBackColor(COLOR_ORANGE);
-    text.SetBackColor(COLOR_ORANGE);
-    icon.SetBackColor(COLOR_ORANGE);
+    SetBackColor(COLOR_BRAND);
+    text.SetBackColor(COLOR_BRAND);
+    icon.SetBackColor(COLOR_BRAND);
 
     if (!pButtons) { // pButtons can never be null
         assert("unassigned msgbox");

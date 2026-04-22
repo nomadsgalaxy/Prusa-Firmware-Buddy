@@ -183,7 +183,7 @@ extern const OutputPin *SideLed_LcdSelector;
     MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf4Reset, buddy::hw::IoPin::p4, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
     MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf5Reset, buddy::hw::IoPin::p5, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
     MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, fanPowerSwitch, buddy::hw::IoPin::p6, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, modularBedReset, buddy::hw::IoPin::p7, Pin::State::low COMMA io_expander1, buddy::hw::noHandler)
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, modular_bed_reset, buddy::hw::IoPin::p7, Pin::State::low COMMA io_expander1, buddy::hw::noHandler)
 
 #define VIRTUAL_PIN_TABLE(MACRO_FUNCTION) \
     MACRO_FUNCTION(buddy::hw::VirtualInterruptPin, buddy::hw::zMinReadFn, endstop_ISR, zMin, BUDDY_PIN(Z_MIN), IMode::IT_rising_falling) \

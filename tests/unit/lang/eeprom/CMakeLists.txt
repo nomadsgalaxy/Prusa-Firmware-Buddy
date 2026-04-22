@@ -1,9 +1,9 @@
 # define the test executable
 add_executable(
   language_eeprom_tests
-  ${CMAKE_SOURCE_DIR}/src/common/random_sw.cpp ${CMAKE_SOURCE_DIR}/src/common/language_eeprom.cpp
-  ${CMAKE_SOURCE_DIR}/src/lang/translator.cpp ${CMAKE_SOURCE_DIR}/tests/unit/test_main.cpp
-  tests.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/random_common.cpp ${CMAKE_SOURCE_DIR}/src/common/random_sw.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/language_eeprom.cpp ${CMAKE_SOURCE_DIR}/src/lang/translator.cpp
+  ${CMAKE_SOURCE_DIR}/tests/unit/test_main.cpp tests.cpp
   )
 
 # define required search paths

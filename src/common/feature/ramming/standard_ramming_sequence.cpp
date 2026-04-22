@@ -2,7 +2,7 @@
 
 #include <config_store/store_definition.hpp>
 #include <buddy/unreachable.hpp>
-#include <option/has_loadcell.h>
+#include <option/has_nextruder.h>
 
 using namespace buddy;
 
@@ -13,7 +13,7 @@ const RammingSequence &buddy::standard_ramming_sequence(StandardRammingSequence 
 
 #if HAS_AUTO_RETRACT()
     case StandardRammingSequence::auto_retract: {
-        static_assert(HAS_LOADCELL()); // HAS_NEXTRUDER alternative
+        static_assert(HAS_NEXTRUDER());
         static constexpr RammingSequenceArray seq({
             { 8, 995 },
             { -43, 6000 },

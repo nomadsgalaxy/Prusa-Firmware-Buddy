@@ -42,24 +42,6 @@ constexpr const char *ToString(TestResultNet res) {
 }
 
 /**
- * @brief Know globally if selftest passed.
- * Currently not affected by eth and wifi.
- */
-bool SelftestResult_Passed_All(const SelftestResult &results);
-
-/**
- * @brief Checks mandatory tests and if optional didn't fail
- * Currently only for MK4, for others it works the same as All
- */
-bool SelftestResult_Passed_Mandatory(const SelftestResult &results);
-
-/**
- * @brief Know globally if selftest failed.
- * Currently not affected by eth and wifi.
- */
-bool SelftestResult_Failed(const SelftestResult &results);
-
-/**
  * @brief Log all results.
  */
 void SelftestResult_Log(const SelftestResult &results);

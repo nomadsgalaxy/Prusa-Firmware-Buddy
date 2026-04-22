@@ -63,18 +63,18 @@ void SelftestFrametAxis::change() {
     switch (dt.axis) {
     case X_AXIS:
         show_x = true;
-        progress.SetProgressPercent(dt.x_progress);
+        progress.set_progress_percent(dt.x_progress);
         break;
     case Y_AXIS:
         show_y = true;
-        progress.SetProgressPercent(dt.y_progress);
+        progress.set_progress_percent(dt.y_progress);
         icon_y_axis.Reposition(Rect16::Top_t(row_2));
         text_y_axis.Reposition(Rect16::Top_t(row_2));
         icon_y_axis_state.Reposition(Rect16::Top_t(row_2));
         break;
     case Z_AXIS:
         show_z = true;
-        progress.SetProgressPercent(dt.z_progress);
+        progress.set_progress_percent(dt.z_progress);
         icon_z_axis.Reposition(Rect16::Top_t(row_2));
         text_z_axis.Reposition(Rect16::Top_t(row_2));
         icon_z_axis_state.Reposition(Rect16::Top_t(row_2));
@@ -83,7 +83,7 @@ void SelftestFrametAxis::change() {
         show_x = true;
         show_y = true;
         show_z = true;
-        progress.SetProgressPercent((dt.x_progress * X_AXIS_PERCENT + dt.y_progress * Y_AXIS_PERCENT + dt.z_progress * Z_AXIS_PERCENT) / 100);
+        progress.set_progress_percent((dt.x_progress * X_AXIS_PERCENT + dt.y_progress * Y_AXIS_PERCENT + dt.z_progress * Z_AXIS_PERCENT) / 100);
         icon_y_axis.Reposition(Rect16::Top_t(row_3));
         text_y_axis.Reposition(Rect16::Top_t(row_3));
         icon_y_axis_state.Reposition(Rect16::Top_t(row_3));

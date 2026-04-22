@@ -1,4 +1,4 @@
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "../../lib/Marlin/Marlin/src/feature/prusa/MMU2/mmu2_fsensor.h"
 
 namespace MMU2 {

@@ -6,7 +6,6 @@ This file is generated automatically so don't edit it directly
 - BufferedSerial: logging::Severity::debug, src/hw/buffered_serial.cpp
 - Cheese: logging::Severity::info, src/puppy/dwarf/Cheese.cpp
 - Core: logging::Severity::info, src/common/appmain.cpp
-- CrashDump: logging::Severity::info, src/common/crash_dump/crash_dump_distribute.cpp
 - Dwarf: logging::Severity::info, src/puppy/dwarf/task_startup.cpp
 - Dwarf_1: logging::Severity::info, src/puppies/Dwarf.cpp
 - Dwarf_2: logging::Severity::info, src/puppies/Dwarf.cpp
@@ -17,7 +16,7 @@ This file is generated automatically so don't edit it directly
 - EEPROM: logging::Severity::info, src/persistent_stores/store_instances/config_store/store_c_api.cpp
 - ESPIF: logging::Severity::info, lib/WUI/espif.cpp
 - EmergencyStop: logging::Severity::debug, src/common/feature/emergency_stop/emergency_stop.cpp
-- FSensor: logging::Severity::info, src/common/filament_sensors_handler.cpp
+- FSensor: logging::Severity::info, src/common/feature/filament_sensor/filament_sensors_handler.cpp
 - FileSystem: logging::Severity::info, src/buddy/filesystem.cpp
 - Fsm: logging::Severity::debug, src/common/fsm_states.cpp
 - GUI: logging::Severity::debug, src/gui/logger.cpp
@@ -36,6 +35,7 @@ This file is generated automatically so don't edit it directly
 - ModularBed: logging::Severity::info, src/puppies/modular_bed.cpp
 - Network: logging::Severity::info, lib/WUI/wui.cpp
 - PRUSA_GCODE: logging::Severity::info, src/marlin_stubs/gcode.cpp
+- PRUSA_PACK_READER: logging::Severity::info, src/common/gcode/gcode_reader_binary.cpp
 - PhaseStepping: logging::Severity::debug, lib/Marlin/Marlin/src/feature/phase_stepping/phase_stepping.cpp
 - Ping: logging::Severity::info, src/common/ping_manager.cpp
 - PowerPanic: logging::Severity::info, src/common/power_panic.cpp

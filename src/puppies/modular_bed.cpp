@@ -174,29 +174,31 @@ CommunicationStatus ModularBed::read_bedlet_data() {
     }
 
     for (uint16_t i = 0; i < BEDLET_COUNT; ++i) {
-        metric_record_custom(
-            &metric_states,
-            ",n=%d v=%u",
-            i,
-            static_cast<unsigned>(bedlet_data.value.fault_status[i]));
-        metric_record_custom(
-            &metric_temps,
-            ",n=%d v=%.2f",
-            i,
-            static_cast<double>(bedlet_data.value.measured_temperature[i]) / MODBUS_TEMPERATURE_REGISTERS_SCALE);
-        metric_record_custom(
-            &metric_pwms,
-            ",n=%d v=%.2f",
-            i,
-            static_cast<double>(bedlet_data.value.pwm_state[i]));
-        metric_record_custom(
-            &metric_regulators,
-            ",n=%d p=%d,i=%d,d=%d,tc=%d",
-            i,
-            bedlet_data.value.p_value[i],
-            bedlet_data.value.i_value[i],
-            bedlet_data.value.d_value[i],
-            bedlet_data.value.tc_value[i]);
+        if (is_used_bedlet(i)) {
+            metric_record_custom(
+                &metric_states,
+                ",n=%d v=%u",
+                i,
+                static_cast<unsigned>(bedlet_data.value.fault_status[i]));
+            metric_record_custom(
+                &metric_temps,
+                ",n=%d v=%.2f",
+                i,
+                static_cast<double>(bedlet_data.value.measured_temperature[i]) / MODBUS_TEMPERATURE_REGISTERS_SCALE);
+            metric_record_custom(
+                &metric_pwms,
+                ",n=%d v=%.2f",
+                i,
+                static_cast<double>(bedlet_data.value.pwm_state[i]));
+            metric_record_custom(
+                &metric_regulators,
+                ",n=%d p=%d,i=%d,d=%d,tc=%d",
+                i,
+                bedlet_data.value.p_value[i],
+                bedlet_data.value.i_value[i],
+                bedlet_data.value.d_value[i],
+                bedlet_data.value.tc_value[i]);
+        }
 
         const auto fault_int { std::to_underlying(bedlet_data.value.fault_status[i]) };
         if (fault_int > 0) {
@@ -486,7 +488,7 @@ uint16_t ModularBed::get_mcu_temperature() {
 }
 
 void ModularBed::safe_state() {
-    buddy::hw::modularBedReset.set();
+    buddy::hw::modular_bed_reset.set();
 }
 
 ModularBed modular_bed(puppyModbus, PuppyBootstrap::get_modbus_address_for_dock(Dock::MODULAR_BED));

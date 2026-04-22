@@ -1,9 +1,7 @@
 #pragma once
 #include "option/has_dwarf.h"
-#include <inplace_function.hpp>
 #include "puppies/BootloaderProtocol.hpp"
 #include "unique_file_ptr.hpp"
-#include <span>
 #include <option/has_puppy_modularbed.h>
 #include <puppies/puppy_constants.hpp>
 #include <common/utils/algorithm_extensions.hpp>
@@ -17,27 +15,6 @@ namespace buddy::puppies {
  */
 class PuppyBootstrap {
 public:
-    /// GUI callback enum
-    enum class FlashingStage {
-        START, ///< Reset puppies
-        DISCOVERY, ///< and assign them addresses
-        CALCULATE_FINGERPRINT, ///< Puppies are calculating fingerprints
-        CHECK_FINGERPRINT, ///< Check match of fingerprint
-        FLASHING, ///< Writing firmware
-        DONE, ///< Starting app
-    };
-
-    struct Progress {
-        int percent_done;
-        FlashingStage stage;
-        PuppyType puppy_type;
-
-        const char *description();
-    };
-
-    /// Callback to GUI for displaying process
-    using ProgressHook = stdext::inplace_function<void(Progress progress)>;
-
     /// Minimal puppy bootloader version that works with this bootstrap
     static constexpr uint32_t MINIMAL_BOOTLOADER_VERSION = 294;
 
@@ -65,12 +42,10 @@ public:
      * @brief Constructor.
      * @param BUFFER_SIZE size of buffer in bytes
      * @param buffer buffer for bootloader protocol, needs to be in regular RAM as it is used by DMA
-     * @param progressHook callback to GUI for displaying bootstrap progress
      */
     template <size_t BUFFER_SIZE>
-    PuppyBootstrap(std::array<uint8_t, BUFFER_SIZE> &buffer, ProgressHook progressHook_)
-        : flasher(buffer.data())
-        , progressHook(progressHook_) {
+    PuppyBootstrap(std::array<uint8_t, BUFFER_SIZE> &buffer)
+        : flasher(buffer.data()) {
         static_assert(BUFFER_SIZE >= BootloaderProtocol::MAX_PACKET_LENGTH, "Buffer needs to be this large");
     }
 
@@ -120,7 +95,6 @@ private:
     };
 
     BootloaderProtocol flasher;
-    ProgressHook progressHook; // Hook for bootstrap progress bar, expecting percentages from 0 - 100, which will be adjusted in guimain to fit max_bootstrap_perc constant
     void reset_all_puppies();
     void reset_puppies_range(DockIterator begin, DockIterator end);
 
@@ -138,12 +112,10 @@ private:
      * @brief Check fingerprint and if needed, flash new firmware.
      * @param dock check puppy in this dock
      * @param fw_fingerprints salts already given to puppies and each corresponding fingerprint
-     * @param chunk_offset do initial fingerprint check only with chunk starting at offset
-     * @param chunk_size do initial fingerprint check only with chunk of this size bytes
      * @param percent_offset start position of the progress trackbar
      * @param percent_span length on the progress trackbar filled with this check
      */
-    void flash_firmware(Dock dock, fingerprints_t &fw_fingerprints, uint8_t chunk_offset, uint8_t chunk_size, int percent_offset, int percent_span);
+    void flash_firmware(Dock dock, fingerprints_t &fw_fingerprints, int percent_offset, int percent_span);
 
     /**
      * @brief Tell puppy to check fingerprint and start application.
@@ -173,14 +145,9 @@ private:
     /**
      * @brief Check chunk of fingerprint from puppy.
      * @param fingerprint fingerprint to compare
-     * @param offset compare only a chunk starting at offset
-     * @param size compare only a chunk of size bytes
-     * Offset and size allow to check only a chunk of the entire fingerprint.
-     * It is used to check multiple puppies with one salt.
-     * Second puppy cannot reuse a chunk from the first puppy that appeared on the bus.
      * @return true if fingerprint matches
      */
-    bool fingerprint_match(const fingerprint_t &fingerprint, uint8_t offset = 0, uint8_t size = sizeof(fingerprint_t));
+    bool fingerprint_match(const fingerprint_t &fingerprint);
 
     BootstrapResult run_address_assignment();
     void assign_address(BootloaderProtocol::Address current_address, BootloaderProtocol::Address new_address);

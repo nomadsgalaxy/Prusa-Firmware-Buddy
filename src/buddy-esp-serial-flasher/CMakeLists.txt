@@ -14,7 +14,9 @@ add_library(
 
 add_dependencies(buddy-esp-serial-flasher esp-parts)
 
-target_link_libraries(buddy-esp-serial-flasher PRIVATE STM32F4::HAL BuddyHeaders freertos logging)
+target_link_libraries(
+  buddy-esp-serial-flasher PRIVATE STM32F4::HAL BuddyHeaders freertos logging FreeRTOS::CMSIS
+  )
 
 target_include_directories(
   buddy-esp-serial-flasher

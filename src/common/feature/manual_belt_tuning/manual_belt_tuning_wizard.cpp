@@ -13,17 +13,13 @@
 
 #include <fsm/manual_belt_tuning_phases.hpp>
 #include <common/marlin_server.hpp>
-#include <buddy/unreachable.hpp>
+#include <bsod/bsod.h>
 #include <string_builder.hpp>
 
 #include <Marlin/src/gcode/gcode.h>
 #include <Marlin/src/module/motion.h>
 
 #include <cmath>
-
-#if !PRINTER_IS_PRUSA_COREONE()
-    #error "A lot of magic number values in this file are CoreONE specific. Belt tuning has not been tested on any other printers, hence the values are probably not correct for them. Revise them at manual_belt_tuning_config.hpp"
-#endif
 
 using namespace marlin_server;
 using namespace manual_belt_tuning;
@@ -65,7 +61,7 @@ public:
         if (!GcodeSuite::G28_no_parser(true, true, false, { .precise = false })) {
             return Result::abort;
         }
-        do_blocking_move_to_xy(240, -8, 50.f); // belt tension calibration position
+        do_blocking_move_to_xy(calib_position_x, calib_position_y, 50.f); // belt tension calibration position
         planner.synchronize();
 
         fsm_change(PhaseManualBeltTuning::intro_measure);
@@ -130,7 +126,7 @@ public:
                 case Response::Abort:
                     return Result::abort;
                 default:
-                    BUDDY_UNREACHABLE();
+                    bsod_unreachable();
                     return Result::abort;
                 }
             }
@@ -170,7 +166,7 @@ public:
             case Response::Abort:
                 return Result::abort;
             default:
-                BUDDY_UNREACHABLE();
+                bsod_unreachable();
                 break;
             }
             break;
@@ -242,7 +238,7 @@ public:
         case Response::Abort:
             break;
         default:
-            BUDDY_UNREACHABLE();
+            bsod_unreachable();
             break;
         }
         return false;

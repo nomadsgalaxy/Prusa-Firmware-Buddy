@@ -19,8 +19,6 @@ static const constexpr uint8_t WDT_WWDG_RELOAD = 127; // ~48ms max period
 IWDG_HandleTypeDef hiwdg {}; // set Instance member to null
 WWDG_HandleTypeDef hwwdg {}; // ..
 
-extern "C" void Error_Handler(void);
-
 volatile unsigned int wdt_iwdg_counter = 0;
 volatile unsigned char wdt_wwdg_counter = 0;
 
@@ -32,7 +30,7 @@ void wdt_iwdg_init(void) {
     hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
     hiwdg.Init.Reload = WDT_IWDG_RELOAD;
     if (HAL_IWDG_Init(&hiwdg) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 #endif // WDT_IWDG_ENABLED
 }

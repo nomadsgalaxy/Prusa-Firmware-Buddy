@@ -42,9 +42,6 @@ void window_t::SetRedLayout() {
 void window_t::SetBlackLayout() {
     set_layout(ColorLayout::black);
 }
-void window_t::SetBlueLayout() {
-    set_layout(ColorLayout::blue);
-}
 
 void window_t::set_layout(ColorLayout set) {
     switch (set) {
@@ -55,10 +52,6 @@ void window_t::set_layout(ColorLayout set) {
 
     case ColorLayout::black:
         SetBackColor(COLOR_BLACK);
-        break;
-
-    case ColorLayout::blue:
-        SetBackColor(COLOR_NAVY);
         break;
     }
 }

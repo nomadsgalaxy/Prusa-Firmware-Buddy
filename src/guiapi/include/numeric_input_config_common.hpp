@@ -29,6 +29,11 @@ extern const NumericInputConfig percent_with_off;
 /// 0-100 %, -1 = auto
 extern const NumericInputConfig percent_with_auto;
 
+/// 0-100 %, -1 = disabled
+/// (just to visually distinguish the case where we do have auto, but the auto
+///  acts as always disabled due to other conditions).
+extern const NumericInputConfig percent_with_disabled;
+
 #if HAS_CHAMBER_API()
 /// Degrees celsius.
 /// This is a function because the config is dynamic and can change based on what chamber backend is currently running.

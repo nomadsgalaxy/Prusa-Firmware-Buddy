@@ -13,7 +13,9 @@
 #include <array>
 #include <stdio.h>
 #include <dirent.h>
-#include "file_raii.hpp"
+#include <common/filename_type.hpp>
+#include <common/directory.hpp>
+#include <strings.h>
 #include "../../src/gui/file_list_defs.h"
 #include "mutable_path.hpp"
 #include "common/utils/utility_extensions.hpp"
@@ -121,4 +123,24 @@ public:
         &less_by_name,
         &less_by_time,
     };
+
+    static dirent *find_next(Directory &dir) {
+        while (dirent *entry = dir.read()) {
+            // ignore hidden files/directories
+            if (entry->lfn[0] == '.') {
+                continue;
+            }
+
+            // all normal directories are accepted
+            if ((entry->d_type & DT_DIR) != 0) {
+                return entry;
+            }
+
+            // files are being filtered by their extension
+            if (filename_is_printable(entry->lfn)) {
+                return entry;
+            }
+        }
+        return nullptr;
+    }
 };

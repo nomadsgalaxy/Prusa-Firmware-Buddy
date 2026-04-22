@@ -9,7 +9,7 @@
 #include "chunked.h"
 #include "debug.h"
 #include <common/printer_model.hpp>
-#include <common/utils/overloaded_visitor.hpp>
+#include <utils/overloaded_visitor.hpp>
 #include <version/version.hpp>
 
 using automata::ExecutionControl;

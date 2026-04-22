@@ -2,6 +2,7 @@
 #include "PrusaGcodeSuite.hpp"
 #include <optional>
 #include <feature/prusa/e-stall_detector.h>
+#include <Marlin/src/module/planner.h>
 #include <option/has_loadcell.h>
 #include <config_store/store_instance.hpp>
 #include <logging/log.hpp>
@@ -16,6 +17,9 @@ enum class Restore { no,
 
 #if HAS_LOADCELL()
 void m591_no_parser(std::optional<bool> opt_enable_e_stall, IsPermanent is_permanent, Restore restore) {
+    // wait for all previously queued moves to finish to only apply the new settings for moves that follow
+    planner.synchronize();
+
     if (restore == Restore::yes) {
         bool enabled_in_eeprom = config_store().stuck_filament_detection.get();
         EMotorStallDetector::Instance().SetEnabled(enabled_in_eeprom);

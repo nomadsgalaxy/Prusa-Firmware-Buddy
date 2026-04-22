@@ -72,7 +72,7 @@ target_include_directories(
           ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-target_compile_definitions(text_fit_tests_mini PUBLIC BOARD=1)
+target_compile_definitions(text_fit_tests_mini PUBLIC BOARD=BOARD_BUDDY)
 
 add_dependencies(text_fit_tests_mini translation_hashtables)
 add_dependencies(text_fit_tests_mini error_texts_extraction)
@@ -113,7 +113,7 @@ target_include_directories(
           ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-target_compile_definitions(text_fit_tests_large PUBLIC BOARD=2)
+target_compile_definitions(text_fit_tests_large PUBLIC BOARD=BOARD_XBUDDY)
 
 add_dependencies(text_fit_tests_large translation_hashtables)
 add_dependencies(text_fit_tests_large error_texts_extraction)

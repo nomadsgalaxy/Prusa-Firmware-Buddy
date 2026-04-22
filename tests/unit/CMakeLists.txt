@@ -7,8 +7,21 @@ add_custom_target(tests)
 # Define UNITTESTS macro everywhere
 add_definitions(-DUNITTESTS)
 
+# Make tests_include available for all tests
+include_directories(tests_include)
+link_libraries(magic_enum)
+
+# Add implementation that fails test on BSOD everywhere
+add_library(bsod_catch STATIC "${CMAKE_CURRENT_SOURCE_DIR}/tests_include/bsod.cpp")
+target_link_libraries(bsod_catch PUBLIC bsod)
+target_link_libraries(bsod_catch PRIVATE Catch2::Catch2)
+link_libraries(bsod_catch)
+
 # Prepend our stubbed libintl header to override the host's gettext
 include_directories(${CMAKE_SOURCE_DIR}/tests/stubs/host)
+# Global stubs for generated headers (e.g. option/signature_oak.h needed by color.hpp). color.hpp is
+# transitively included by many unit tests and the codebase is too tightly coupled to stub per-test.
+include_directories(${CMAKE_SOURCE_DIR}/tests/stubs/global)
 
 # include catch_discover_tests function from Catch2
 include(${Catch2_SOURCE_DIR}/contrib/Catch.cmake)
@@ -18,6 +31,8 @@ target_link_libraries(catch_main Catch2::Catch2 CppStdExtensions)
 # registers given target as a catch test
 function(add_catch_test target)
   target_link_libraries(${target} catch_main Catch2::Catch2)
+  target_include_directories(${target} PRIVATE ${CMAKE_SOURCE_DIR}/tests/unit/include)
+  # Universal BSOD implementation that fails the tests
   catch_discover_tests(${target})
   add_dependencies(tests ${target})
 endfunction()
@@ -27,7 +42,7 @@ add_catch_test(system_tests)
 
 # Define printer-type related defines (set up as MINI)
 add_compile_definitions(
-  PRINTER_VERSION=1 PRINTER_SUBVERSION=0 PRINTER_TYPE=2 PRINTER_CODE=12 BOARD=1
+  PRINTER_VERSION=1 PRINTER_SUBVERSION=0 PRINTER_TYPE=2 PRINTER_CODE=12 BOARD=BOARD_BUDDY
   )
 
 # now, include all the unit tests; they should add themselves using the add_catch_test function
@@ -45,3 +60,4 @@ add_subdirectory(persistent_stores)
 add_subdirectory(media_prefetch)
 add_subdirectory(puppy)
 add_subdirectory(module)
+add_subdirectory(mock)

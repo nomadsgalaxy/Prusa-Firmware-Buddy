@@ -13,11 +13,16 @@
 #include "Marlin/src/module/stepper.h"
 #include "Marlin/src/module/prusa/toolchanger.h"
 #include <tasks.hpp>
+#include <option/has_ac_controller.h>
 #include <option/has_dwarf.h>
 #include <option/has_puppy_modularbed.h>
 #include <buddy/ccm_thread.hpp>
+#include <buddy/bootstrap_state.hpp>
 #include "bsod.h"
-#include "gui_bootstrap_screen.hpp"
+
+#if HAS_AC_CONTROLLER()
+    #include <puppies/ac_controller.hpp>
+#endif
 
 #if HAS_PUPPY_MODULARBED()
     #include <puppies/modular_bed.hpp>
@@ -27,6 +32,8 @@
     #include <puppies/xbuddy_extension.hpp>
 #endif
 
+#define PUPPY_TASK_DEBUG() false
+
 LOG_COMPONENT_DEF(Puppies, logging::Severity::debug);
 
 namespace buddy::puppies {
@@ -35,19 +42,10 @@ osThreadId puppy_task_handle;
 
 std::atomic<bool> stop_request = false; // when this is set to true, puppy task will gracefully stop its execution
 
-static PuppyBootstrap::BootstrapResult bootstrap_puppies(PuppyBootstrap::BootstrapResult minimal_config, bool first_run) {
+static PuppyBootstrap::BootstrapResult bootstrap_puppies(PuppyBootstrap::BootstrapResult minimal_config) {
     // boostrap first
     log_info(Puppies, "Starting bootstrap");
-    PuppyBootstrap puppy_bootstrap(PuppyModbus::share_buffer(), [first_run](PuppyBootstrap::Progress progress) {
-        bool log = true;
-        if (first_run) {
-            // report progress to gui bootstrap screen only if first run - if this is puppy recoverery, there is no bootstrap screen anymore
-            log = gui_bootstrap_screen_set_state(progress.percent_done, progress.description());
-        }
-        if (log) {
-            log_info(Puppies, "Bootstrap stage: %s, percent %d", progress.description(), progress.percent_done);
-        }
-    });
+    PuppyBootstrap puppy_bootstrap { PuppyModbus::share_buffer() };
     return puppy_bootstrap.run(minimal_config);
 }
 
@@ -84,6 +82,8 @@ static void verify_puppies_running() {
         const bool xbuddy_extension_ok = true;
 #endif
 
+        // Note: We don't ping AC controller. It's not a separate device from modbus point of view, that one is virtual & proxied by extension board.
+
         if (num_dwarfs_dead == 0 && modular_bed_ok && xbuddy_extension_ok) {
             log_info(Puppies, "All puppies are reacheable. Continuing");
             return;
@@ -93,7 +93,11 @@ static void verify_puppies_running() {
             osDelay(200);
             continue;
         } else {
+#if PUPPY_TASK_DEBUG()
+            log_error(Puppies, "ErrCode::ERR_SYSTEM_PUPPY_RUN_TIMEOUT");
+#else
             fatal_error(ErrCode::ERR_SYSTEM_PUPPY_RUN_TIMEOUT);
+#endif
         }
     } while (true);
 }
@@ -182,6 +186,20 @@ static void puppy_task_loop() {
                 // TODO: Deal with possibility of extension being optional
                 CommunicationStatus status = xbuddy_extension.refresh();
                 if (status == CommunicationStatus::ERROR) {
+    #if PUPPY_TASK_DEBUG()
+                    log_error(Puppies, "xbuddy_extension.refresh() == CommunicationStatus::ERROR")
+    #else
+                    return;
+    #endif
+                }
+
+                worked |= status == CommunicationStatus::OK;
+            }
+#endif
+#if HAS_AC_CONTROLLER()
+            {
+                CommunicationStatus status = ac_controller.refresh();
+                if (status == CommunicationStatus::ERROR) {
                     return;
                 }
 
@@ -220,20 +238,62 @@ static bool puppy_initial_scan() {
         return false;
     }
 #endif
+
+#if HAS_AC_CONTROLLER()
+    if (ac_controller.initial_scan() == CommunicationStatus::ERROR) {
+        return false;
+    }
+#endif
     return true;
 }
+
+#if HAS_AC_CONTROLLER()
+[[nodiscard]] bool wait_for_ac_controller() {
+    // AC controller is vital part of the printer, there is no upper limit
+    // on how long we are willing to wait for the bootstrap.
+    for (;;) {
+        // At this point, puppy_task_loop() is not yet running, so we must
+        // manually call refresh() on puppies. Without this, XBE can't make
+        // progress while flashing/veryfing ACC. It would also stop sending
+        // healthy heartbeats which would in turn put ACC into safe state.
+        // We should run this as often as possible to minimize time when
+        // XBE is waiting for firmware chunk.
+        if (xbuddy_extension.refresh() == CommunicationStatus::ERROR) {
+            return false;
+        }
+        if (ac_controller.refresh() == CommunicationStatus::ERROR) {
+            return false;
+        }
+        using xbuddy_extension::NodeState;
+        switch (ac_controller.get_node_state()) {
+        case NodeState::unknown:
+            bootstrap_state_set(0, BootstrapStage::ac_controller_unknown);
+            break;
+        case NodeState::verify:
+            bootstrap_state_set(0, BootstrapStage::ac_controller_verify);
+            break;
+        case NodeState::flash:
+            bootstrap_state_set(xbuddy_extension.get_flash_progress_percent(), BootstrapStage::ac_controller_flash);
+            break;
+        case NodeState::ready:
+            bootstrap_state_set(0, BootstrapStage::ac_controller_ready);
+            return true;
+        }
+    }
+}
+#endif
 
 static void puppy_task_body([[maybe_unused]] void const *argument) {
     TaskDeps::wait(TaskDeps::Tasks::puppy_task_start);
 
-    bool first_run = true;
+    [[maybe_unused]] bool first_run = true;
 
     // by default, we want one modular bed and one dwarf
     PuppyBootstrap::BootstrapResult minimal_puppy_config = PuppyBootstrap::MINIMAL_PUPPY_CONFIG;
 
     do {
         // reset and flash the puppies
-        auto bootstrap_result = bootstrap_puppies(minimal_puppy_config, first_run);
+        auto bootstrap_result = bootstrap_puppies(minimal_puppy_config);
         // once some puppies are detected, consider this minimal puppy config (do no allow disconnection of puppy while running)
         minimal_puppy_config = bootstrap_result;
 
@@ -261,6 +321,12 @@ static void puppy_task_body([[maybe_unused]] void const *argument) {
             if (!prusa_toolchanger.init(first_run)) {
                 log_error(Puppies, "Unable to select tool, retrying");
                 break;
+            }
+#endif
+
+#if HAS_AC_CONTROLLER()
+            if (!wait_for_ac_controller()) {
+                break; // go to puppy recovery
             }
 #endif
 

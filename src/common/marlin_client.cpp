@@ -312,7 +312,6 @@ bool is_print_started() {
 
     while (true) {
         switch (marlin_vars().print_state) {
-        case State::WaitGui:
         // We also need to wait these two out, because they are not considered printing
         // and if connect want to send JOB_INFO before marlin_server goes through them
         // it falsely rejects the print. There should be no chance to get an infinit loop
@@ -350,14 +349,6 @@ bool is_print_exited() {
             return false;
         }
     }
-}
-
-void marlin_gui_ready_to_print() {
-    _send_request_flag_to_server(RequestFlag::PrintReady);
-}
-
-void marlin_gui_cant_print() {
-    _send_request_flag_to_server(RequestFlag::GuiCantPrint);
 }
 
 void print_abort() {

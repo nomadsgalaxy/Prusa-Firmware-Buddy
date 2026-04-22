@@ -8,8 +8,8 @@
 #include <Configuration.h>
 
 #include <logging/log.hpp>
-#include <RAII.hpp>
-#include <scope_guard.hpp>
+#include <raii/auto_restore.hpp>
+#include <raii/scope_guard.hpp>
 
 LOG_COMPONENT_DEF(EmergencyStop, logging::Severity::debug);
 
@@ -33,10 +33,6 @@ namespace {
 
     // Don't park below this position.
     constexpr float min_park_z = 0.6;
-
-#ifdef INCH_MODE_SUPPORT
-    #error "Implement unit conversion here."
-#endif
 
     int32_t current_z() {
         return stepper.position_from_startup(Z_AXIS);

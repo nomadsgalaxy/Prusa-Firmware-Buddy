@@ -108,12 +108,6 @@
 #if ENABLED(THERMAL_PROTECTION_CHAMBER)
     #define THERMAL_PROTECTION_CHAMBER_PERIOD 20 // Seconds
     #define THERMAL_PROTECTION_CHAMBER_HYSTERESIS 2 // Degrees Celsius
-
-    /**
-   * Heated chamber watch settings (M141/M191).
-   */
-    #define WATCH_CHAMBER_TEMP_PERIOD 60 // Seconds
-    #define WATCH_CHAMBER_TEMP_INCREASE 2 // Degrees Celsius
 #endif
 
 #if ENABLED(PIDTEMP)
@@ -170,17 +164,6 @@
 #define EXTRUDER_AUTO_FAN_SPEED 255 // 255 == full speed
 
 /**
- * Part-Cooling Fan Multiplexer
- *
- * This feature allows you to digitally multiplex the fan output.
- * The multiplexer is automatically switched at tool-change.
- * Set FANMUX[012]_PINs below for up to 2, 4, or 8 multiplexed fans.
- */
-#define FANMUX0_PIN -1
-#define FANMUX1_PIN -1
-#define FANMUX2_PIN -1
-
-/**
  * M355 Case Light on-off / brightness
  */
 //#define CASE_LIGHT_ENABLE
@@ -205,13 +188,6 @@
 // @section extras
 
 //#define Z_LATE_ENABLE // Enable Z the last moment. Needed if your Z driver overheats.
-
-// Employ an external closed loop controller. Override pins here if needed.
-//#define EXTERNAL_CLOSED_LOOP_CONTROLLER
-#if ENABLED(EXTERNAL_CLOSED_LOOP_CONTROLLER)
-//#define CLOSED_LOOP_ENABLE_PIN        -1
-//#define CLOSED_LOOP_MOVE_COMPLETE_PIN -1
-#endif
 
 /**
  * Dual Steppers / Dual Endstops
@@ -268,54 +244,6 @@
     #endif
 #endif
 
-/**
- * Dual X Carriage
- *
- * This setup has two X carriages that can move independently, each with its own hotend.
- * The carriages can be used to print an object with two colors or materials, or in
- * "duplication mode" it can print two identical or X-mirrored objects simultaneously.
- * The inactive carriage is parked automatically to prevent oozing.
- * X1 is the left carriage, X2 the right. They park and home at opposite ends of the X axis.
- * By default the X2 stepper is assigned to the first unused E plug on the board.
- *
- * The following Dual X Carriage modes can be selected with M605 S<mode>:
- *
- *   0 : (FULL_CONTROL) The slicer has full control over both X-carriages and can achieve optimal travel
- *       results as long as it supports dual X-carriages. (M605 S0)
- *
- *   1 : (AUTO_PARK) The firmware automatically parks and unparks the X-carriages on tool-change so
- *       that additional slicer support is not required. (M605 S1)
- *
- *   2 : (DUPLICATION) The firmware moves the second X-carriage and extruder in synchronization with
- *       the first X-carriage and extruder, to print 2 copies of the same object at the same time.
- *       Set the constant X-offset and temperature differential with M605 S2 X[offs] R[deg] and
- *       follow with M605 S2 to initiate duplicated movement.
- *
- *   3 : (MIRRORED) Formbot/Vivedino-inspired mirrored mode in which the second extruder duplicates
- *       the movement of the first except the second extruder is reversed in the X axis.
- *       Set the initial X offset and temperature differential with M605 S2 X[offs] R[deg] and
- *       follow with M605 S3 to initiate mirrored movement.
- */
-//#define DUAL_X_CARRIAGE
-#if ENABLED(DUAL_X_CARRIAGE)
-    #define X1_MIN_POS X_MIN_POS // Set to X_MIN_POS
-    #define X1_MAX_POS X_BED_SIZE // Set a maximum so the first X-carriage can't hit the parked second X-carriage
-    #define X2_MIN_POS 80 // Set a minimum to ensure the  second X-carriage can't hit the parked first X-carriage
-    #define X2_MAX_POS 353 // Set this to the distance between toolheads when both heads are homed
-    #define X2_HOME_DIR 1 // Set to 1. The second X-carriage always homes to the maximum endstop position
-    #define X2_HOME_POS X2_MAX_POS // Default X2 home position. Set to X2_MAX_POS.
-// However: In this mode the HOTEND_OFFSET_X value for the second extruder provides a software
-// override for X2_HOME_POS. This also allow recalibration of the distance between the two endstops
-// without modifying the firmware (through the "M218 T1 X???" command).
-// Remember: you should set the second extruder x-offset to 0 in your slicer.
-
-    // This is the default power-up mode which can be later using M605.
-    #define DEFAULT_DUAL_X_CARRIAGE_MODE DXC_AUTO_PARK_MODE
-
-    // Default x offset in duplication mode (typically set to half print bed width)
-    #define DEFAULT_DUPLICATION_X_OFFSET 100
-
-#endif // DUAL_X_CARRIAGE
 
 // Activate a solenoid on the active extruder with M380. Disable all with M381.
 // Define SOL0_PIN, SOL1_PIN, etc., for each extruder that has a solenoid.
@@ -608,21 +536,6 @@
     #define FEEDRATE_CHANGE_BEEP_FREQUENCY 440
 #endif
 
-// Include a page of printer information in the LCD Main Menu
-//#define LCD_INFO_MENU
-
-// Scroll a longer status message into view
-//#define STATUS_MESSAGE_SCROLLING
-
-// On the Info Screen, display XY with one decimal place when possible
-//#define LCD_DECIMAL_SMALL_XY
-
-// The timeout (in ms) to return to the status screen from sub-menus
-//#define LCD_TIMEOUT_TO_STATUS 15000
-
-// Add an 'M73' G-code to set the current percentage
-//#define LCD_SET_PROGRESS_MANUALLY
-
 // @section lcd
 
 /**
@@ -635,7 +548,7 @@
 #define BABYSTEPPING
 #if ENABLED(BABYSTEPPING)
     #define BABYSTEP_WITHOUT_HOMING
-    //#define BABYSTEP_XY                     // Also enable X/Y Babystepping. Not supported on DELTA!
+    //#define BABYSTEP_XY                     // Also enable X/Y Babystepping.
     #define BABYSTEP_INVERT_Z false // Change if Z babysteps should go the other way
     #define BABYSTEP_MULTIPLICATOR 1 // Babysteps are very small. Increase for faster motion.
 
@@ -859,41 +772,12 @@
 // @section extras
 
 /**
- * Extra Fan Speed
- * Adds a secondary fan speed for each print-cooling fan.
- *   'M106 P<fan> T3-255' : Set a secondary speed for <fan>
- *   'M106 P<fan> T2'     : Use the set secondary speed
- *   'M106 P<fan> T1'     : Restore the previous fan speed
- */
-//#define EXTRA_FAN_SPEED
-
-/**
  * Universal tool change settings.
  * Applies to all types of extruders except where explicitly noted.
  */
 #if EXTRUDERS > 1
     // Z raise distance for tool-change, as needed for some extruders
     #define TOOLCHANGE_ZRAISE 2 // (mm)
-
-    // Retract and prime filament on tool-change
-    //#define TOOLCHANGE_FILAMENT_SWAP
-    #if ENABLED(TOOLCHANGE_FILAMENT_SWAP)
-        #define TOOLCHANGE_FIL_SWAP_LENGTH 12 // (mm)
-        #define TOOLCHANGE_FIL_EXTRA_PRIME 2 // (mm)
-        #define TOOLCHANGE_FIL_SWAP_RETRACT_SPEED 3600 // (mm/m)
-        #define TOOLCHANGE_FIL_SWAP_PRIME_SPEED 3600 // (mm/m)
-    #endif
-
-    /**
-   * Position to park head during tool change.
-   * Doesn't apply to SWITCHING_TOOLHEAD, DUAL_X_CARRIAGE, or PARKING_EXTRUDER
-   */
-    //#define TOOLCHANGE_PARK
-    #if ENABLED(TOOLCHANGE_PARK)
-        #define TOOLCHANGE_PARK_XY \
-            { X_MIN_POS + 10, Y_MIN_POS + 10 }
-        #define TOOLCHANGE_PARK_XY_FEEDRATE 6000 // (mm/m)
-    #endif
 #endif
 
 /**
@@ -1459,14 +1343,6 @@
 #endif
 
 /**
- * CNC Coordinate Systems
- *
- * Enables G53 and G54-G59.3 commands to select coordinate systems
- * and G92.1 to reset the workspace to native machine space.
- */
-//#define CNC_COORDINATE_SYSTEMS
-
-/**
  * Auto-report temperatures with M155 S<seconds>
  */
 #define AUTO_REPORT_TEMPERATURES
@@ -1523,44 +1399,6 @@
 //#define G0_FEEDRATE 3000 // (mm/m)
 #ifdef G0_FEEDRATE
 //#define VARIABLE_G0_FEEDRATE // The G0 feedrate is set by F in G0 motion mode
-#endif
-
-/**
- * G-code Macros
- *
- * Add G-codes M810-M819 to define and run G-code macros.
- * Macros are not saved to EEPROM.
- */
-//#define GCODE_MACROS
-#if ENABLED(GCODE_MACROS)
-    #define GCODE_MACROS_SLOTS 5 // Up to 10 may be used
-    #define GCODE_MACROS_SLOT_SIZE 50 // Maximum length of a single macro
-#endif
-
-/**
- * User-defined menu items that execute custom GCode
- */
-//#define CUSTOM_USER_MENUS
-#if ENABLED(CUSTOM_USER_MENUS)
-    //#define CUSTOM_USER_MENU_TITLE "Custom Commands"
-    #define USER_SCRIPT_DONE "M117 User Script Done"
-    #define USER_SCRIPT_AUDIBLE_FEEDBACK
-//#define USER_SCRIPT_RETURN  // Return to status screen after a script
-
-    #define USER_DESC_1 "Home & UBL Info"
-    #define USER_GCODE_1 "G28\nG29 W"
-
-    #define USER_DESC_2 "Preheat for " PREHEAT_1_LABEL
-    #define USER_GCODE_2 "M140 S" STRINGIFY(PREHEAT_1_TEMP_BED) "\nM104 S" STRINGIFY(PREHEAT_1_TEMP_HOTEND)
-
-    #define USER_DESC_3 "Preheat for " PREHEAT_2_LABEL
-    #define USER_GCODE_3 "M140 S" STRINGIFY(PREHEAT_2_TEMP_BED) "\nM104 S" STRINGIFY(PREHEAT_2_TEMP_HOTEND)
-
-    #define USER_DESC_4 "Heat Bed/Home/Level"
-    #define USER_GCODE_4 "M140 S" STRINGIFY(PREHEAT_2_TEMP_BED) "\nG28\nG29"
-
-    #define USER_DESC_5 "Home & Info"
-    #define USER_GCODE_5 "G28\nM503"
 #endif
 
 /**
@@ -1745,20 +1583,6 @@
 
 #endif // PRUSA_MMU2
 
-/**
- * Advanced Print Counter settings
- */
-#if ENABLED(PRINTCOUNTER)
-    #define SERVICE_WARNING_BUZZES 3
-// Activate up to 3 service interval watchdogs
-//#define SERVICE_NAME_1      "Service S"
-//#define SERVICE_INTERVAL_1  100 // print hours
-//#define SERVICE_NAME_2      "Service L"
-//#define SERVICE_INTERVAL_2  200 // print hours
-//#define SERVICE_NAME_3      "Service 3"
-//#define SERVICE_INTERVAL_3    1 // print hours
-#endif
-
 // Prusa M73 implementation
 #define M73_PRUSA
 
@@ -1766,11 +1590,6 @@
 #define SDCARD_GCODES
 
 // @section develop
-
-/**
- * M43 - display pin status, watch pins for changes, watch endstops & toggle LED, Z servo probe test, toggle pins
- */
-//#define PINS_DEBUGGING
 
 // Enable Marlin dev mode which adds some special commands
 //#define MARLIN_DEV_MODE

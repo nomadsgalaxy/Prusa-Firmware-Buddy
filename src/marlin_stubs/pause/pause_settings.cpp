@@ -20,7 +20,6 @@ Settings::Settings()
     , slow_load_length(GetDefaultSlowLoadLength())
     , fast_load_length(GetDefaultFastLoadLength())
     , retract(GetDefaultRetractLength())
-    , park_z_feedrate(MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z))
     , park_pos { NAN, NAN, NAN }
     , resume_pos { NAN, NAN, NAN, NAN }
     , target_extruder(0)
@@ -52,10 +51,6 @@ float Settings::GetDefaultRetractLength() {
     return -std::abs(PAUSE_PARK_RETRACT_LENGTH);
 }
 
-float Settings::GetDefaultParkZFeedrate() {
-    return MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z);
-}
-
 void Settings::SetUnloadLength(const std::optional<float> &len) {
     unload_length = -std::abs(len.has_value() ? len.value() : GetDefaultUnloadLength()); // it is negative value
 }
@@ -76,13 +71,6 @@ void Settings::SetRetractLength(const std::optional<float> &len) {
     retract = -std::abs(len.has_value() ? len.value() : GetDefaultRetractLength()); // retract is negative
 }
 
-void Settings::SetParkZFeedrate(const std::optional<float> &feedrate) {
-    if (feedrate.has_value() && std::abs(feedrate.value()) < MMM_TO_MMS(HOMING_FEEDRATE_INVERTED_Z)) {
-        park_z_feedrate = std::abs(feedrate.value());
-    } else {
-        park_z_feedrate = GetDefaultParkZFeedrate();
-    }
-}
 void Settings::SetParkPoint(const mapi::ParkingPosition &park_point) {
     // Currently parking handles it's NaN values internally.
     // TODO: Refactor parking to use ParkingPosition instead of xyz_pos_t

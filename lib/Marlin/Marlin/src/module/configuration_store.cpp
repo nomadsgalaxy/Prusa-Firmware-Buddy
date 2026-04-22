@@ -93,7 +93,7 @@
 
 #if EXTRUDERS > 1
   #include "tool_change.h"
-  void M217_report(const bool eeprom);
+  void M217_report();
 #endif
 
 #if ENABLED(BLTOUCH)
@@ -155,12 +155,6 @@ void MarlinSettings::postprocess() {
 
     // steps per s2 needs to be updated to agree with units per s2
     planner.refresh_acceleration_rates();
-
-    // Make sure delta kinematics are updated before refreshing the
-    // planner position so the stepper counts will be set correctly.
-    #if ENABLED(DELTA)
-      recalc_delta_settings();
-    #endif
 
     #if ENABLED(PIDTEMP)
       thermalManager.updatePID();
@@ -256,9 +250,7 @@ void MarlinSettings::reset() {
     reset_motion();
   #endif
 
-  #if HAS_SCARA_OFFSET
-    scara_home_offset.reset();
-  #elif HAS_HOME_OFFSET
+  #if HAS_HOME_OFFSET
     home_offset.reset();
   #endif
 
@@ -283,16 +275,6 @@ void MarlinSettings::reset() {
   //
 
   #if EXTRUDERS > 1
-    #if ENABLED(TOOLCHANGE_FILAMENT_SWAP)
-      toolchange_settings.swap_length = TOOLCHANGE_FIL_SWAP_LENGTH;
-      toolchange_settings.extra_prime = TOOLCHANGE_FIL_EXTRA_PRIME;
-      toolchange_settings.prime_speed = TOOLCHANGE_FIL_SWAP_PRIME_SPEED;
-      toolchange_settings.retract_speed = TOOLCHANGE_FIL_SWAP_RETRACT_SPEED;
-    #endif
-    #if ENABLED(TOOLCHANGE_PARK)
-      constexpr xyz_pos_t tpxy = TOOLCHANGE_PARK_XY;
-      toolchange_settings.change_point = tpxy;
-    #endif
     toolchange_settings.z_raise = TOOLCHANGE_ZRAISE;
   #endif
 
@@ -307,14 +289,6 @@ void MarlinSettings::reset() {
 
   #if ENABLED(EXTENSIBLE_UI)
     ExtUI::onFactoryReset();
-  #endif
-
-  //
-  // Magnetic Parking Extruder
-  //
-
-  #if ENABLED(MAGNETIC_PARKING_EXTRUDER)
-    mpe_settings_init();
   #endif
 
   //
@@ -357,17 +331,7 @@ void MarlinSettings::reset() {
   // Endstop Adjustments
   //
 
-  #if ENABLED(DELTA)
-    const abc_float_t adj = DELTA_ENDSTOP_ADJ, dta = DELTA_TOWER_ANGLE_TRIM;
-    delta_height = DELTA_HEIGHT;
-    delta_endstop_adj = adj;
-    delta_radius = DELTA_RADIUS;
-    delta_diagonal_rod = DELTA_DIAGONAL_ROD;
-    delta_segments_per_second = DELTA_SEGMENTS_PER_SECOND;
-    delta_calibration_radius = DELTA_CALIBRATION_RADIUS;
-    delta_tower_angle_trim = dta;
-
-  #elif EITHER(X_DUAL_ENDSTOPS, Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS
+  #if EITHER(X_DUAL_ENDSTOPS, Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS
 
     #if ENABLED(X_DUAL_ENDSTOPS)
       endstops.x2_endstop_adj = (
@@ -419,7 +383,7 @@ void MarlinSettings::reset() {
   //
 
   #if ENABLED(PIDTEMP)
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
       PID_PARAM(Kp, e) = float(DEFAULT_Kp);
       PID_PARAM(Ki, e) = scalePID_i(DEFAULT_Ki);
       PID_PARAM(Kd, e) = scalePID_d(DEFAULT_Kd);
@@ -444,19 +408,11 @@ void MarlinSettings::reset() {
   #endif
 
   #if ENABLED(PIDTEMPHEATBREAK)
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
       thermalManager.temp_heatbreak[e].pid.Kp = DEFAULT_heatbreakKp;
       thermalManager.temp_heatbreak[e].pid.Ki = scalePID_i(DEFAULT_heatbreakKi);
       thermalManager.temp_heatbreak[e].pid.Kd = scalePID_d(DEFAULT_heatbreakKd);
     }
-  #endif
-
-  //
-  // LCD Contrast
-  //
-
-  #if HAS_LCD_CONTRAST
-    ui.set_contrast(DEFAULT_LCD_CONTRAST);
   #endif
 
   //
@@ -488,14 +444,6 @@ void MarlinSettings::reset() {
   #endif /* HAS_PLANNER() */
 
   reset_stepper_drivers();
-
-  //
-  // CNC Coordinate System
-  //
-
-  #if ENABLED(CNC_COORDINATE_SYSTEMS)
-    (void)gcode.select_coordinate_system(-1); // Go back to machine space
-  #endif
 
   //
   // Skew Correction
@@ -563,9 +511,6 @@ void MarlinSettings::reset() {
 
   inline void say_units(const bool colon) {
     serialprintPGM(
-      #if ENABLED(INCH_MODE_SUPPORT)
-        parser.linear_unit_factor != 1.0 ? PSTR(" (in)") :
-      #endif
       PSTR(" (mm)")
     );
     if (colon) SERIAL_ECHOLNPGM(":");
@@ -583,15 +528,8 @@ void MarlinSettings::reset() {
      * Announce current units, in case inches are being displayed
      */
     CONFIG_ECHO_START();
-    #if ENABLED(INCH_MODE_SUPPORT)
-      SERIAL_ECHOPGM("  G2");
-      SERIAL_CHAR(parser.linear_unit_factor == 1.0 ? '1' : '0');
-      SERIAL_ECHOPGM(" ;");
-      say_units(false);
-    #else
       SERIAL_ECHOPGM("  G21    ; Units in mm");
       say_units(false);
-    #endif
     SERIAL_EOL();
 
     #if DISABLED(NO_VOLUMETRICS)
@@ -783,14 +721,7 @@ void MarlinSettings::reset() {
       CONFIG_ECHO_HEADING("Servo Angles:");
       for (uint8_t i = 0; i < NUM_SERVOS; i++) {
         switch (i) {
-          #if ENABLED(SWITCHING_EXTRUDER)
-            case SWITCHING_EXTRUDER_SERVO_NR:
-            #if EXTRUDERS > 3
-              case SWITCHING_EXTRUDER_E23_SERVO_NR:
-            #endif
-          #elif ENABLED(SWITCHING_NOZZLE)
-            case SWITCHING_NOZZLE_SERVO_NR:
-          #elif (ENABLED(BLTOUCH) && defined(BLTOUCH_ANGLES)) || (defined(Z_SERVO_ANGLES) && defined(Z_PROBE_SERVO_NR))
+          #if (ENABLED(BLTOUCH) && defined(BLTOUCH_ANGLES)) || (defined(Z_SERVO_ANGLES) && defined(Z_PROBE_SERVO_NR))
             case Z_PROBE_SERVO_NR:
           #endif
             CONFIG_ECHO_START();
@@ -801,41 +732,7 @@ void MarlinSettings::reset() {
 
     #endif // EDITABLE_SERVO_ANGLES
 
-    #if HAS_SCARA_OFFSET
-
-      CONFIG_ECHO_HEADING("SCARA settings: S<seg-per-sec> P<theta-psi-offset> T<theta-offset>");
-      CONFIG_ECHO_START();
-      SERIAL_ECHOLNPAIR(
-          "  M665 S", delta_segments_per_second
-        , " P", scara_home_offset.a
-        , " T", scara_home_offset.b
-        , " Z", LINEAR_UNIT(scara_home_offset.z)
-      );
-
-    #elif ENABLED(DELTA)
-
-      CONFIG_ECHO_HEADING("Endstop adjustment:");
-      CONFIG_ECHO_START();
-      SERIAL_ECHOLNPAIR(
-          "  M666 X", LINEAR_UNIT(delta_endstop_adj.a)
-        , " Y", LINEAR_UNIT(delta_endstop_adj.b)
-        , " Z", LINEAR_UNIT(delta_endstop_adj.c)
-      );
-
-      CONFIG_ECHO_HEADING("Delta settings: L<diagonal_rod> R<radius> H<height> S<segments_per_s> B<calibration radius> XYZ<tower angle corrections>");
-      CONFIG_ECHO_START();
-      SERIAL_ECHOLNPAIR(
-          "  M665 L", LINEAR_UNIT(delta_diagonal_rod)
-        , " R", LINEAR_UNIT(delta_radius)
-        , " H", LINEAR_UNIT(delta_height)
-        , " S", delta_segments_per_second
-        , " B", LINEAR_UNIT(delta_calibration_radius)
-        , " X", LINEAR_UNIT(delta_tower_angle_trim.a)
-        , " Y", LINEAR_UNIT(delta_tower_angle_trim.b)
-        , " Z", LINEAR_UNIT(delta_tower_angle_trim.c)
-      );
-
-    #elif EITHER(X_DUAL_ENDSTOPS, Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS
+    #if EITHER(X_DUAL_ENDSTOPS, Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS
 
       CONFIG_ECHO_HEADING("Endstop adjustment:");
       CONFIG_ECHO_START();
@@ -862,7 +759,7 @@ void MarlinSettings::reset() {
       CONFIG_ECHO_HEADING("PID settings:");
 
       #if ENABLED(PIDTEMP)
-        HOTEND_LOOP() {
+        for (int8_t e = 0; e < HOTENDS; e++) {
           CONFIG_ECHO_START();
           SERIAL_ECHOPAIR("  M301"
             #if HOTENDS > 1 && ENABLED(PID_PARAMS_PER_HOTEND)
@@ -889,12 +786,6 @@ void MarlinSettings::reset() {
       #endif
 
     #endif // PIDTEMP || PIDTEMPBED
-
-    #if HAS_LCD_CONTRAST
-      CONFIG_ECHO_HEADING("LCD Contrast:");
-      CONFIG_ECHO_START();
-      SERIAL_ECHOLNPAIR("  M250 C", ui.contrast);
-    #endif
 
     /**
      * Probe Offset
@@ -1219,7 +1110,7 @@ void MarlinSettings::reset() {
     #if EXTRUDERS > 1
       CONFIG_ECHO_HEADING("Tool-changing:");
       CONFIG_ECHO_START();
-      M217_report(true);
+      M217_report();
     #endif
 
     #if ENABLED(BACKLASH_GCODE)

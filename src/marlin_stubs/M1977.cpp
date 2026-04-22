@@ -13,6 +13,7 @@
 #include <sys/fcntl.h>
 #include <sys/unistd.h>
 #include <version/version.hpp>
+#include <gcode/gcode.h>
 
 namespace {
 
@@ -89,7 +90,10 @@ public:
 };
 
 void calibration_helper(AxisEnum axis, CalibrateAxisHooks &hooks) {
-    auto result = phase_stepping::calibrate_axis(axis, hooks);
+    GcodeSuite::G28_no_parser(true, true, false, { .only_if_needed = true, .z_raise = 3, .precise = false });
+
+    phase_stepping::CalibrateAxisResult result;
+    phase_stepping::calibrate_axis(axis, hooks, result);
     if (result.has_value()) {
         phase_stepping::save_to_persistent_storage_without_enabling(axis);
     } else {
@@ -256,9 +260,6 @@ namespace state {
                 .precise = false,
             };
             GcodeSuite::G28_no_parser(true, true, false, flags); // XY only
-#if HAS_TOOLCHANGER()
-            tool_change(/*tool_index=*/0, tool_return_t::no_return, tool_change_lift_t::no_lift, /*z_down=*/false);
-#endif
         }
         Planner::synchronize();
 

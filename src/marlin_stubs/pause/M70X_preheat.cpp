@@ -1,5 +1,5 @@
 #include "config_features.h"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include <config_store/store_instance.hpp>
 
 // clang-format off
@@ -14,7 +14,7 @@
 #include "../../../lib/Marlin/Marlin/src/module/planner.h"
 #include "../../../lib/Marlin/Marlin/src/module/temperature.h"
 #include "pause_stubbed.hpp"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "M70X.hpp"
 
 #if HAS_CHAMBER_API()
@@ -141,7 +141,7 @@ std::pair<std::optional<PreheatStatus::Result>, FilamentType> filament_gcodes::p
     }
 }
 
-void filament_gcodes::M1700_no_parser(const M1700Args &args) {
+void filament_gcodes::M1700_preheat(const M1700Args &args) {
     InProgress progress;
     const FSMResponseVariant response_variant = preheatTempUnKnown(PreheatData::make(args.mode, args.target_extruder, args.preheat), true);
 
@@ -167,7 +167,7 @@ void filament_gcodes::M1700_no_parser(const M1700Args &args) {
     if (response == Response::Cooldown || args.target_extruder < 0) {
         // Set temperature to all tools
         // Cooldown is always applied to all tools
-        HOTEND_LOOP() {
+        for (int8_t e = 0; e < HOTENDS; e++) {
 #if ENABLED(PRUSA_TOOLCHANGER)
             if (!prusa_toolchanger.is_tool_enabled(e)) {
                 continue;
@@ -188,6 +188,9 @@ void filament_gcodes::M1700_no_parser(const M1700Args &args) {
 #if HAS_CHAMBER_API()
     if (args.preheat_chamber) {
         buddy::chamber().set_target_temperature(fil_cnf.chamber_target_temperature);
+    #if HAS_CHAMBER_VENTS()
+        buddy::chamber().manage_ventilation_state(fil_cnf.chamber_target_temperature);
+    #endif
     }
 #endif
 
@@ -207,7 +210,7 @@ void filament_gcodes::M1700_no_parser(const M1700Args &args) {
 
     if (args.save) {
         if (args.target_extruder < 0) {
-            HOTEND_LOOP() {
+            for (int8_t e = 0; e < HOTENDS; e++) {
                 config_store().set_filament_type(e, filament);
             }
         } else {

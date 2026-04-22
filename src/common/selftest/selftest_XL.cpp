@@ -18,7 +18,6 @@
 #include "selftest_heaters_type.hpp"
 #include "selftest_heaters_interface.hpp"
 #include "selftest_loadcell_interface.hpp"
-#include "selftest_fsensor_interface.hpp"
 #include "selftest_axis_interface.hpp"
 #include "selftest_netstatus_interface.hpp"
 #include "selftest_dock_interface.hpp"
@@ -26,7 +25,6 @@
 #include "selftest_axis_config.hpp"
 #include "selftest_heater_config.hpp"
 #include "selftest_loadcell_config.hpp"
-#include "selftest_fsensor_config.hpp"
 #include "calibration_z.hpp"
 #include "fanctl.hpp"
 #include "timing.h"
@@ -190,15 +188,6 @@ static constexpr LoadcellConfig_t Config_Loadcell[] = {
     make_loadcell_config(4, "Loadcell 5")
 };
 
-static constexpr std::array<const FSensorConfig_t, HOTENDS> Config_FSensor = { {
-    { .extruder_id = 0 },
-    { .extruder_id = 1 },
-    { .extruder_id = 2 },
-    { .extruder_id = 3 },
-    { .extruder_id = 4 },
-    { .extruder_id = 5 },
-} };
-
 static consteval DockConfig_t make_dock_config(uint8_t index) {
     return {
         .dock_id = index,
@@ -229,7 +218,6 @@ public:
     virtual bool Abort() override;
 
 protected:
-    void phaseSelftestStart();
     void restoreAfterSelftest();
     virtual void next() override;
     void phaseDidSelftestPass();
@@ -285,7 +273,6 @@ bool CSelftest::Start(const uint64_t test_mask, const selftest::TestData test_da
     if (m_Mask & stmLoadcell) {
         m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmWait_loadcell));
     }
-    m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmSelftestStart)); // any selftest state will trigger selftest additional init
     m_Mask = (SelftestMask_t)(m_Mask | uint64_t(stmSelftestStop)); // any selftest state will trigger selftest additional deinit
 
     if (std::holds_alternative<ToolMask>(test_data)) {
@@ -311,9 +298,6 @@ void CSelftest::Loop() {
         return;
     case stsStart:
         phaseStart();
-        break;
-    case stsSelftestStart:
-        phaseSelftestStart();
         break;
     case stsDocks:
         if (prusa_toolchanger.is_toolchanger_enabled() && (ret = selftest::phaseDocks(tool_mask, pDocks, Config_Docks))) {
@@ -409,12 +393,6 @@ void CSelftest::Loop() {
             }
         }
         break;
-
-    case stsFSensor_calibration:
-        if ((ret = selftest::phaseFSensor(tool_mask, pFSensor, Config_FSensor))) {
-            return;
-        }
-        break;
     case stsSelftestStop:
         restoreAfterSelftest();
         break;
@@ -436,11 +414,6 @@ void CSelftest::Loop() {
 void CSelftest::phaseDidSelftestPass() {
     m_result = config_store().selftest_result.get();
     SelftestResult_Log(m_result);
-
-    // dont run wizard again
-    if (SelftestResult_Passed_All(m_result)) {
-        config_store().run_selftest.set(false);
-    }
 }
 
 bool CSelftest::Abort() {
@@ -471,50 +444,10 @@ bool CSelftest::Abort() {
     return true;
 }
 
-void CSelftest::phaseSelftestStart() {
-    if (m_Mask & to_one_hot(stsHeaters_bed_ena)) {
-        // set bed to 35°C
-        // heater test will start after temperature pass tru 40°C (we dont want to entire bed and sheet to be tempered at it)
-        // so don't set 40°C, it could also trigger cooldown in case temperature is or similar 40.1°C
-        thermalManager.setTargetBed(35);
-    }
-
-    if (m_Mask & to_one_hot(stsHeaters_noz_ena)) {
-        // no need to preheat nozzle, it heats up much faster than bed
-        HOTEND_LOOP() {
-            thermalManager.setTargetHotend(0, e);
-            marlin_server::set_temp_to_display(0, e);
-        }
-    }
-
-    m_result = config_store().selftest_result.get(); // read previous result
-    if (m_Mask & stmXAxis) {
-        m_result.xaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmYAxis) {
-        m_result.yaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmZAxis) {
-        m_result.zaxis = TestResult_Unknown;
-    }
-    if (m_Mask & stmZcalib) {
-        m_result.zalign = TestResult_Unknown;
-    }
-    if (m_Mask & to_one_hot(stsHeaters_bed_ena)) {
-        m_result.bed = TestResult_Unknown;
-    }
-    if (m_Mask & to_one_hot(stsHeaters_noz_ena)) {
-        HOTEND_LOOP() {
-            m_result.tools[e].nozzle = TestResult_Unknown;
-        }
-    }
-    config_store().selftest_result.set(m_result); // reset status for all selftest parts in eeprom
-}
-
 void CSelftest::restoreAfterSelftest() {
     // disable heater target values - thermalManager.disable_all_heaters does not do that
     thermalManager.setTargetBed(0);
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         if (buddy::puppies::dwarfs[e].is_enabled()) {
             thermalManager.setTargetHotend(0, e);
         }

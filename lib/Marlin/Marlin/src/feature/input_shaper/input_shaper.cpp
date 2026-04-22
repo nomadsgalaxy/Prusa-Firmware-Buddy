@@ -33,21 +33,64 @@ static void init_input_shaper_pulses(const float a[], const float t[], const int
         sum_a += a[i];
     }
 
-    // Reverse pulses vs their traditional definition
+    // Reverse pulses vs. their traditional definition
+    // and normalize their amplitudes
+    //
+    // In traditional definition time is increasing
+    // as it is running forward.
+    // If we assume time axis to have negative values on the left
+    // and positive values on the right signal is moving from
+    // left to the right as time goes forward.
+    // In tradition definition pulses with lower index have lower
+    // time and are encountered first by the signal.
+    //
+    // In our definition of time meaning of the time is time
+    // remaining to some event. In our definition time
+    // is decreasing as it is running forward.
+    // If we assume time axis to have negative values on the left
+    // and positive values on the right signal is moving from
+    // right to the left as time goes forward.
+    // In our definition pulses with higher index have higher
+    // time and are encountered first by the signal.
+    // As the time is moving in opposite direction,
+    // we need to reverse pulses to ensure first pulse
+    // from traditional definition is encountered first
+    // by the signal in our definition.
+    // In our definition we use same index vs. time
+    // ordering as in traditional definition
+    // (lowest index has lowest time and vice versa)
+    // So purely reordering would break ordering.
+    // Therefore we also flip pulse time sign to preserve
+    // ordering.
+    //
+    // Amplitude normalization ensures that sum
+    // of all pulse amplitudes is 1. This ensures that
+    // sparse moves reaches their original target destinations.
+    // If the sum would be greater than 1, printed object would be
+    // enlarged in that axis, if lower than 1 it would be reduced.
+
     const float inv_sum_a = 1.f / sum_a;
     for (int i = 0; i < num_pulses; ++i) {
         is_pulses->pulses[num_pulses - i - 1].a = a[i] * inv_sum_a;
         is_pulses->pulses[num_pulses - i - 1].t = -t[i];
     }
 
-    double time_shift = 0.;
+    double pulses_weighted_average_time = 0.;
     for (int i = 0; i < num_pulses; ++i) {
-        time_shift += double(is_pulses->pulses[i].a) * is_pulses->pulses[i].t;
+        // not sure if pulse centering algorithm works for negative amplitude
+        // check if needed
+        assert((is_pulses->pulses[i].a) >= 0.f);
+        static_assert(0.f == -0.f);
+        // no other operation needed as sum of amplitudes is already 1 at this point
+        pulses_weighted_average_time += double(is_pulses->pulses[i].a) * is_pulses->pulses[i].t;
     }
 
-    // Shift pulses around mid-point.
+    // Center pulses around zero time
+    //
+    // This ensures at least some synchronization between
+    // different axes with different or no input shapers
     for (int i = 0; i < num_pulses; ++i) {
-        is_pulses->pulses[i].t -= time_shift;
+        is_pulses->pulses[i].t -= pulses_weighted_average_time;
     }
 
     is_pulses->num_pulses = num_pulses;
@@ -171,53 +214,39 @@ input_shaper::Shaper input_shaper::get(const float damping_ratio, const float sh
     bsod("input_shaper::Type out of range");
 }
 
-input_shaper_pulses_t create_zv_input_shaper_pulses(const float shaper_freq, const float damping_ratio) {
+void create_zv_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, 0.f, input_shaper::Type::zv);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_zvd_input_shaper_pulses(const float shaper_freq, const float damping_ratio) {
+void create_zvd_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, 0.f, input_shaper::Type::zvd);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_mzv_input_shaper_pulses(const float shaper_freq, const float damping_ratio) {
+void create_mzv_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, 0.f, input_shaper::Type::mzv);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_ei_input_shaper_pulses(const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
+void create_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, vibration_reduction, input_shaper::Type::ei);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_2hump_ei_input_shaper_pulses(const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
+void create_2hump_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, vibration_reduction, input_shaper::Type::ei_2hump);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_3hump_ei_input_shaper_pulses(const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
+void create_3hump_ei_input_shaper_pulses(input_shaper_pulses_t &is_pulses, const float shaper_freq, const float damping_ratio, const float vibration_reduction) {
     input_shaper::Shaper shaper = input_shaper::get(damping_ratio, shaper_freq, vibration_reduction, input_shaper::Type::ei_3hump);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
-input_shaper_pulses_t create_null_input_shaper_pulses() {
+void create_null_input_shaper_pulses(input_shaper_pulses_t &is_pulses) {
     input_shaper::Shaper shaper = input_shaper::get(NAN, NAN, NAN, input_shaper::Type::null);
-    input_shaper_pulses_t is_pulses;
     init_input_shaper_pulses(shaper.a, shaper.t, shaper.num_pulses, &is_pulses);
-    return is_pulses;
 }
 
 void input_shaper_step_generator_init(const move_t &move, input_shaper_step_generator_t &step_generator, step_generator_state_t &step_generator_state) {
@@ -226,6 +255,11 @@ void input_shaper_step_generator_init(const move_t &move, input_shaper_step_gene
     input_shaper_state_t *const is_state = step_generator.is_state;
     step_generator_state.step_generator[axis] = &step_generator;
     step_generator_state.next_step_func[axis] = (generator_next_step_f)input_shaper_step_generator_next_step_event;
+
+    // Set the initial step flags from the last cached values
+    step_generator.step_flags = 0;
+    step_generator.step_flags |= step_generator_state.current_flags & (STEP_EVENT_FLAG_X_DIR << axis);
+    step_generator.step_flags |= step_generator_state.current_flags & (STEP_EVENT_FLAG_X_ACTIVE << axis);
 
     // Set the initial direction and activity flags for the entire next move
     step_generator.move_step_flags = 0;
@@ -502,7 +536,6 @@ step_event_info_t input_shaper_step_generator_next_step_event(input_shaper_step_
 }
 
 uint8_t input_shaper_state_t::calc_nearest_next_change_idx() const {
-    assert(m_logical_axis_pulses.front()->num_pulses == m_logical_axis_pulses.back()->num_pulses);
     uint8_t min_next_change_idx = 0;
     double min_next_change = m_next_change[0];
     for (uint8_t idx = 1; idx < m_logical_axis_pulses.front()->num_pulses; ++idx) {

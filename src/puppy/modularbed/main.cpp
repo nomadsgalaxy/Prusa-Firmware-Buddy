@@ -6,7 +6,6 @@
 #include "hal/HAL_ADC.hpp"
 #include "hal/HAL_GPIO.hpp"
 #include "hal/HAL_PWM.hpp"
-#include "hal/HAL_Common.hpp"
 #include "modbus/ModbusProtocol.hpp"
 #include "modbus/ModbusTask.hpp"
 #include "control/PWMLogic.hpp"
@@ -79,19 +78,19 @@ int main(void) {
     osSetIdleTaskWatchdog(idle_task_watchdog_callback); // Add watchdog to idle task
 
     if (hal::GPIODriver::Init() == false) {
-        Error_Handler();
+        bsod_system();
     }
 
     if (hal::ADCDriver::Init() == false) {
-        Error_Handler();
+        bsod_system();
     }
 
     if (hal::RS485Driver::Init(get_assigned_modbus_address()) == false) {
-        Error_Handler();
+        bsod_system();
     }
 
     if (hal::PWMDriver::Init() == false) {
-        Error_Handler();
+        bsod_system();
     }
 
     modularbed::ModbusRegisters::Init();
@@ -105,11 +104,11 @@ int main(void) {
     modularbed::ControlLogic::Init();
 
     if (modbus::ModbusTask::Init() == false) {
-        Error_Handler();
+        bsod_system();
     }
 
     if (modularbed::ControlTask::Init() == false) {
-        Error_Handler();
+        bsod_system();
     }
 
     osKernelStart(); // function never returns

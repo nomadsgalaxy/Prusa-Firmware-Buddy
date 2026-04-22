@@ -4,9 +4,9 @@
 #pragma once
 #include "../../lib/Marlin/Marlin/src/gcode/parser.h"
 
+#include <option/has_esp.h>
 #include <option/has_toolchanger.h>
 #include <option/has_side_leds.h>
-#include <option/has_belt_tuning.h>
 #include <option/has_manual_belt_tuning.h>
 #include <option/has_i2c_expander.h>
 #include <option/has_chamber_api.h>
@@ -36,7 +36,6 @@ int8_t get_target_extruder_from_command_p(const GCodeParser2 &p);
 void G12(); ///< Nozzle Cleaning
 #endif
 void G26(); //< first layer calibration
-void G64(); //< Measure Z_AXIS height
 void G162(); //< calibrate Z
 void G163(); //< measure length of axis
 void G123(); //< Manual move
@@ -123,9 +122,8 @@ void M870(); ///< Open or close ventilation intake
 #endif
 
 void M591(); //< configure Filament stuck monitoring
-
-#if HAS_BELT_TUNING()
-void M960(); //< Belt tuning
+#if PRINTER_IS_PRUSA_iX()
+void M853(); //< Align z motors over bed pins/end of axis
 #endif
 #if HAS_MANUAL_BELT_TUNING()
 void M961(); //< Manual Belt tuning
@@ -144,11 +142,16 @@ void M1601(); //< Filament stuck detected, Prusa STM32 platform specific
 void M1700(); //< Preheat. Prusa STM32 platform specific
 void M1701(); //< Autoload. Prusa STM32 platform specific
 void M1702(); //< Coldpull. Prusa platform specific
+#if HAS_ESP()
 void M1703(); //< Wi-fi setup. Prusa platform specific
+#endif
 
 void M1978(); //< Fan Selftest
 #if HAS_DOOR_SENSOR_CALIBRATION()
 void M1980(); //< Door sensor calibration
+#endif
+#if HAS_SELFTEST()
+void M1981(); //< Filament sensors selftest
 #endif
 
 void M9140(); //< Set normal (non-stealth) mode

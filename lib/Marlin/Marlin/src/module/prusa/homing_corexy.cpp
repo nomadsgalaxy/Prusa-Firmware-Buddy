@@ -28,7 +28,7 @@
 #endif
 
 #include <bsod.h>
-#include <scope_guard.hpp>
+#include <raii/scope_guard.hpp>
 #include <feature/phase_stepping/phase_stepping.hpp>
 #include <feature/input_shaper/input_shaper_config.hpp>
 #include <config_store/store_instance.hpp>

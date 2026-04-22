@@ -1,11 +1,12 @@
 # Common dependencies for all tests
-link_libraries(SG14 freertos_tests buddy_utils)
+link_libraries(SG14 freertos_tests buddy_utils logging-mock)
 add_definitions(-DPRUSA_TOOL_MAPPING)
 
 add_executable(
   connect_tests
   ${CMAKE_CURRENT_BINARY_DIR}/http_resp_automaton.cpp
   ${CMAKE_SOURCE_DIR}/src/common/automata/core.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/directory.cpp
   ${CMAKE_SOURCE_DIR}/src/common/crc32.cpp
   ${CMAKE_SOURCE_DIR}/src/common/error_code_mangle.cpp
   ${CMAKE_SOURCE_DIR}/src/common/json_encode.cpp
@@ -26,8 +27,18 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/src/common/http/connection.cpp
   ${CMAKE_SOURCE_DIR}/src/common/http/socket_connection_factory.cpp
   ${CMAKE_SOURCE_DIR}/src/common/stat_retry.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/random_common.cpp
   ${CMAKE_SOURCE_DIR}/src/common/random_sw.cpp
   ${CMAKE_SOURCE_DIR}/src/common/general_response.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/path_utils.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/e2ee.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/sha256_multiuse.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/movable_aes_context.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/key.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/decryptor.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/utils.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/hmac.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/crash_dump/secret.cpp
   ${CMAKE_SOURCE_DIR}/src/connect/background.cpp
   ${CMAKE_SOURCE_DIR}/src/connect/render.cpp
   ${CMAKE_SOURCE_DIR}/src/connect/command.cpp
@@ -57,6 +68,7 @@ add_executable(
   xbuddy_extension_mock.cpp
   side_strip_control_mock.cpp
   cancel_object_mock.cpp
+  ${CMAKE_SOURCE_DIR}/tests/stubs/async_job/async_job.cpp
   ${CMAKE_SOURCE_DIR}/tests/unit/common/printer_state_mock.cpp
   ${CMAKE_SOURCE_DIR}/tests/stubs/jsmn_impl.c
   ${CMAKE_SOURCE_DIR}/tests/stubs/strlcpy.c
@@ -105,7 +117,6 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/common/utils
           ${CMAKE_SOURCE_DIR}/src/common/marlin_server_types
           ${CMAKE_SOURCE_DIR}/src/persistent_stores
-          ${CMAKE_SOURCE_DIR}/src/puppy/xbuddy_extension_shared
           ${CMAKE_SOURCE_DIR}/lib/jsmn
           ${CMAKE_SOURCE_DIR}/lib/WUI
           ${CMAKE_SOURCE_DIR}/lib/heatshrink
@@ -117,7 +128,10 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/lib/Marlin/Marlin/src/
           ${CMAKE_BINARY_DIR}/lib/libbgcode/src/
   )
-target_link_libraries(connect_tests mbedTLS bgcode_core)
+target_compile_options(
+  connect_tests PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/printer_type_override.hpp
+  )
+target_link_libraries(connect_tests mbedTLS bgcode_core raii xbuddy_extension)
 
 file(GLOB AUTOMATA_GENERATORS ${PROJECT_ROOT_DIR}/utils/gen-automata/*.py)
 
@@ -141,6 +155,7 @@ add_executable(
   ${CMAKE_CURRENT_BINARY_DIR}/http_resp_automaton.cpp
   ${CMAKE_SOURCE_DIR}/src/common/automata/core.cpp
   ${CMAKE_SOURCE_DIR}/src/common/crc32.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/directory.cpp
   ${CMAKE_SOURCE_DIR}/src/common/error_code_mangle.cpp
   ${CMAKE_SOURCE_DIR}/src/common/json_encode.cpp
   ${CMAKE_SOURCE_DIR}/src/common/filepath_operation.cpp
@@ -152,6 +167,7 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/src/common/http/connection.cpp
   ${CMAKE_SOURCE_DIR}/src/common/http/socket_connection_factory.cpp
   ${CMAKE_SOURCE_DIR}/src/common/stat_retry.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/random_common.cpp
   ${CMAKE_SOURCE_DIR}/src/common/random_sw.cpp
   ${CMAKE_SOURCE_DIR}/src/common/general_response.cpp
   ${CMAKE_SOURCE_DIR}/src/common/utils/string_builder.cpp
@@ -225,7 +241,6 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/gui
           ${CMAKE_SOURCE_DIR}/src
           ${CMAKE_SOURCE_DIR}/src/lang
-          ${CMAKE_SOURCE_DIR}/src/puppy/xbuddy_extension_shared
           ${CMAKE_SOURCE_DIR}/lib/jsmn
           ${CMAKE_SOURCE_DIR}/lib/WUI
           ${CMAKE_SOURCE_DIR}/lib/Middlewares/Third_Party/mbedtls/include
@@ -237,6 +252,11 @@ target_include_directories(
           ${CMAKE_BINARY_DIR}/lib/libbgcode/src/
   )
 add_dependencies(connect_planner_tests generate-httpc-automata-tests-connect)
+
+target_compile_options(
+  connect_planner_tests PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/printer_type_override.hpp
+  )
+target_link_libraries(connect_planner_tests raii xbuddy_extension)
 
 add_executable(
   connect_registration_tests
@@ -257,6 +277,7 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/src/common/printer_model.cpp
   ${CMAKE_SOURCE_DIR}/src/common/stat_retry.cpp
   ${CMAKE_SOURCE_DIR}/src/common/segmented_json.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/random_common.cpp
   ${CMAKE_SOURCE_DIR}/src/common/random_sw.cpp
   ${CMAKE_SOURCE_DIR}/src/common/utils/string_builder.cpp
   ${CMAKE_SOURCE_DIR}/src/connect/background.cpp
@@ -321,7 +342,6 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/src/common/marlin_server_types
           ${CMAKE_SOURCE_DIR}/src/common/utils
           ${CMAKE_SOURCE_DIR}/src/gui
-          ${CMAKE_SOURCE_DIR}/src/puppy/xbuddy_extension_shared
           ${CMAKE_SOURCE_DIR}/lib/Middlewares/Third_Party/mbedtls/include
           ${CMAKE_SOURCE_DIR}/include/usb_host
           ${CMAKE_SOURCE_DIR}/lib/WUI
@@ -333,6 +353,11 @@ target_include_directories(
           ${CMAKE_BINARY_DIR}/lib/libbgcode/src/
   )
 add_dependencies(connect_registration_tests generate-httpc-automata-tests-connect)
+
+target_link_libraries(connect_registration_tests raii xbuddy_extension)
+target_compile_options(
+  connect_registration_tests PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/printer_type_override.hpp
+  )
 
 add_catch_test(connect_tests)
 add_catch_test(connect_planner_tests)

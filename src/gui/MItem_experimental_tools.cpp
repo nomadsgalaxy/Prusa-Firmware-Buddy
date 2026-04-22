@@ -211,3 +211,19 @@ MI_SAVE_AND_RETURN::MI_SAVE_AND_RETURN()
 void MI_SAVE_AND_RETURN::click([[maybe_unused]] IWindowMenu &window_menu) {
     Screens::Access()->Get()->WindowEvent(nullptr, GUI_event_t::CHILD_CLICK, (void *)ClickCommand::Return);
 }
+
+/*****************************************************************************/
+// MI_FAST_DRAW_ENABLE
+// If this is put outside of ScreenMenuExperimental (that resets the printer
+// after exiting), the config_store().fast_draw_enabled usage in ili9488
+// must be reworked to not store the result in a static variable.
+MI_FAST_DRAW_ENABLE::MI_FAST_DRAW_ENABLE()
+    : WI_ICON_SWITCH_OFF_ON_t {
+        config_store().fast_draw_enabled.get(),
+        // translation: experimental menu item enabling faster display routines
+        _("Fast Draw"),
+    } {
+}
+void MI_FAST_DRAW_ENABLE::OnChange(size_t) {
+    config_store().fast_draw_enabled.set(value());
+}

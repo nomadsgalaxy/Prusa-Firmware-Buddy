@@ -9,7 +9,7 @@ target_include_directories(
 
 target_compile_definitions(CoreBuddy PUBLIC ARDUINO=187 HAVE_HWSERIAL2 USBD_USE_CDC USBCON)
 
-target_link_libraries(CoreBuddy PUBLIC FreeRTOS::FreeRTOS BuddyHeaders)
+target_link_libraries(CoreBuddy PUBLIC FreeRTOS::FreeRTOS FreeRTOS::CMSIS BuddyHeaders bsod)
 
 if(${HAS_USB_DEVICE})
   target_sources(CoreBuddy PRIVATE cores/arduino/USBSerial.cpp)

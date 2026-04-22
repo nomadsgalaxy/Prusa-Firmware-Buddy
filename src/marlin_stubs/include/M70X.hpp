@@ -50,11 +50,11 @@ private:
     BlockEStallDetection estall_lock;
 };
 
-void M701_no_parser(FilamentType filament_to_be_loaded, const std::optional<float> &fast_load_length, float z_min_pos, std::optional<RetAndCool_t> op_preheat, uint8_t target_extruder, int8_t mmu_slot, std::optional<Color> color_to_be_loaded, ResumePrint_t resume_print_request);
-void M702_no_parser(std::optional<float> unload_length, float z_min_pos, std::optional<RetAndCool_t> op_preheat, uint8_t target_extruder, bool ask_unloaded);
+void M701_load(FilamentType filament_to_be_loaded, const std::optional<float> &fast_load_length, float z_min_pos, std::optional<RetAndCool_t> op_preheat, uint8_t target_extruder, int8_t mmu_slot, std::optional<Color> color_to_be_loaded, ResumePrint_t resume_print_request);
+void M702_unload(std::optional<float> unload_length, float z_min_pos, std::optional<RetAndCool_t> op_preheat, uint8_t target_extruder, bool ask_unloaded);
 void M70X_process_user_response(PreheatStatus::Result res, uint8_t target_extruder);
 
-void M1600_no_parser(FilamentType filament_to_be_loaded, uint8_t target_extruder, RetAndCool_t preheat, AskFilament_t ask_filament, std::optional<Color> color_to_be_loaded);
+void M1600_change_filament(FilamentType filament_to_be_loaded, uint8_t target_extruder, RetAndCool_t preheat, AskFilament_t ask_filament, std::optional<Color> color_to_be_loaded);
 
 struct M1700Args {
     /// include return and/or cooldown items in menu
@@ -87,9 +87,9 @@ struct M1700Args {
 };
 
 /// Standalone preheat
-void M1700_no_parser(const M1700Args &args);
+void M1700_preheat(const M1700Args &args);
 
-void M1701_no_parser(const std::optional<float> &fast_load_length, float z_min_pos, uint8_t target_extruder);
+void M1701_autoload(const std::optional<float> &fast_load_length, float z_min_pos, uint8_t target_extruder);
 
 void mmu_load(uint8_t data);
 void mmu_load_test(uint8_t data);

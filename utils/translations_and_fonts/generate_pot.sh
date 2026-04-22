@@ -5,13 +5,8 @@ set -e
 # Generate template for all error code strings
 mkdir -p tmp_error_headers
 
-python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/buddy-error-codes.yaml tmp_error_headers/error_list_coreone.hpp COREONE 31 --list
-python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/buddy-error-codes.yaml tmp_error_headers/error_list_mini.hpp MINI 12 --list
-python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/buddy-error-codes.yaml tmp_error_headers/error_list_mk4.hpp MK4 13 --list
-python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/buddy-error-codes.yaml tmp_error_headers/error_list_mk35.hpp MK3.5 23 --list
-python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/buddy-error-codes.yaml tmp_error_headers/error_list_ix.hpp iX 16 --list
-python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/buddy-error-codes.yaml tmp_error_headers/error_list_xl.hpp XL 17 --list # XL_DEV_KIT shares header with XL (see AddPrusaErrorCodes.cmake)
-python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/mmu-error-codes.yaml tmp_error_headers/error_list_mmu.hpp MMU 04 --mmu --list
+python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/buddy-error-codes.yaml tmp_error_headers/error_list.hpp XL 17 --list --ignore_printer_id
+python3 lib/Prusa-Error-Codes/generate_buddy_headers.py lib/Prusa-Error-Codes/yaml/mmu-error-codes.yaml tmp_error_headers/error_list_mmu.hpp MMU 04 --mmu --list --ignore_printer_id
 
 # Generate template for strings from firmware and error headers
 find src include tmp_error_headers lib -regextype posix-extended -regex "^.*\.c$|^.*\.cpp$|^.*\.h$|^.*\.hpp$" > tmp_filelist

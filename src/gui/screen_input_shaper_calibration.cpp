@@ -38,9 +38,9 @@ protected:
 public:
     void update(fsm::PhaseData data) {
         if (data[3]) {
-            progress.SetProgressPercent(data[2] / 2.55);
+            progress.set_progress_percent(data[2] / 2.55);
         } else {
-            progress.SetProgressPercent(100 * float(data[2] - data[0]) / (data[1] - data[0]));
+            progress.set_progress_percent(100 * float(data[2] - data[0]) / (data[1] - data[0]));
             snprintf(text_below_buffer.data(), text_below_buffer.size(), "%3d Hz", data[2]);
             text_above.SetText(text_above_axis);
             text_below.SetText(string_view_utf8::MakeRAM(text_below_buffer.data()));
@@ -48,6 +48,8 @@ public:
         }
     }
 };
+
+#if HAS_ATTACHABLE_ACCELEROMETER()
 
 class FrameInfo {
 private:
@@ -81,6 +83,8 @@ private:
         "Attention: Ensure the accelerometer is properly connected. Follow the step-by-step guide in the link below:");
     std::array<char, 32> link_buffer;
 };
+
+#endif
 
 class FrameParking final {
 private:
@@ -133,7 +137,7 @@ public:
     }
 
     void update(fsm::PhaseData data) {
-        progress.SetProgressPercent(data[0] / 2.55);
+        progress.set_progress_percent(data[0] / 2.55);
         snprintf(text_below_buffer.data(), text_below_buffer.size(), "Axis %c shaper %3s",
             data[2] == 0 ? 'X' : (data[2] == 1 ? 'Y' : '?'), input_shaper::to_short_string(static_cast<input_shaper::Type>(data[1])));
         text_below.SetText(string_view_utf8::MakeRAM(text_below_buffer.data()));
@@ -230,14 +234,14 @@ public:
 };
 
 using Frames = FrameDefinitionList<ScreenInputShaperCalibration::FrameStorage,
-    FrameDefinition<PhasesInputShaperCalibration::info, FrameInfo>,
-    FrameDefinition<PhasesInputShaperCalibration::parking, FrameParking>,
 #if HAS_ATTACHABLE_ACCELEROMETER()
+    FrameDefinition<PhasesInputShaperCalibration::info, FrameInfo>,
     FrameDefinition<PhasesInputShaperCalibration::connect_to_board, FrameConnectToBoard>,
     FrameDefinition<PhasesInputShaperCalibration::wait_for_extruder_temperature, FrameWaitForExtruderTemperature>,
     FrameDefinition<PhasesInputShaperCalibration::attach_to_extruder, FrameAttachToExtruder>,
     FrameDefinition<PhasesInputShaperCalibration::attach_to_bed, FrameAttachToBed>,
 #endif
+    FrameDefinition<PhasesInputShaperCalibration::parking, FrameParking>,
     FrameDefinition<PhasesInputShaperCalibration::measuring_x_axis, FrameMeasuringExtruder>,
     FrameDefinition<PhasesInputShaperCalibration::measuring_y_axis, FrameMeasuringBed>,
     FrameDefinition<PhasesInputShaperCalibration::measurement_failed, FrameMeasurementFailed>,

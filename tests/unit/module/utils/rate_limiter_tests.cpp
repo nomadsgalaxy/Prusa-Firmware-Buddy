@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include <utils/timing/rate_limiter.hpp>
 
-TEST_CASE("RateLimiter::uint8_t") {
+TEST_CASE("RateLimiter::uint8_t", "[ratelimiter]") {
     // First of all, check that math still works
     CHECK(1 + 1 == 2);
 
@@ -44,4 +44,13 @@ TEST_CASE("RateLimiter::uint8_t") {
     // Check that math still works after doing our tests
     // One can never be too sure
     CHECK(2 * 2 == 4);
+}
+
+TEST_CASE("RateLimiter edge cases", "[ratelimiter]") {
+    SECTION("With overflowed signed int value") {
+        RateLimiter<int8_t> limiter(50);
+        CHECK(limiter.check(std::numeric_limits<int8_t>::max() - 5));
+        CHECK(limiter.check(50));
+        CHECK(limiter.check(101));
+    }
 }

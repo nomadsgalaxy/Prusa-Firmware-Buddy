@@ -32,11 +32,6 @@ const char* ui8tostr3(const uint8_t i);
 // Convert int8_t to string with 123 format
 const char* i8tostr3(const int8_t x);
 
-#if HAS_PRINT_PROGRESS_PERMYRIAD
-  // Convert 16-bit unsigned permyriad value to percent: 100 / 23 / 23.4 / 3.45
-  const char* permyriadtostr4(const uint16_t xx);
-#endif
-
 // Convert uint16_t to string with 12345 format
 const char* ui16tostr5(const uint16_t x);
 
@@ -95,10 +90,5 @@ FORCE_INLINE const char* ftostr3(const float &x) { return i16tostr3(int16_t(x + 
 
 #include "../inc/MarlinConfigPre.h"
 
-#if ENABLED(LCD_DECIMAL_SMALL_XY)
-  // Convert float to rj string with 1234, _123, 12.3, _1.2, -123, _-12, or -1.2 format
-  const char* ftostr4sign(const float &fx);
-#else
   // Convert float to rj string with 1234, _123, -123, __12, _-12, ___1, or __-1 format
   FORCE_INLINE const char* ftostr4sign(const float &x) { return i16tostr4sign(int16_t(x + (x < 0 ? -0.5f : 0.5f))); }
-#endif

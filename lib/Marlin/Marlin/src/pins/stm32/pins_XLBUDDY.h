@@ -23,16 +23,9 @@
 #include "hwio_pindef.h"
 #include <device/board.h>
 
-#if !defined(STM32F4) && !defined(STM32F4xx)
-  #error "Oops! Select a Buddy board in 'Tools > Board.'"
-#endif
+static_assert(BOARD_IS_XLBUDDY());
 
 #define DEFAULT_MACHINE_NAME "Prusa-XL"
-#define BOARD_NAME "Buddy Board"
-
-#define I2C_EEPROM
-
-#define E2END 0x03ff // EEPROM end address (1kB)
 
 #if HOTENDS > 6 || E_STEPPERS > 2
   #error "XLBuddy supports up to 5+1 hotends / E-steppers."

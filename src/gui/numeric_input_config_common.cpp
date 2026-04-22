@@ -45,6 +45,13 @@ const NumericInputConfig numeric_input_config::percent_with_auto = {
     .unit = Unit::percent,
 };
 
+const NumericInputConfig numeric_input_config::percent_with_disabled = {
+    .max_value = 100,
+    .special_value = -1,
+    .special_value_str = N_("Disabled"),
+    .unit = Unit::percent,
+};
+
 #if HAS_CHAMBER_API()
 const NumericInputConfig &numeric_input_config::chamber_temp_with_off() {
     // Using static is intended here and okay - we need to be returing a persistent reference, and this function is only used from the GUI thread

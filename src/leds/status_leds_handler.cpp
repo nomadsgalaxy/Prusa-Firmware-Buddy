@@ -1,28 +1,37 @@
 #include "leds/status_leds_handler.hpp"
 
-#include "leds/animation_controller.hpp"
+#include <led_animation_controller/animation_controller.hpp>
+#include <led_animation_controller/frame_animation.hpp>
 #include "marlin_vars.hpp"
 #include "client_response.hpp"
+#include <option/has_side_fsensor.h>
 
 namespace leds {
 
 using namespace marlin_server;
 
 static StateAnimation marlin_to_anim_state() {
+    fsm::States::State load_unload_state;
+    bool is_preheating;
+    marlin_vars().peek_fsm_states([&](const auto &states) {
+        load_unload_state = states[ClientFSM::Load_unload];
+        is_preheating = states.is_active(ClientFSM::Preheat);
+    });
 
-    const auto fsm_states = marlin_vars().get_fsm_states();
 #if PRINTER_IS_PRUSA_iX()
     /*
      * These comments all refer to states in diagram provided in [BFW-6938]
      */
-    if (fsm_states.is_active(ClientFSM::Load_unload)) {
-        const PhasesLoadUnload phase = static_cast<PhasesLoadUnload>(fsm_states[ClientFSM::Load_unload]->GetPhase());
+    if (load_unload_state.has_value()) {
+        const PhasesLoadUnload phase = static_cast<PhasesLoadUnload>(load_unload_state->GetPhase());
         switch (phase) {
         // Unloading + waiting for filament removal (there is no way to distinguish between them (extruder fs = in gears))
         case PhasesLoadUnload::Ramming_stoppable:
         case PhasesLoadUnload::Ramming_unstoppable:
         case PhasesLoadUnload::Unloading_stoppable:
         case PhasesLoadUnload::Unloading_unstoppable:
+        case PhasesLoadUnload::Ejecting_stoppable:
+        case PhasesLoadUnload::Ejecting_unstoppable:
             return StateAnimation::Unloading;
         // Filament in removal
         case PhasesLoadUnload::UnloadNozzleCleaning:
@@ -39,10 +48,15 @@ static StateAnimation marlin_to_anim_state() {
         // PreLoading
         case PhasesLoadUnload::LoadingToGears_stoppable:
         case PhasesLoadUnload::LoadingToGears_unstoppable:
+    #if HAS_SIDE_FSENSOR()
+        case PhasesLoadUnload::LoadingObstruction_stoppable:
+        case PhasesLoadUnload::LoadingObstruction_unstoppable:
+    #endif
             return StateAnimation::Loading;
         // Loading filament
         case PhasesLoadUnload::Loading_stoppable:
         case PhasesLoadUnload::Loading_unstoppable:
+        case PhasesLoadUnload::AutoRetracting:
         case PhasesLoadUnload::Purging_stoppable:
         case PhasesLoadUnload::Purging_unstoppable:
         case PhasesLoadUnload::LoadNozzleCleaning:
@@ -50,13 +64,12 @@ static StateAnimation marlin_to_anim_state() {
 
         case PhasesLoadUnload::WaitingTemp_stoppable:
         case PhasesLoadUnload::WaitingTemp_unstoppable:
-            return StateAnimation::Idle;
-
-        // Other phases, let them be handled by the printer state in next switch
-        case PhasesLoadUnload::initial:
-        case PhasesLoadUnload::ChangingTool:
         case PhasesLoadUnload::Parking_stoppable:
         case PhasesLoadUnload::Parking_unstoppable:
+        case PhasesLoadUnload::Unparking:
+        case PhasesLoadUnload::ChangingTool:
+            return StateAnimation::WaitingForPrinter;
+
         case PhasesLoadUnload::IsFilamentUnloaded:
         case PhasesLoadUnload::ManualUnload_continuable:
         case PhasesLoadUnload::ManualUnload_uncontinuable:
@@ -65,12 +78,15 @@ static StateAnimation marlin_to_anim_state() {
         case PhasesLoadUnload::MakeSureInserted_stoppable:
         case PhasesLoadUnload::MakeSureInserted_unstoppable:
         case PhasesLoadUnload::IsFilamentInGear:
-        case PhasesLoadUnload::Ejecting_stoppable:
-        case PhasesLoadUnload::Ejecting_unstoppable:
         case PhasesLoadUnload::IsColor:
         case PhasesLoadUnload::IsColorPurge:
-        case PhasesLoadUnload::Unparking:
+            return StateAnimation::WaitingForUser;
+
         case PhasesLoadUnload::FilamentStuck:
+            return StateAnimation::Warning;
+
+        // Other phases, let them be handled by the printer state in next switch
+        case PhasesLoadUnload::initial:
         case PhasesLoadUnload::_cnt:
             break;
         }
@@ -80,7 +96,6 @@ static StateAnimation marlin_to_anim_state() {
 
     switch (printer_state) {
     case State::Idle:
-    case State::WaitGui:
     case State::PrintPreviewInit:
     case State::PrintPreviewImage:
     case State::PrintPreviewConfirmed:
@@ -104,7 +119,7 @@ static StateAnimation marlin_to_anim_state() {
     case State::Resuming_Reheating:
     case State::Resuming_UnparkHead_XY:
     case State::Resuming_UnparkHead_ZE: {
-        if (fsm_states.is_active(ClientFSM::Load_unload) || fsm_states.is_active(ClientFSM::Preheat)) {
+        if (load_unload_state.has_value() || is_preheating) {
             return StateAnimation::Warning;
         } else {
             return StateAnimation::Printing;
@@ -169,20 +184,31 @@ namespace {
         { 0, 0, 0 } });
 #endif
     constexpr EnumArray<StateAnimation, typename FrameAnimation<3>::Params, static_cast<int>(StateAnimation::_last) + 1> animations {
+#if PRINTER_IS_PRUSA_iX()
+        { StateAnimation::Idle, { { 0, 0, 255 }, 1000, 0, 400, solid } },
+            { StateAnimation::Printing, { { 0, 255, 0 }, 1000, 0, 400, solid } },
+            { StateAnimation::Finishing, { { 0, 0, 255 }, 500, 0, 250, pulsing } },
+#else
         { StateAnimation::Idle, { { 0, 0, 0 }, 1000, 0, 400, solid } },
             { StateAnimation::Printing, { { 0, 150, 255 }, 1000, 0, 400, solid } },
-            { StateAnimation::Aborting, { { 0, 0, 0 }, 1000, 0, 400, solid } },
             { StateAnimation::Finishing, { { 0, 255, 0 }, 1000, 0, 400, solid } },
+#endif
+            { StateAnimation::Aborting, { { 0, 0, 0 }, 1000, 0, 400, solid } },
+#if PRINTER_IS_PRUSA_iX()
+            { StateAnimation::Warning, { { 128, 32, 0 }, 1000, 0, 1000, pulsing } },
+#else
             { StateAnimation::Warning, { { 255, 255, 0 }, 1000, 0, 1000, pulsing } },
+#endif
             { StateAnimation::PowerPanic, { { 0, 0, 0 }, 1000, 0, 400, solid } },
             { StateAnimation::PowerUp, { { 0, 255, 0 }, 1500, 0, 1500, pulsing } },
 #if PRINTER_IS_PRUSA_iX()
+            { StateAnimation::WaitingForPrinter, { { 0, 0, 255 }, 500, 0, 250, alternating } },
+            { StateAnimation::WaitingForUser, { { 0, 0, 255 }, 250, 0, 100, alternating } },
             { StateAnimation::Unloading, { { 0, 0, 255 }, 500, 0, 0, pulsing_right } },
             { StateAnimation::WaitingForFilamentRemoval, { { 0, 0, 255 }, 500, 250, 0, running_left } },
             { StateAnimation::FilamentRemoved, { { 0, 0, 255 }, 500, 0, 0, pulsing_left } },
             { StateAnimation::Inserting, { { 0, 0, 255 }, 500, 250, 0, running_right } },
             { StateAnimation::Loading, { { 0, 0, 255 }, 250, 0, 0, running_right } },
-            { StateAnimation::WaitingForFilamentUserRetraction, { { 0, 0, 255 }, 250, 0, 100, alternating } },
 #endif
             { StateAnimation::Error, { { 255, 0, 0 }, 500, 0, 500, pulsing } },
     };
@@ -219,6 +245,10 @@ void StatusLedsHandler::set_error() {
 void StatusLedsHandler::set_animation(StateAnimation state) {
     std::lock_guard lock(mutex);
     controller_instance().set(animations[state]);
+}
+
+ColorRGBW StatusLedsHandler::get_color() const {
+    return color;
 }
 
 bool StatusLedsHandler::get_active() {
@@ -265,9 +295,11 @@ void StatusLedsHandler::update() {
         state = marlin_to_anim_state();
     }
 
+    const auto &animation = animations[state];
+    color = animation.color;
     if (state != old_state) {
         old_state = state;
-        controller_instance().set(animations[state]);
+        controller_instance().set(animation);
     }
 
     controller_instance().update();

@@ -23,7 +23,7 @@ void MenuItemToggleSwitch::set_value(Tristate set, bool emit_toggled) {
 }
 
 void MenuItemToggleSwitch::click(IWindowMenu &) {
-    set_value(!value(), true);
+    set_value(value() == false, true);
 }
 
 void MenuItemToggleSwitch::printExtension(Rect16 extension_rect, [[maybe_unused]] Color color_text, Color color_back, ropfn raster_op) const {

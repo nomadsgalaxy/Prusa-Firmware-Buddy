@@ -3,6 +3,8 @@
 #include <device/board.h>
 #include "printers.h"
 
+#include <option/has_esp.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
@@ -70,10 +72,12 @@ extern TIM_HandleTypeDef htim14;
 #define THERM_1_GPIO_Port     GPIOA
 
 #if (BOARD_IS_BUDDY())
-    #define ESP_TX_Pin            GPIO_PIN_6
-    #define ESP_TX_GPIO_Port      GPIOC
-    #define ESP_RX_Pin            GPIO_PIN_7
-    #define ESP_RX_GPIO_Port      GPIOC
+    #if (HAS_ESP())
+        #define ESP_TX_Pin       GPIO_PIN_6
+        #define ESP_TX_GPIO_Port GPIOC
+        #define ESP_RX_Pin       GPIO_PIN_7
+        #define ESP_RX_GPIO_Port GPIOC
+    #endif
     #define THERM_2_Pin           GPIO_PIN_5
     #define THERM_2_GPIO_Port     GPIOA
     #define THERM_PINDA_Pin       GPIO_PIN_6
@@ -132,14 +136,18 @@ extern TIM_HandleTypeDef htim14;
 
 #define USB_OVERC_Pin       GPIO_PIN_4
 #define USB_OVERC_GPIO_Port GPIOE
-#if (BOARD_IS_XBUDDY() || BOARD_IS_XLBUDDY())
-    #define ESP_GPIO0_Pin GPIO_PIN_15
-#else
-    #define ESP_GPIO0_Pin GPIO_PIN_6
+
+#if HAS_ESP()
+    #if (BOARD_IS_XBUDDY() || BOARD_IS_XLBUDDY())
+        #define ESP_GPIO0_Pin GPIO_PIN_15
+    #else
+        #define ESP_GPIO0_Pin GPIO_PIN_6
+    #endif
+    #define ESP_GPIO0_GPIO_Port GPIOE
+    #define ESP_RST_Pin         GPIO_PIN_13
+    #define ESP_RST_GPIO_Port   GPIOC
 #endif
-#define ESP_GPIO0_GPIO_Port         GPIOE
-#define ESP_RST_Pin                 GPIO_PIN_13
-#define ESP_RST_GPIO_Port           GPIOC
+
 #define BED_MON_Pin                 GPIO_PIN_3
 #define BED_MON_GPIO_Port           GPIOA
 #define FANPRINT_TACH_Pin           GPIO_PIN_10
@@ -257,10 +265,6 @@ extern RNG_HandleTypeDef hrng;
 //
 // Initialization
 //
-#if PRINTER_IS_PRUSA_iX()
-void hw_preinit_turbine_disable();
-#endif
-
 void hw_rtc_init();
 void hw_rng_init();
 

@@ -1,10 +1,6 @@
 #include <device/peripherals.h>
 #include "bsod.h"
 
-static void Error_Handler() {
-    bsod("hal_msp");
-}
-
 void HAL_MspInit(void) {
     __HAL_RCC_SYSCFG_CLK_ENABLE();
     __HAL_RCC_PWR_CLK_ENABLE();
@@ -22,7 +18,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *adcHandle) {
         PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
         PeriphClkInit.AdcClockSelection = RCC_ADCCLKSOURCE_SYSCLK;
         if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
-            Error_Handler();
+            bsod_system();
         }
 
         // ADC1 clock enable
@@ -63,7 +59,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef *adcHandle) {
         hdma_adc1.Init.Mode = DMA_CIRCULAR;
         hdma_adc1.Init.Priority = DMA_PRIORITY_HIGH;
         if (HAL_DMA_Init(&hdma_adc1) != HAL_OK) {
-            Error_Handler();
+            bsod_system();
         }
 
         __HAL_LINKDMA(adcHandle, DMA_Handle, hdma_adc1);

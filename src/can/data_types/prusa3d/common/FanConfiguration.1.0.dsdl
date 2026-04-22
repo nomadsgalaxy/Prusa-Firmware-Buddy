@@ -1,0 +1,7 @@
+@union
+
+uavcan.primitive.Empty.1.0 automatic # the device will manage the fan speed or turn it off at will
+prusa3d.unit.Pwm.1.0 pwm             # request to drive the fan with given PWM
+prusa3d.unit.Rpm.1.0 rpm             # request to spin the fan at given RPM
+
+@sealed

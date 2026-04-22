@@ -52,7 +52,7 @@ void PrusaGcodeSuite::M1700() {
         }
     }
 
-    filament_gcodes::M1700_no_parser(filament_gcodes::M1700Args {
+    filament_gcodes::M1700_preheat(filament_gcodes::M1700Args {
         .preheat = RetAndCool_t(preheat),
         .mode = PreheatMode::None,
         .target_extruder = target_extruder,
@@ -98,7 +98,7 @@ void PrusaGcodeSuite::M1701() {
         return;
     }
 
-    filament_gcodes::M1701_no_parser(fast_load_length, min_Z_pos, target_extruder);
+    filament_gcodes::M1701_autoload(fast_load_length, min_Z_pos, target_extruder);
 }
 
 /**
@@ -139,7 +139,7 @@ void PrusaGcodeSuite::M1600() {
     const filament_gcodes::AskFilament_t ask_unload = filament_gcodes::AskFilament_t(p.option<int>('U').value_or(0));
     const bool hasReturn = p.option<bool>('R').value_or(false);
 
-    filament_gcodes::M1600_no_parser(filament_to_be_loaded, target_extruder, hasReturn ? RetAndCool_t::Return : RetAndCool_t::Neither, ask_unload, color_to_be_loaded);
+    filament_gcodes::M1600_change_filament(filament_to_be_loaded, target_extruder, hasReturn ? RetAndCool_t::Return : RetAndCool_t::Neither, ask_unload, color_to_be_loaded);
 }
 
 /** @}*/

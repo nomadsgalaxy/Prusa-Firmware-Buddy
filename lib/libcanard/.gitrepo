@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:OpenCyphal/libcanard.git
+	branch = master
+	commit = 03fc5fecc2c81bd6bfc6e474af8059fca2db4647
+	parent = aff5d14ca3b9fcb50852005d93a5d292603df3d7
+	method = merge
+	cmdver = 0.4.9

@@ -11,7 +11,7 @@ buddy::DoorSensor::DetailedState buddy::DoorSensor::detailed_state() const {
     // If this starts failing, check that the implementation of this function
     // is correct for the door sensor of the printer you are adding.
     // MK4: Checking door sensor presence (valid FW-HW combo check)
-    static_assert(PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_MK4());
+    static_assert(PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL() || PRINTER_IS_PRUSA_MK4());
 
     // The 12-bit door sensor is returning approximate values of:
     //   0x000: Door closed

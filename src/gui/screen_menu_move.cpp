@@ -69,7 +69,7 @@ ScreenMenuMove::ScreenMenuMove()
     Item<MI_AXIS_E>().set_value(0);
 
     Item<screen_menu_move::MI_COOLDOWN>().callback = [] {
-        HOTEND_LOOP() {
+        for (int8_t e = 0; e < HOTENDS; e++) {
             marlin_client::set_target_nozzle(0, e);
         }
         marlin_client::set_display_nozzle(0);

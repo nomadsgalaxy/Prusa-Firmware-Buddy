@@ -54,12 +54,12 @@ dependencies = {
         },
     },
     'gcc-arm-none-eabi': {
-        'version': '13.2.1',
+        'version': '13.3.1',
         'url': {
-            'Linux': 'https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz',
-            'Linux-aarch64': 'https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-aarch64-arm-none-eabi.tar.xz',
-            'Windows': 'https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-mingw-w64-i686-arm-none-eabi.zip',
-            'Darwin': 'https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-darwin-x86_64-arm-none-eabi.tar.xzg',
+            'Linux': 'https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi.tar.xz',
+            'Linux-aarch64': 'https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-aarch64-arm-none-eabi.tar.xz',
+            'Windows': 'https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-mingw-w64-i686-arm-none-eabi.zip',
+            'Darwin': 'https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-darwin-x86_64-arm-none-eabi.tar.xz',
         }
     },
     'clang-format': {
@@ -71,33 +71,41 @@ dependencies = {
         }
     },
     'bootloader-mini': {
-        'version': '2.5.0',
-        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mini-2.5.0-A05C6B62-D801-4D14-9CB2-E1856AE491B4.zip',
+        'version': '2.6.0',
+        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mini-2.6.0-3F576FB7-DF99-4877-AB20-BF3CA45AD1FC.zip',
     },
     'bootloader-mk4': {
-        'version': '2.5.0',
-        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mk4-2.5.0-F25989EA-595A-4CE4-BF6F-4E5A6E30EDF2.zip',
+        'version': '2.6.0',
+        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mk4-2.6.0-48C7820D-1C5F-44D5-A4D4-B4C0F8CCB2A6.zip',
     },
     'bootloader-coreone': {
-        'version': '2.5.0',
-        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mk4-2.5.0-F25989EA-595A-4CE4-BF6F-4E5A6E30EDF2.zip',
+        'version': '2.6.0',
+        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mk4-2.6.0-48C7820D-1C5F-44D5-A4D4-B4C0F8CCB2A6.zip',
+    },
+    'bootloader-coreonel': {
+        'version': '2.6.0',
+        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mk4-2.6.0-48C7820D-1C5F-44D5-A4D4-B4C0F8CCB2A6.zip',
     },
     'bootloader-mk3.5': {
-        'version': '2.5.0',
-        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mk4-2.5.0-F25989EA-595A-4CE4-BF6F-4E5A6E30EDF2.zip',
+        'version': '2.6.0',
+        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-mk4-2.6.0-48C7820D-1C5F-44D5-A4D4-B4C0F8CCB2A6.zip',
     },
     'bootloader-xl': {
-        'version': '2.5.0',
-        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-xl-2.5.0-855E7B4F-C06F-4785-9578-B392136108D3.zip',
+        'version': '2.6.0',
+        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-xl-2.6.0-BBF9BE22-2A89-4B82-AAFA-A463F8AD2ABF.zip',
     },
     'bootloader-ix': {
-        'version': '2.5.0',
-        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-ix-2.5.0-D485B618-3E74-4CAB-8666-880819DE4C4D.zip',
+        'version': '2.6.0',
+        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/bootloader-ix-2.6.0-36BB9EB6-4DE5-4007-B635-EDD577CBB3BA.zip',
+    },
+    'firmware-coreonel_ac_controller': {
+        'version': '0.0.8',
+        'url': 'https://prusa-buddy-firmware-dependencies.s3.eu-central-1.amazonaws.com/firmware-coreonel_ac_controller-0.0.8-ECD94653-E201-4B7C-A9D4-1439BF25D7E5.zip',
     },
     'firmware-mmu': {
-        'version': '3.0.3',
+        'version': '3.0.4',
         'files': [
-            'https://github.com/prusa3d/Prusa-Firmware-MMU/releases/download/v3.0.3/MMU2S_MMU3_FW3.0.3+896.hex'
+            'https://github.com/prusa3d/Prusa-Firmware-MMU/releases/download/v3.0.4/MMU3_FW3.0.4+936.hex'
         ],
     },
     'mini404': {

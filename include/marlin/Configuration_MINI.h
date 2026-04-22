@@ -21,8 +21,6 @@
  */
 #pragma once
 
-#define MOTHERBOARD BOARD_BUDDY_2209_02
-
 // clang-format off
 
 /**
@@ -61,20 +59,6 @@
  * https://sites.google.com/site/repraplogphase/calibration-of-your-reprap
  * http://www.thingiverse.com/thing:298812
  */
-
-//===========================================================================
-//============================= DELTA Printer ===============================
-//===========================================================================
-// For a Delta printer start with one of the configuration files in the
-// config/examples/delta directory and customize for your machine.
-//
-
-//===========================================================================
-//============================= SCARA Printer ===============================
-//===========================================================================
-// For a SCARA printer start with the configuration files in
-// config/examples/SCARA and customize for your machine.
-//
 
 // @section info
 
@@ -183,84 +167,6 @@
  */
 //#define PRUSA_MMU2
 
-// A dual extruder that uses a single stepper motor
-//#define SWITCHING_EXTRUDER
-#if ENABLED(SWITCHING_EXTRUDER)
-    #define SWITCHING_EXTRUDER_SERVO_NR 0
-    #define SWITCHING_EXTRUDER_SERVO_ANGLES \
-        { 0, 90 } // Angles for E0, E1[, E2, E3]
-    #if EXTRUDERS > 3
-        #define SWITCHING_EXTRUDER_E23_SERVO_NR 1
-    #endif
-#endif
-
-// A dual-nozzle that uses a servomotor to raise/lower one (or both) of the nozzles
-//#define SWITCHING_NOZZLE
-#if ENABLED(SWITCHING_NOZZLE)
-    #define SWITCHING_NOZZLE_SERVO_NR 0
-    //#define SWITCHING_NOZZLE_E1_SERVO_NR 1          // If two servos are used, the index of the second
-    #define SWITCHING_NOZZLE_SERVO_ANGLES \
-        { 0, 90 } // Angles for E0, E1 (single servo) or lowered/raised (dual servo)
-#endif
-
-/**
- * Two separate X-carriages with extruders that connect to a moving part
- * via a solenoid docking mechanism. Requires SOL1_PIN and SOL2_PIN.
- */
-//#define PARKING_EXTRUDER
-
-/**
- * Two separate X-carriages with extruders that connect to a moving part
- * via a magnetic docking mechanism using movements and no solenoid
- *
- * project   : https://www.thingiverse.com/thing:3080893
- * movements : https://youtu.be/0xCEiG9VS3k
- *             https://youtu.be/Bqbcs0CU2FE
- */
-//#define MAGNETIC_PARKING_EXTRUDER
-
-#if EITHER(PARKING_EXTRUDER, MAGNETIC_PARKING_EXTRUDER)
-
-    #define PARKING_EXTRUDER_PARKING_X \
-        { -78, 184 } // X positions for parking the extruders
-    #define PARKING_EXTRUDER_GRAB_DISTANCE 1 // (mm) Distance to move beyond the parking point to grab the extruder
-//#define MANUAL_SOLENOID_CONTROL                   // Manual control of docking solenoids with M380 S / M381
-
-    #if ENABLED(PARKING_EXTRUDER)
-
-        #define PARKING_EXTRUDER_SOLENOIDS_INVERT // If enabled, the solenoid is NOT magnetized with applied voltage
-        #define PARKING_EXTRUDER_SOLENOIDS_PINS_ACTIVE LOW // LOW or HIGH pin signal energizes the coil
-        #define PARKING_EXTRUDER_SOLENOIDS_DELAY 250 // (ms) Delay for magnetic field. No delay if 0 or not defined.
-    //#define MANUAL_SOLENOID_CONTROL                   // Manual control of docking solenoids with M380 S / M381
-
-    #elif ENABLED(MAGNETIC_PARKING_EXTRUDER)
-
-        #define MPE_FAST_SPEED 9000 // (mm/m) Speed for travel before last distance point
-        #define MPE_SLOW_SPEED 4500 // (mm/m) Speed for last distance travel to park and couple
-        #define MPE_TRAVEL_DISTANCE 10 // (mm) Last distance point
-        #define MPE_COMPENSATION 0 // Offset Compensation -1 , 0 , 1 (multiplier) only for coupling
-
-    #endif
-
-#endif
-
-/**
- * Switching Toolhead
- *
- * Support for swappable and dockable toolheads, such as
- * the E3D Tool Changer. Toolheads are locked with a servo.
- */
-//#define SWITCHING_TOOLHEAD
-#if ENABLED(SWITCHING_TOOLHEAD)
-    #define SWITCHING_TOOLHEAD_SERVO_NR 2 // Index of the servo connector
-    #define SWITCHING_TOOLHEAD_SERVO_ANGLES \
-        { 0, 180 } // (degrees) Angles for Lock, Unlock
-    #define SWITCHING_TOOLHEAD_Y_POS 235 // (mm) Y position of the toolhead dock
-    #define SWITCHING_TOOLHEAD_Y_SECURITY 10 // (mm) Security distance Y axis
-    #define SWITCHING_TOOLHEAD_Y_CLEAR 60 // (mm) Minimum distance from dock for unobstructed X axis
-    #define SWITCHING_TOOLHEAD_X_POS \
-        { 215, 0 } // (mm) X positions for parking the extruders
-#endif
 
 // Offset of the extruders (uncomment if using more than one and relying on firmware to position when changing).
 // The offset has to be X=0, Y=0 for the extruder 0 hotend (default extruder).
@@ -275,54 +181,7 @@
 //============================= Thermal Settings ============================
 //===========================================================================
 
-/**
- * --NORMAL IS 4.7kohm PULLUP!-- 1kohm pullup can be used on hotend sensor, using correct resistor and table
- *
- * Temperature sensors available:
- *
- *     0 : not used
- *     1 : 100k thermistor - best choice for EPCOS 100k (4.7k pullup)
- *     2 : 200k thermistor - ATC Semitec 204GT-2 (4.7k pullup)
- *     3 : Mendel-parts thermistor (4.7k pullup)
- *     4 : 10k thermistor !! do not use it for a hotend. It gives bad resolution at high temp. !!
- *     5 : 100K thermistor - ATC Semitec 104GT-2/104NT-4-R025H42G (Used in ParCan & J-Head) (4.7k pullup)
- *   501 : 100K Zonestar (Tronxy X3A) Thermistor
- *     6 : 100k EPCOS - Not as accurate as table 1 (created using a fluke thermocouple) (4.7k pullup)
- *     7 : 100k Honeywell thermistor 135-104LAG-J01 (4.7k pullup)
- *    71 : 100k Honeywell thermistor 135-104LAF-J01 (4.7k pullup)
- *     8 : 100k 0603 SMD Vishay NTCS0603E3104FXT (4.7k pullup)
- *     9 : 100k GE Sensing AL03006-58.2K-97-G1 (4.7k pullup)
- *    10 : 100k RS thermistor 198-961 (4.7k pullup)
- *    11 : 100k beta 3950 1% thermistor (4.7k pullup)
- *    12 : 100k 0603 SMD Vishay NTCS0603E3104FXT (4.7k pullup) (calibrated for Makibox hot bed)
- *    13 : 100k Hisens 3950  1% up to 300°C for hotend "Simple ONE " & "Hotend "All In ONE"
- *    15 : 100k thermistor calibration for JGAurora A5 hotend
- *    20 : the PT100 circuit found in the Ultimainboard V2.x
- *    60 : 100k Maker's Tool Works Kapton Bed Thermistor beta=3950
- *    61 : 100k Formbot / Vivedino 3950 350C thermistor 4.7k pullup
- *    66 : 4.7M High Temperature thermistor from Dyze Design
- *    67 : 450C thermistor from SliceEngineering
- *    70 : the 100K thermistor found in the bq Hephestos 2
- *    75 : 100k Generic Silicon Heat Pad with NTC 100K MGB18-104F39050L32 thermistor
- *
- *       1k ohm pullup tables - This is atypical, and requires changing out the 4.7k pullup for 1k.
- *                              (but gives greater accuracy and more stable PID)
- *    51 : 100k thermistor - EPCOS (1k pullup)
- *    52 : 200k thermistor - ATC Semitec 204GT-2 (1k pullup)
- *    55 : 100k thermistor - ATC Semitec 104GT-2 (Used in ParCan & J-Head) (1k pullup)
- *
- *  1047 : Pt1000 with 4k7 pullup
- *  1010 : Pt1000 with 1k pullup (non standard)
- *   147 : Pt100 with 4k7 pullup
- *   110 : Pt100 with 1k pullup (non standard)
- *
- *         Use these for Testing or Development purposes. NEVER for production machine.
- *   998 : Dummy Table that ALWAYS reads 25°C or the temperature defined below.
- *   999 : Dummy Table that ALWAYS reads 100°C or the temperature defined below.
- *
- *   2000 : 100k TDK NTC Chip Thermistor 100K NTCG104LH104JT1 thermistor (4k7 pullup) board thermistor
- */
-#define TEMP_SENSOR_0 5 //1
+#define TEMP_SENSOR_0 5
 #define TEMP_SENSOR_1 0
 #define TEMP_SENSOR_2 0
 #define TEMP_SENSOR_3 0
@@ -331,11 +190,6 @@
 #define TEMP_SENSOR_BED 1
 #define TEMP_SENSOR_BOARD 2000
 #define TEMP_SENSOR_CHAMBER 0
-#define HEATER_CHAMBER_PIN -1 // On/off pin for enclosure heating system
-
-// Dummy thermistor constant temperature readings, for use with 998 and 999
-#define DUMMY_THERMISTOR_998_VALUE 25
-#define DUMMY_THERMISTOR_999_VALUE 100
 
 #define TEMP_RESIDENCY_TIME 1 // (seconds) Time to wait for hotend to "settle" in M109
 #define TEMP_WINDOW 2.5F // (°C) Temperature proximity for the "temperature reached" timer
@@ -590,20 +444,6 @@
 // This will remove the need to poll the interrupt pins, saving many CPU cycles.
 #define ENDSTOP_INTERRUPTS_FEATURE
 
-/**
- * Endstop Noise Threshold
- *
- * Enable if your probe or endstops falsely trigger due to noise.
- *
- * - Higher values may affect repeatability or accuracy of some bed probes.
- * - To fix noise install a 100nF ceramic capacitor inline with the switch.
- * - This feature is not required for common micro-switches mounted on PCBs
- *   based on the Makerbot design, which already have the 100nF capacitor.
- *
- * :[2,3,4,5,6,7]
- */
-//#define ENDSTOP_NOISE_THRESHOLD 2
-
 //=============================================================================
 //============================== Movement Settings ============================
 //=============================================================================
@@ -681,8 +521,8 @@
 //
 #define CLASSIC_JERK
 #if DISABLED(CLASSIC_JERK)
-    #define JUNCTION_DEVIATION_MM 0.02 // (mm) Distance from real junction edge
-    //#define JD_SMALL_SEGMENT_HANDLING // Handle small segments (< 1 mm) with large junction angles (> 135°) based on a local curvature estimate, instead of just the junction angle.
+    #define JUNCTION_DEVIATION_MM 0.01f // (mm) Distance from real junction edge
+    #define JD_SMALL_SEGMENT_HANDLING   // Handle small segments (< 1 mm) with large junction angles (> 135°) based on a local curvature estimate, instead of just the junction angle.
     //#define JD_DEBUG_OUTPUT           // Output junction_cos_theta and vmax_junction_sqr to serial
 #endif
 
@@ -1169,7 +1009,6 @@
 //#define BED_CENTER_AT_0_0
 
 // Manually set the home position. Leave these undefined for automatic settings.
-// For DELTA this is the top-center of the Cartesian print volume.
 #define MANUAL_X_HOME_POS 180.4
 //#define MANUAL_Y_HOME_POS 0
 //#define MANUAL_Z_HOME_POS 0
@@ -1193,7 +1032,7 @@
 // Homing speeds (mm/m)
 #define HOMING_FEEDRATE_XY (3000)
 #define HOMING_FEEDRATE_Z (6 * 60)
-#define HOMING_FEEDRATE_INVERTED_Z (30 * 60)
+#define HOMING_FEEDRATE_INVERTED_Z 30 // mm/s
 
 // Validate that endstops are triggered on homing moves
 //#define VALIDATE_HOMING_ENDSTOPS
@@ -1285,21 +1124,6 @@
 #define DEFAULT_KEEPALIVE_INTERVAL 2 // Number of seconds between "busy" messages. Set with M113.
 #define BUSY_WHILE_HEATING // Some hosts require "busy" messages even during heating
 
-//
-// M100 Free Memory Watcher
-//
-//#define M100_FREE_MEMORY_WATCHER    // Add M100 (Free Memory Watcher) to debug memory usage
-
-//
-// G20/G21 Inch mode support
-//
-//#define INCH_MODE_SUPPORT
-
-//
-// M149 Set temperature units support
-//
-//#define TEMPERATURE_UNITS_SUPPORT
-
 // @section temperature
 
 // Preheat Constants
@@ -1381,348 +1205,6 @@
  */
 #define PRINTJOB_TIMER_AUTOSTART
 
-/**
- * Print Counter
- *
- * Track statistical data such as:
- *
- *  - Total print jobs
- *  - Total successful print jobs
- *  - Total failed print jobs
- *  - Total time printing
- *
- * View the current statistics with M78.
- */
-//#define PRINTCOUNTER
-
-//=============================================================================
-//============================= LCD and SD support ============================
-//=============================================================================
-
-// @section lcd
-
-/**
- * SD CARD: SPI SPEED
- *
- * Enable one of the following items for a slower SPI transfer speed.
- * This may be required to resolve "volume init" errors.
- */
-//#define SPI_SPEED SPI_HALF_SPEED
-//#define SPI_SPEED SPI_QUARTER_SPEED
-//#define SPI_SPEED SPI_EIGHTH_SPEED
-
-//
-// ENCODER SETTINGS
-//
-// This option overrides the default number of encoder pulses needed to
-// produce one step. Should be increased for high-resolution encoders.
-//
-//#define ENCODER_PULSES_PER_STEP 4
-
-//
-// Use this option to override the number of step signals required to
-// move between next/prev menu items.
-//
-//#define ENCODER_STEPS_PER_MENU_ITEM 1
-
-/**
- * Encoder Direction Options
- *
- * Test your encoder's behavior first with both options disabled.
- *
- *  Reversed Value Edit and Menu Nav? Enable REVERSE_ENCODER_DIRECTION.
- *  Reversed Menu Navigation only?    Enable REVERSE_MENU_DIRECTION.
- *  Reversed Value Editing only?      Enable BOTH options.
- */
-
-//
-// This option reverses the encoder direction everywhere.
-//
-//  Set this option if CLOCKWISE causes values to DECREASE
-//
-//#define REVERSE_ENCODER_DIRECTION
-
-//
-// This option reverses the encoder direction for navigating LCD menus.
-//
-//  If CLOCKWISE normally moves DOWN this makes it go UP.
-//  If CLOCKWISE normally moves UP this makes it go DOWN.
-//
-//#define REVERSE_MENU_DIRECTION
-
-//
-// Individual Axis Homing
-//
-// Add individual axis homing items (Home X, Home Y, and Home Z) to the LCD menu.
-//
-//#define INDIVIDUAL_AXIS_HOMING_MENU
-
-//
-// SPEAKER/BUZZER
-//
-// If you have a speaker that can produce tones, enable it here.
-// By default Marlin assumes you have a buzzer with a fixed frequency.
-//
-//#define SPEAKER
-
-//
-// The duration and frequency for the UI feedback sound.
-// Set these to 0 to disable audio feedback in the LCD menus.
-//
-// Note: Test audio output with the G-Code:
-//  M300 S<frequency Hz> P<duration ms>
-//
-//#define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
-//#define LCD_FEEDBACK_FREQUENCY_HZ 5000
-
-//=============================================================================
-//======================== LCD / Controller Selection =========================
-//========================   (Character-based LCDs)   =========================
-//=============================================================================
-
-//
-// RepRapDiscount Smart Controller.
-// http://reprap.org/wiki/RepRapDiscount_Smart_Controller
-//
-// Note: Usually sold with a white PCB.
-//
-//#define REPRAP_DISCOUNT_SMART_CONTROLLER
-
-//
-// Original RADDS LCD Display+Encoder+SDCardReader
-// http://doku.radds.org/dokumentation/lcd-display/
-//
-//#define RADDS_DISPLAY
-
-//
-// ULTIMAKER Controller.
-//
-//#define ULTIMAKERCONTROLLER
-
-//
-// PanelOne from T3P3 (via RAMPS 1.4 AUX2/AUX3)
-// http://reprap.org/wiki/PanelOne
-//
-//#define PANEL_ONE
-
-//
-// GADGETS3D G3D LCD/SD Controller
-// http://reprap.org/wiki/RAMPS_1.3/1.4_GADGETS3D_Shield_with_Panel
-//
-// Note: Usually sold with a blue PCB.
-//
-//#define G3D_PANEL
-
-//
-// RigidBot Panel V1.0
-// http://www.inventapart.com/
-//
-//#define RIGIDBOT_PANEL
-
-//
-// Makeboard 3D Printer Parts 3D Printer Mini Display 1602 Mini Controller
-// https://www.aliexpress.com/item/Micromake-Makeboard-3D-Printer-Parts-3D-Printer-Mini-Display-1602-Mini-Controller-Compatible-with-Ramps-1/32765887917.html
-//
-//#define MAKEBOARD_MINI_2_LINE_DISPLAY_1602
-
-//=============================================================================
-//======================== LCD / Controller Selection =========================
-//=====================   (I2C and Shift-Register LCDs)   =====================
-//=============================================================================
-
-//
-// CONTROLLER TYPE: I2C
-//
-// Note: These controllers require the installation of Arduino's LiquidCrystal_I2C
-// library. For more info: https://github.com/kiyoshigawa/LiquidCrystal_I2C
-//
-
-//
-// Sainsmart (YwRobot) LCD Displays
-//
-// These require F.Malpartida's LiquidCrystal_I2C library
-// https://bitbucket.org/fmalpartida/new-liquidcrystal/wiki/Home
-//
-//#define LCD_SAINSMART_I2C_1602
-//#define LCD_SAINSMART_I2C_2004
-
-//
-// Generic LCM1602 LCD adapter
-//
-//#define LCM1602
-
-//
-// PANELOLU2 LCD with status LEDs,
-// separate encoder and click inputs.
-//
-// Note: This controller requires Arduino's LiquidTWI2 library v1.2.3 or later.
-// For more info: https://github.com/lincomatic/LiquidTWI2
-//
-// Note: The PANELOLU2 encoder click input can either be directly connected to
-// a pin (if BTN_ENC defined to != -1) or read through I2C (when BTN_ENC == -1).
-//
-//#define LCD_I2C_PANELOLU2
-
-//
-// Panucatt VIKI LCD with status LEDs,
-// integrated click & L/R/U/D buttons, separate encoder inputs.
-//
-//#define LCD_I2C_VIKI
-
-//
-// CONTROLLER TYPE: Shift register panels
-//
-
-//
-// 2-wire Non-latching LCD SR from https://goo.gl/aJJ4sH
-// LCD configuration: http://reprap.org/wiki/SAV_3D_LCD
-//
-//#define SAV_3DLCD
-
-//
-// 3-wire SR LCD with strobe using 74HC4094
-// https://github.com/mikeshub/SailfishLCD
-// Uses the code directly from Sailfish
-//
-//#define FF_INTERFACEBOARD
-
-//=============================================================================
-//=======================   LCD / Controller Selection  =======================
-//=========================      (Graphical LCDs)      ========================
-//=============================================================================
-
-//
-// CONTROLLER TYPE: Graphical 128x64 (DOGM)
-//
-// IMPORTANT: The U8glib library is required for Graphical Display!
-//            https://github.com/olikraus/U8glib_Arduino
-//
-
-//
-// RepRapDiscount FULL GRAPHIC Smart Controller
-// http://reprap.org/wiki/RepRapDiscount_Full_Graphic_Smart_Controller
-//
-//#define REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER
-
-//
-// ReprapWorld Graphical LCD
-// https://reprapworld.com/?products_details&products_id/1218
-//
-//#define REPRAPWORLD_GRAPHICAL_LCD
-
-//
-// Activate one of these if you have a Panucatt Devices
-// Viki 2.0 or mini Viki with Graphic LCD
-// http://panucatt.com
-//
-//#define VIKI2
-//#define miniVIKI
-
-//
-// MakerLab Mini Panel with graphic
-// controller and SD support - http://reprap.org/wiki/Mini_panel
-//
-//#define MINIPANEL
-
-//
-// MaKr3d Makr-Panel with graphic controller and SD support.
-// http://reprap.org/wiki/MaKr3d_MaKrPanel
-//
-//#define MAKRPANEL
-
-//
-// Adafruit ST7565 Full Graphic Controller.
-// https://github.com/eboston/Adafruit-ST7565-Full-Graphic-Controller/
-//
-//#define ELB_FULL_GRAPHIC_CONTROLLER
-
-//
-// BQ LCD Smart Controller shipped by
-// default with the BQ Hephestos 2 and Witbox 2.
-//
-//#define BQ_LCD_SMART_CONTROLLER
-
-//
-// Cartesio UI
-// http://mauk.cc/webshop/cartesio-shop/electronics/user-interface
-//
-//#define CARTESIO_UI
-
-//
-// LCD for Melzi Card with Graphical LCD
-//
-//#define LCD_FOR_MELZI
-
-//
-// SSD1306 OLED full graphics generic display
-//
-//#define U8GLIB_SSD1306
-
-//
-// SAV OLEd LCD module support using either SSD1306 or SH1106 based LCD modules
-//
-//#define SAV_3DGLCD
-#if ENABLED(SAV_3DGLCD)
-    //#define U8GLIB_SSD1306
-    #define U8GLIB_SH1106
-#endif
-
-//
-// Original Ulticontroller from Ultimaker 2 printer with SSD1309 I2C display and encoder
-// https://github.com/Ultimaker/Ultimaker2/tree/master/1249_Ulticontroller_Board_(x1)
-//
-//#define ULTI_CONTROLLER
-
-//
-// TinyBoy2 128x64 OLED / Encoder Panel
-//
-//#define OLED_PANEL_TINYBOY2
-
-//
-// MKS MINI12864 with graphic controller and SD support
-// http://reprap.org/wiki/MKS_MINI_12864
-//
-//#define MKS_MINI_12864
-
-//
-// Factory display for Creality CR-10
-// https://www.aliexpress.com/item/Universal-LCD-12864-3D-Printer-Display-Screen-With-Encoder-For-CR-10-CR-7-Model/32833148327.html
-//
-// This is RAMPS-compatible using a single 10-pin connector.
-// (For CR-10 owners who want to replace the Melzi Creality board but retain the display)
-//
-//#define CR10_STOCKDISPLAY
-
-//
-// ANET and Tronxy Graphical Controller
-//
-// Anet 128x64 full graphics lcd with rotary encoder as used on Anet A6
-// A clone of the RepRapDiscount full graphics display but with
-// different pins/wiring (see pins_ANET_10.h).
-//
-//#define ANET_FULL_GRAPHICS_LCD
-
-//
-// MKS OLED 1.3" 128 × 64 FULL GRAPHICS CONTROLLER
-// http://reprap.org/wiki/MKS_12864OLED
-//
-// Tiny, but very sharp OLED display
-//
-//#define MKS_12864OLED          // Uses the SH1106 controller (default)
-//#define MKS_12864OLED_SSD1306  // Uses the SSD1306 controller
-
-//
-// AZSMZ 12864 LCD with SD
-// https://www.aliexpress.com/store/product/3D-printer-smart-controller-SMART-RAMPS-OR-RAMPS-1-4-LCD-12864-LCD-control-panel-green/2179173_32213636460.html
-//
-//#define AZSMZ_12864
-
-//
-// Silvergate GLCD controller
-// http://github.com/android444/Silvergate
-//
-//#define SILVER_GATE_GLCD_CONTROLLER
-
 //
 // Extensible UI
 //
@@ -1731,15 +1213,6 @@
 // be placed in "src/lcd/extensible_ui/lib"
 //
 #define EXTENSIBLE_UI
-
-//=============================================================================
-//=============================== Graphical TFTs ==============================
-//=============================================================================
-
-//
-// MKS Robin 320x240 color display
-//
-//#define MKS_ROBIN_TFT
 
 //=============================================================================
 //=============================== Extra Features ==============================
@@ -1761,9 +1234,6 @@
 
 // SkeinForge sends the wrong arc g-codes when using Arc Point as fillet procedure
 //#define SF_ARC_FIX
-
-// Support for the BariCUDA Paste Extruder
-//#define BARICUDA
 
 /**
  * R/C SERVO support

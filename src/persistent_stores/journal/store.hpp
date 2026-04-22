@@ -6,6 +6,7 @@
 
 #include <cstring>
 #include "store_item.hpp"
+#include "store_item_array.hpp"
 #include <algorithm>
 #include <ranges>
 #include <type_traits>
@@ -31,6 +32,9 @@ struct CurrentStoreConfig {
 
     template <StoreItemDataC DataT, auto default_val, ItemFlags flags, typename BackendT::Id id, uint8_t max_item_count, uint8_t item_count>
     using StoreItemArray = JournalItemArray<DataT, default_val, flags, backend, id, max_item_count, item_count>;
+
+    template <StoreItemDataC DataT, auto default_val, ItemFlags flags, auto hashed_ids>
+    using StoreItemLegacyArray = JournalItemLegacyArray<DataT, default_val, flags, backend, hashed_ids>;
 };
 
 template <BackendC BackendT>
@@ -74,17 +78,9 @@ public:
      * @param id Hashed id of target store item
      * @param data Holds data in binary form to be loaded into current item
      */
-    void load_item(uint16_t id, std::span<uint8_t> data) {
+    void load_item(uint16_t id, const std::span<const uint8_t> &data) {
         visit_all_struct_fields(static_cast<Config &>(*this), [&]<typename Item>(Item &item) {
-            if constexpr (std::is_base_of_v<JournalItemArrayBase, Item>) {
-                if (Item::hashed_id_first <= id && id <= Item::hashed_id_last) {
-                    item.init(id - Item::hashed_id_first, data);
-                }
-            } else {
-                if (Item::hashed_id == id) {
-                    item.init(data);
-                }
-            }
+            item.check_init(id, data);
         });
     }
 
@@ -100,7 +96,7 @@ public:
     };
 
     void load_all() {
-        Config::get_backend().load_all([this](uint16_t id, std::span<uint8_t> data) -> void { return load_item(id, data); }, MigrationFunctions);
+        Config::get_backend().load_all([this](uint16_t id, const std::span<const uint8_t> &data) -> void { return load_item(id, data); }, MigrationFunctions);
     };
     void init() {
         Config::get_backend().init([this]() {

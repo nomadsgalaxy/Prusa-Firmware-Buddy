@@ -12,13 +12,16 @@ bool GCodeLoader::is_idle() const {
     return state == BufferState::idle;
 }
 
+bool GCodeLoader::is_buffering() const {
+    return state == BufferState::buffering;
+}
+
 void GCodeLoader::load_gcode_callback(AsyncJobExecutionControl &control) {
     AnyGcodeFormatReader reader(gcode_buffer);
 
     // Error conditions
     if (!reader.is_open()) {
         if (gcode_fallback != nullptr) {
-            log_info(MarlinServer, "G-Code Loader: file not found: %s (using fallback)", gcode_buffer);
             StringBuilder str_builder(gcode_buffer);
             str_builder.append_string(gcode_fallback);
             state = BufferState::ready;
@@ -28,6 +31,8 @@ void GCodeLoader::load_gcode_callback(AsyncJobExecutionControl &control) {
         log_error(MarlinServer, "G-Code Loader: failed to open file: %s", gcode_buffer);
         return;
     }
+
+    log_info(MarlinServer, "G-Code Loader: Loading %s", gcode_buffer);
 
     StringBuilder str_builder(gcode_buffer);
 

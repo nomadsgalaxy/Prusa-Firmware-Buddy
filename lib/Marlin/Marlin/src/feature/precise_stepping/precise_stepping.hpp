@@ -11,10 +11,6 @@
 #include <timing.h>
 #include <atomic>
 
-#ifdef COREXY
-    #define COREXY_CONVERT_LIMITS
-#endif
-
 // Minimum number of free slots in the move segment queue must be available in the queue in all circumstances.
 // 1 free slot is required to ensure that we can add the empty ending move anytime.
 constexpr const uint8_t MOVE_SEGMENT_QUEUE_MIN_FREE_SLOTS = 1;
@@ -136,8 +132,8 @@ public:
     static std::atomic<MoveFlag_t> current_move_flags;
     static_assert(decltype(current_move_flags)::is_always_lock_free);
 
-    // Indicate which direction bits are inverted.
-    static uint16_t inverted_dirs;
+    static uint16_t inverted_dirs; ///< Indicate which direction bits are inverted.
+    static bool inverted_dirs_set; ///< Set to true once inverted_dirs has been set
 
     // It represents the maximum value of how far in the time can some step event generators point.
     // Used for computing flush time that ensures that none of the step event generators will produce step
@@ -163,6 +159,12 @@ public:
 #endif
 
     PreciseStepping() = default;
+
+    /**
+     * @brief Initialize the legacy stepper functions
+     * @warning Should be called before init()
+     */
+    static void init_stepper();
 
     // Initialize
     static void init();
@@ -318,6 +320,13 @@ public:
         return nullptr;
     }
 
+    // Is the current step event marked for resync?
+    //
+    // Call only if there _is_ a current step, that is, get_current_step_event() returns non-null.
+    FORCE_INLINE static bool current_step_shall_resync() {
+        return step_event_queue.tail == 0;
+    }
+
     // Returns the first head step event, nullptr if the queue is full.
     // Also, it returns the next step event queue head index (passed by reference).
     FORCE_INLINE static step_event_u16_t *get_next_free_step_event(uint16_t &next_step_event_queue_head) {
@@ -328,6 +337,12 @@ public:
         // Return the first available step event.
         next_step_event_queue_head = step_event_queue_next_index(step_event_queue.head);
         return &step_event_queue.data[step_event_queue.head];
+    }
+
+    // Is the next free step event (as returned by get_next_free_step_event) marked for resync?
+    FORCE_INLINE static bool next_free_step_shall_resync() {
+        const uint16_t next = step_event_queue_next_index(step_event_queue.head);
+        return next == 0;
     }
 
     // Discard the current step event.

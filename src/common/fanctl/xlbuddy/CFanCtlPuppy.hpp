@@ -31,6 +31,8 @@ public:
 
     virtual FanState get_state() const override;
 
+    void safe_state() override {}; // Don't do anything, Dwarf gets completely shut down during hwio_safe_state
+
     // Not used
     virtual uint16_t get_min_pwm() const override { return 0; }
     virtual bool get_rpm_measured() const override { return false; }

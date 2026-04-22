@@ -282,14 +282,14 @@ void ScreenSelftestTemp::change() {
                         progress = std::min(progress, dt.noz[i].progress);
                     }
                 }
-                progress_noz.SetProgressPercent(progress);
+                progress_noz.set_progress_percent(progress);
             }
 
             if (is_tested(dt, SelftestHeaters_t::TestedParts::bed)) {
 
                 icon_bed_prep.SetState(dt.bed.prep_state);
                 icon_bed_heat.SetState(dt.bed.heat_state);
-                progress_bed.SetProgressPercent(dt.bed.progress);
+                progress_bed.set_progress_percent(dt.bed.progress);
             }
         }
         break;

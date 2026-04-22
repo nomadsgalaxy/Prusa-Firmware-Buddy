@@ -1,0 +1,13 @@
+{
+  "name": "PUB6",
+  "apiVersion": "1.0.0",
+  "author": "Prusa Research",
+  "version": "0.0.1",
+  "description": "",
+  "extensions": {
+    "PUB6": {
+      "type": "HighLevelAnalyzer",
+      "entryPoint": "pub6.Analyzer"
+    }
+  }
+}

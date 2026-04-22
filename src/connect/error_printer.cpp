@@ -23,6 +23,11 @@ ErrorPrinter::ErrorPrinter()
         text[0] = '\0';
     }
     error_code = crash_dump::load_message_error_code();
+
+    // Do not send error code of BSOD (message should be shown and it does not match error text)
+    if (error_code == std::to_underlying(ErrCode::ERR_SYSTEM_INTERNAL_ERROR)) {
+        error_code = 0;
+    }
 }
 
 void ErrorPrinter::renew(std::optional<SharedBuffer::Borrow>) {}

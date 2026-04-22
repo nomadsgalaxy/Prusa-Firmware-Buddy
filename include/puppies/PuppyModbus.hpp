@@ -194,7 +194,9 @@ private:
     std::array<uint8_t, MODBUS_RECEIVE_BUFFER_SIZE> response_buffer;
     bool suppress_error_logs;
 
-    ModbusErrorInfo make_request(RequestTiming *const timing, uint8_t retries = 3);
+    static constexpr uint8_t MODBUS_RETRIES = 5;
+
+    ModbusErrorInfo make_request(RequestTiming *const timing, uint8_t retries = MODBUS_RETRIES);
     ModbusErrorInfo make_single_request(RequestTiming *const timing);
     static ModbusError static_data_callback(const ModbusMaster *master, const ModbusDataCallbackArgs *args);
     static ModbusError static_exception_callback(

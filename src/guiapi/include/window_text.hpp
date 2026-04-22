@@ -72,20 +72,19 @@ using window_text_button_t = WindowButton;
 
 class WindowBlinkingText : public window_text_t {
     Color color_blink;
-    uint16_t blink_step;
-    uint8_t blink_phase = 0;
-    bool blink_enable;
+    bool blink_phase : 1 = false;
+    bool blink_enable : 1 = false;
 
 public:
     void SetBlinkColor(Color clr) {
         color_blink = clr;
-        color_blink == GetTextColor() ? DisableBlink() : EnableBlink();
+        blink_enable = (color_blink != GetTextColor());
     }
     constexpr Color GetBlinkColor() const { return color_blink; }
     constexpr void EnableBlink() { blink_enable = true; }
     constexpr void DisableBlink() { blink_enable = false; }
 
-    WindowBlinkingText(window_t *parent, Rect16 rect, const string_view_utf8 &txt = string_view_utf8::MakeNULLSTR(), uint16_t blink_step = 500);
+    WindowBlinkingText(window_t *parent, Rect16 rect, const string_view_utf8 &txt = string_view_utf8::MakeNULLSTR());
 
 protected:
     virtual void unconditionalDraw() override;

@@ -33,12 +33,10 @@ void AsyncJobExecutor::thread_routine() {
     while (true) {
         Callback callback;
 
-        // This pointer is unsafe to access outside mutex locked areas
-        AsyncJobBase *job;
-
         // Pop a job from the list and obtain the callback
         {
             std::unique_lock mutex_guard(mutex);
+            auto &job = synchronized_data.current_job;
 
             while (!synchronized_data.first_job) {
                 empty_queue_condition.wait(mutex_guard);
@@ -48,7 +46,6 @@ void AsyncJobExecutor::thread_routine() {
             assert(job);
             assert(job->state_ == State::queued);
 
-            synchronized_data.current_job_discarded = false;
             callback = job->callback;
 
             job->unqueue_nolock();
@@ -64,13 +61,17 @@ void AsyncJobExecutor::thread_routine() {
         // Report the job to be done
         {
             std::lock_guard mutex_guard(mutex);
+            auto &job = synchronized_data.current_job;
 
             // The job was discarded -> do not update the AsyncJob instance
-            if (synchronized_data.current_job_discarded) {
+            if (!job) {
                 continue;
             }
 
             assert(job->state_ == State::running);
+
+            // Clear the executor for an extra bit of checking
+            job->executor = nullptr;
 
             // !!! This must be done as the last thing before unlocking the mutex to make AsyncJob::is_active() work correctly
             job->state_ = State::finished;

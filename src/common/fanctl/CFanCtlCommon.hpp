@@ -21,8 +21,8 @@ public:
         error_running = -2, // running error - means zero RPM measured (no feedback)
     };
 
-    inline uint8_t get_min_rpm() const { return min_rpm; }
-    inline uint8_t get_max_rpm() const { return max_rpm; }
+    inline uint16_t get_min_rpm() const { return min_rpm; }
+    inline uint16_t get_max_rpm() const { return max_rpm; }
     inline uint16_t get_max_pwm() const { return 255; }
 
     virtual uint16_t get_min_pwm() const = 0;
@@ -46,6 +46,8 @@ public:
 
     virtual void tick() = 0;
 
+    virtual void safe_state() = 0;
+
 protected:
     const uint16_t min_rpm; // minimum rpm value (set in constructor)
     const uint16_t max_rpm; // maximum rpm value (set in constructor)
@@ -65,7 +67,7 @@ inline constexpr uint16_t FANCTLPRINT_RPM_MIN = 90; // Dynamic PWM enables lower
 inline constexpr uint16_t FANCTLPRINT_RPM_MIN = 150;
 #endif
 inline constexpr uint16_t FANCTLPRINT_RPM_MAX =
-#if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_XL() || PRINTER_IS_PRUSA_COREONE())
+#if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_XL() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL())
     6850
 #elif PRINTER_IS_PRUSA_MINI()
     5000
@@ -94,7 +96,7 @@ inline constexpr uint8_t FANCTLHEATBREAK_PWM_MIN = 0;
 inline constexpr uint8_t FANCTLHEATBREAK_PWM_MAX = 50;
 inline constexpr uint16_t FANCTLHEATBREAK_RPM_MIN = 1000;
 inline constexpr uint16_t FANCTLHEATBREAK_RPM_MAX =
-#if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_XL() || PRINTER_IS_PRUSA_COREONE())
+#if (PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_MK3_5() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_XL() || PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL())
     15180
 #elif PRINTER_IS_PRUSA_MINI()
     8000

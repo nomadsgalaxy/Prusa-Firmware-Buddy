@@ -31,9 +31,7 @@ LOG_COMPONENT_REF(PRUSA_GCODE);
 
 // clang-format off
 #if (!ENABLED(ADVANCED_PAUSE_FEATURE)) || \
-    ENABLED(MMU2_MENUS) || \
-    ENABLED(DUAL_X_CARRIAGE) || \
-    HAS_BUZZER
+    ENABLED(MMU2_MENUS)
     #error unsupported
 #endif
 // clang-format on
@@ -45,7 +43,7 @@ LOG_COMPONENT_REF(PRUSA_GCODE);
 #include "marlin_server.hpp"
 #include "pause_stubbed.hpp"
 #include <cmath>
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "filament.hpp"
 #include <gcode/gcode_parser.hpp>
 
@@ -172,7 +170,7 @@ void M600_manual(const GCodeParser2 &p) {
         park_point.y = LOGICAL_TO_NATIVE(park_point.y, Y_AXIS);
     }
 
-#if HAS_HOTEND_OFFSET && NONE(DUAL_X_CARRIAGE, DELTA) && DISABLED(PRUSA_TOOLCHANGER)
+#if HAS_HOTEND_OFFSET && DISABLED(PRUSA_TOOLCHANGER)
     park_point += hotend_offset[active_extruder];
 #endif
 

@@ -26,4 +26,10 @@ bool extruder_move(float distance, float feed_rate, bool ignore_flow_factor = tr
  */
 float extruder_schedule_turning(float feed_rate, float step = 0.6);
 
+/**
+ * Make sure a tool with accelerometer is picked up. If not, pick up such a
+ * tool. Does nothing on machines without a toolchanger or accelerometer.
+ */
+void ensure_tool_with_accelerometer_picked();
+
 } // namespace mapi

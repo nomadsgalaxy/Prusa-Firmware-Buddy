@@ -43,19 +43,19 @@ class PrintArea {
       }
 
       /// Check the rectangle contains given point
-      bool contains(xy_pos_t point) {
+      bool contains(xy_pos_t point) const {
         bool x_within = a.x <= point.x && point.x <= b.x;
         bool y_within = a.y <= point.y && point.y <= b.y;
         return x_within && y_within;
       }
 
       /// Check the rectangle contains another rect (i.e. this one is a superset of the other one)
-      bool contains(rect_t other) {
+      bool contains(rect_t other) const {
         return contains(other.a) && contains(other.b);
       }
 
       /// Return an intersection of `this` and `other`
-      rect_t intersection(rect_t other) {
+      rect_t intersection(rect_t other) const {
         xy_pos_t ia, ib;
         ia.x = std::fmax(this->a.x, other.a.x);
         ia.y = std::fmax(this->a.y, other.a.y);
@@ -65,7 +65,7 @@ class PrintArea {
       }
 
       /// Return a rect with its edges moved inward by dx/dy
-      rect_t inset(float dx, float dy) {
+      rect_t inset(float dx, float dy) const {
         rect_t r = *this;
         r.a.x += dx;
         r.a.y += dy;
@@ -75,7 +75,7 @@ class PrintArea {
       }
 
       /// Return rect with guarantees that a.x <= b.x && a.y <= b.y
-      rect_t normalized() {
+      rect_t normalized() const {
         rect_t r = *this;
         if (r.b.x < r.a.x)
           r.b.x = r.a.x;

@@ -86,7 +86,7 @@ bool MI_CHANGE::AvailableForTool(uint8_t tool) {
 }
 
 bool MI_CHANGE::AvailableForAnyTool() {
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         if (AvailableForTool(e)) {
             return true;
         }
@@ -139,7 +139,7 @@ bool MI_PURGE::AvailableForTool(uint8_t tool) {
 }
 
 bool MI_PURGE::AvailableForAnyTool() {
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         if (AvailableForTool(e)) {
             return true;
         }

@@ -5,6 +5,10 @@
 #include "../../../lib/Marlin/Marlin/src/gcode/gcode.h"
 #include "M70X.hpp"
 
+#if ENABLED(PRUSA_TOOL_MAPPING)
+    #include "module/prusa/tool_mapper.hpp"
+#endif
+
 /** \addtogroup G-Codes
  * @{
  */
@@ -45,9 +49,21 @@ void PrusaGcodeSuite::M704() {
  *#### Parameters
  *
  * - `P` - MMU index of slot (zero based)
+ * - `M` - Use tool mapping or not (default is yes)
  */
 void PrusaGcodeSuite::M1704() {
-    const uint8_t val = parser.byteval('P', 0);
+    uint8_t val = parser.byteval('P', 0);
+
+#if ENABLED(PRUSA_TOOL_MAPPING)
+    const bool map = !parser.seen('M') || parser.boolval('M', true);
+    if (map) {
+        val = tool_mapper.to_physical(val);
+        if (val == tool_mapper.NO_TOOL_MAPPED) {
+            return; // if no tool has been found, ignore the G-code
+        }
+    }
+#endif
+
     filament_gcodes::mmu_load_test(val);
 }
 

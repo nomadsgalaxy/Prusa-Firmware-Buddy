@@ -20,16 +20,18 @@ void PrintArea::set_bounding_rect(rect_t new_bounding_rect) {
   bounding_rect = new_bounding_rect;
 
 #if HAS_MODULAR_BED()
-  uint16_t enabled_bedlet_mask = 0;
-  for (int x = 0; x < X_HBL_COUNT; x++) {
-    for (int y = 0; y < Y_HBL_COUNT; y++) {
-      rect_t hbl_rect = rect_t(x * X_HBL_SIZE, y * Y_HBL_SIZE, (x + 1) * X_HBL_SIZE, (y + 1) * Y_HBL_SIZE);
-      bool enabled = bounding_rect.intersection(hbl_rect).area() > 0;
-      if (enabled)
-          enabled_bedlet_mask |= 1 << advanced_modular_bed->idx(x, y);
-    }
-  }
+
   if (get_print_area_based_heating_enabled()) {
+    uint16_t enabled_bedlet_mask = 0;
+    for (int x = 0; x < X_HBL_COUNT; x++) {
+      for (int y = 0; y < Y_HBL_COUNT; y++) {
+        rect_t hbl_rect = rect_t(x * X_HBL_SIZE, y * Y_HBL_SIZE, (x + 1) * X_HBL_SIZE, (y + 1) * Y_HBL_SIZE);
+        bool enabled = bounding_rect.intersection(hbl_rect).area() > 0;
+        if (enabled)
+            enabled_bedlet_mask |= 1 << advanced_modular_bed->idx(x, y);
+      }
+    }
+
     thermalManager.setEnabledBedletMask(enabled_bedlet_mask);
   }
 #endif

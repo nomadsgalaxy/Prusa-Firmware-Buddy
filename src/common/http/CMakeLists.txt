@@ -6,7 +6,6 @@ target_sources(
           connection.cpp
           httpc.cpp
           os_porting.cpp
-          post_file_request.cpp
           proxy.cpp
           resp_parser.cpp
           socket.cpp

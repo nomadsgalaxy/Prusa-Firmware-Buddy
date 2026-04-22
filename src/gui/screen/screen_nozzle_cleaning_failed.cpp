@@ -24,25 +24,25 @@ public:
 
     void update(const fsm::PhaseData &data_) {
         const auto data = fsm::deserialize_data<NozzleCleaningFailedProgressData>(data_);
-        progress_bar.SetProgressPercent(static_cast<float>(data.progress_0_255) / 255.0f * 100.0f);
+        progress_bar.set_progress_percent(static_cast<float>(data.progress_0_255) / 255.0f * 100.0f);
     }
 };
 
 constexpr FooterLine::IdArray nozzle_cleaning_footer_items = { footer::Item::nozzle, footer::Item::bed };
 
 using Frames = FrameDefinitionList<ScreenNozzleCleaningFailed::FrameStorage,
-    FrameDefinition<Phase::cleaning_failed, WithConstructorArgs<FrameQRPrompt, Phase::cleaning_failed, txt_desc_cleaning_failed, warning_suffix>>,
+    FrameDefinition<Phase::cleaning_failed, FrameQRPrompt, Phase::cleaning_failed, txt_desc_cleaning_failed, warning_suffix>,
 #if HAS_NOZZLE_CLEANING_FAILED_PURGING()
-    FrameDefinition<Phase::recommend_purge, WithConstructorArgs<WithFooter<FramePrompt, nozzle_cleaning_footer_items>, Phase::recommend_purge, nozzle_cleaning_failed_phase_error_code_mapper>>,
-    FrameDefinition<Phase::wait_temp, WithConstructorArgs<WithFooter<FrameNozzleCleaningProgress, nozzle_cleaning_footer_items>, Phase::wait_temp>>,
-    FrameDefinition<Phase::purge, WithConstructorArgs<WithFooter<FrameNozzleCleaningProgress, nozzle_cleaning_footer_items>, Phase::purge>>,
-    FrameDefinition<Phase::autoretract, WithConstructorArgs<WithFooter<FrameNozzleCleaningProgress, nozzle_cleaning_footer_items>, Phase::autoretract>>,
-    FrameDefinition<Phase::remove_filament, WithConstructorArgs<WithFooter<FramePrompt, nozzle_cleaning_footer_items>, Phase::remove_filament, nozzle_cleaning_failed_phase_error_code_mapper>>,
+    FrameDefinition<Phase::recommend_purge, WithFooter<FramePrompt, nozzle_cleaning_footer_items>, Phase::recommend_purge, nozzle_cleaning_failed_phase_error_code_mapper>,
+    FrameDefinition<Phase::wait_temp, WithFooter<FrameNozzleCleaningProgress, nozzle_cleaning_footer_items>, Phase::wait_temp>,
+    FrameDefinition<Phase::purge, WithFooter<FrameNozzleCleaningProgress, nozzle_cleaning_footer_items>, Phase::purge>,
+    FrameDefinition<Phase::autoretract, WithFooter<FrameNozzleCleaningProgress, nozzle_cleaning_footer_items>, Phase::autoretract>,
+    FrameDefinition<Phase::remove_filament, WithFooter<FramePrompt, nozzle_cleaning_footer_items>, Phase::remove_filament, nozzle_cleaning_failed_phase_error_code_mapper>,
 #endif
 #if HAS_AUTO_RETRACT()
-    FrameDefinition<Phase::offer_auto_retract_enable, WithConstructorArgs<FramePrompt, Phase::offer_auto_retract_enable, nozzle_cleaning_failed_phase_error_code_mapper>>,
+    FrameDefinition<Phase::offer_auto_retract_enable, FramePrompt, Phase::offer_auto_retract_enable, nozzle_cleaning_failed_phase_error_code_mapper>,
 #endif
-    FrameDefinition<Phase::warn_abort, WithConstructorArgs<WithFooter<FramePrompt, nozzle_cleaning_footer_items>, Phase::warn_abort, nozzle_cleaning_failed_phase_error_code_mapper>>>;
+    FrameDefinition<Phase::warn_abort, WithFooter<FramePrompt, nozzle_cleaning_footer_items>, Phase::warn_abort, nozzle_cleaning_failed_phase_error_code_mapper>>;
 
 } // namespace
 

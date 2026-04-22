@@ -2,7 +2,6 @@
 
 #include "MItem_network.hpp"
 #include "MItem_tools.hpp"
-#include <espif.h>
 #include <dns.h>
 #include "wui_api.h"
 #include <netdev.h>
@@ -12,6 +11,10 @@
 #include <wui.h>
 #include <window_msgbox.hpp>
 #include <marlin_client.hpp>
+
+#if HAS_ESP()
+    #include <espif.h>
+#endif
 
 namespace {
 bool is_device_connected(netdev_status_t status) {
@@ -36,6 +39,7 @@ bool NetDeviceID::is_connected() const {
     return is_device_connected(netdev_get_status(get()));
 }
 
+#if HAS_ESP()
 MI_WIFI_STATUS_t::MI_WIFI_STATUS_t()
     : WI_INFO_t(_(label), nullptr, is_enabled_t::yes, is_hidden_t::no) {
 }
@@ -145,6 +149,7 @@ MI_NET_INTERFACE_t::MI_NET_INTERFACE_t()
 void MI_NET_INTERFACE_t::OnChange([[maybe_unused]] size_t old_index) {
     netdev_set_active_id(this->get_index());
 }
+#endif
 
 MI_HOSTNAME::MI_HOSTNAME()
     : WiInfo(_(label)) {

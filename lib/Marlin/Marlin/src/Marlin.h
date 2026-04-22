@@ -93,9 +93,6 @@ extern uint16_t job_id;
   #endif
 #endif
 
-bool pin_is_protected(const pin_t pin);
-void protected_pin_err();
-
 #if HAS_SUICIDE
   inline void suicide() { OUT_WRITE(SUICIDE_PIN, LOW); }
 #endif

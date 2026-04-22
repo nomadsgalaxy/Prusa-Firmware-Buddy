@@ -1,6 +1,6 @@
 #include "hx717mux.hpp"
 
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "loadcell.hpp"
 #include <common/sys.hpp>
 

@@ -8,20 +8,24 @@
  */
 class PlainGcodeReader final : public GcodeReaderCommon {
 public:
-    PlainGcodeReader(FILE &f, const struct stat &stat_info);
+    PlainGcodeReader(unique_file_ptr &&f, const struct stat &stat_info);
     PlainGcodeReader(PlainGcodeReader &&other) = default;
     PlainGcodeReader &operator=(PlainGcodeReader &&other) = default;
 
-    virtual bool stream_metadata_start() override;
-    virtual Result_t stream_gcode_start(uint32_t offset = 0) override;
+    virtual bool stream_metadata_start(const Index *index = nullptr) override;
+    virtual Result_t stream_gcode_start(uint32_t offset = 0, bool ignore_crc = false, const Index *index = nullptr) override;
     virtual AbstractByteReader *stream_thumbnail_start(uint16_t expected_width, uint16_t expected_height, ImgType expected_type, bool allow_larger = false) override;
     virtual Result_t stream_get_line(GcodeBuffer &buffer, Continuations) override;
     virtual uint32_t get_gcode_stream_size_estimate() override;
     virtual uint32_t get_gcode_stream_size() override;
-    virtual FileVerificationResult verify_file(FileVerificationLevel level, std::span<uint8_t> crc_calc_buffer) const override;
-    virtual bool valid_for_print() override;
+    virtual bool valid_for_print(bool) override;
     virtual StreamRestoreInfo get_restore_info() override { return {}; }
     virtual void set_restore_info(const StreamRestoreInfo &) override {}
+
+    // Tries to parse the given comment (already stripped of the ; at the front) as a thumbnail start.
+    //
+    // If successful, provides the details.
+    static std::optional<ThumbnailDetails> thumbnail_details(GcodeBuffer::String comment);
 
 private:
     // Size of header that have to be valid before we start printing

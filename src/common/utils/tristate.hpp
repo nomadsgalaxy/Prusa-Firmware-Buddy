@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <optional>
+
 /// Tri-state "bool" - off, on and third "other" state (undefined/middle/...)
 struct Tristate {
 
@@ -21,26 +24,12 @@ public:
     constexpr inline Tristate(bool val)
         : value(static_cast<Value>(val)) {}
 
-    constexpr static inline Tristate from_bool(bool value) {
-        return Tristate(value);
+    /// Creates tristate from std::optional<bool>. Nullopt is interpreted as Tristate:other
+    constexpr static inline Tristate from_optional(std::optional<bool> value) {
+        return value.has_value() ? Tristate(*value) : other;
     }
-
-    /// Implicit cast to bool - \p other state translates as false
-    constexpr inline operator bool() const {
-        return value == Value::yes;
-    }
-
-    constexpr inline Tristate &operator=(const Tristate &) = default;
 
     constexpr inline bool operator==(const Tristate &) const = default;
-    constexpr inline bool operator!=(const Tristate &) const = default;
-
-    constexpr inline bool operator==(Value o) const {
-        return value == o;
-    }
-    constexpr inline bool operator!=(Value o) const {
-        return value != o;
-    }
 
 public:
     Value value = Value::other;

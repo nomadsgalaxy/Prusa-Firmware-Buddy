@@ -1,10 +1,4 @@
-/*
- * window_dlg_wait.hpp
- *
- *  Created on: Nov 5, 2019
- *      Author: Migi
- */
-
+/// \file
 #pragma once
 
 #include "IDialogMarlin.hpp"
@@ -13,18 +7,18 @@
 #include "window_icon.hpp"
 #include <inplace_function.hpp>
 
+#include <gui/standard_frame/frame_wait.hpp>
+
 class window_dlg_wait_t : public IDialogMarlin {
-    window_text_t text;
-    window_text_t second_text;
-    window_icon_hourglass_t animation;
+    FrameWait frame;
 
 public:
-    window_dlg_wait_t(Rect16 rect, const string_view_utf8 &second_string = string_view_utf8::MakeNULLSTR());
+    window_dlg_wait_t(Rect16 rect, const string_view_utf8 &text = {});
 
     window_dlg_wait_t(fsm::BaseData data);
 
-    window_dlg_wait_t(const string_view_utf8 &second_string)
-        : window_dlg_wait_t(GuiDefaults::DialogFrameRect, second_string) {}
+    window_dlg_wait_t(const string_view_utf8 &text)
+        : window_dlg_wait_t(GuiDefaults::DialogFrameRect, text) {}
 
     /// Shows the dialog and blocks the UI thread until all gcodes are finished
     /// Does this in a somewhat smart way that doesn't obstruct warnings

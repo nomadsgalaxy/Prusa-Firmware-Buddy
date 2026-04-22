@@ -6,7 +6,7 @@
 namespace crash_dump {
 
 /**
- * @brief Parses CrashDump data to display display blue screen of death info
+ * @brief Parses CrashDump data to display BSOD info
  */
 class CrashCatcherDumpParser {
 public:

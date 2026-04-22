@@ -3,6 +3,7 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/src/common/crc32.cpp
   ${CMAKE_SOURCE_DIR}/src/common/filename_type.cpp
   ${CMAKE_SOURCE_DIR}/src/common/filepath_operation.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/random_common.cpp
   ${CMAKE_SOURCE_DIR}/src/common/random_sw.cpp
   ${CMAKE_SOURCE_DIR}/src/transfers/decrypt.cpp
   ${CMAKE_SOURCE_DIR}/src/transfers/monitor.cpp
@@ -36,6 +37,6 @@ add_definitions(-DDATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
 
 file(GLOB AUTOMATA_GENERATORS ${PROJECT_ROOT_DIR}/utils/gen-automata/*.py)
 
-target_link_libraries(transfers_tests SG14 freertos_tests)
+target_link_libraries(transfers_tests SG14 freertos_tests logging-mock)
 
 add_catch_test(transfers_tests)

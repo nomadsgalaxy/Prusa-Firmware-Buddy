@@ -56,9 +56,30 @@ bool AdvancedPower::OvercurrentFaultDetected() const {
     return (inputCurrentFault.read() == Pin::State::high);
 }
 
-float AdvancedPower::GetInputCurrent() const {
-    return buddy::hw::Configuration::Instance().curr_measurement_voltage_to_current(RawValueToVoltage(GetInputCurrentRaw()));
+#endif
+
+#if BOARD_IS_XBUDDY()
+
+float AdvancedPower::bed_voltage() const {
+    const float voltage = RawValueToVoltage(AdcGet::bed_voltage());
+    return beforeVoltageDivider11(voltage);
 }
+
+float AdvancedPower::heater_voltage() const {
+    const float voltage = RawValueToVoltage(AdcGet::heater_voltage());
+    return beforeVoltageDivider11(voltage);
+}
+
+float AdvancedPower::heater_current() const {
+    const float voltage = RawValueToVoltage(AdcGet::heater_current());
+    return (voltage / 1.95f) * 2.00f;
+}
+
+float AdvancedPower::input_current() const {
+    const float voltage = RawValueToVoltage(AdcGet::input_current());
+    return buddy::hw::Configuration::Instance().curr_measurement_voltage_to_current(voltage);
+}
+
 #endif
 
 #if !(BOARD_IS_DWARF())
@@ -97,7 +118,7 @@ void AdvancedPower::Update() {
 
 #if HAS_MMU2()
 bool AdvancedPower::MMUOvercurentFaultDetected() const {
-    return (MMUFault.read() == Pin::State::high);
+    return (ext_fault.read() == Pin::State::high);
 }
 #endif
 

@@ -44,13 +44,9 @@ public:
         SelftestSingleAxis_t &result);
     ~CSelftestPart_Axis();
 
-    LoopResult stateActivateHomingReporter();
     LoopResult stateHomeXY(); ///< Enqueue homing
-    LoopResult stateWaitHomingReporter(); ///< Alternative state to stateWaitHome, in case reporter is used
-    LoopResult stateEvaluateHomingXY();
 
     LoopResult stateHomeZ(); ///< Enqueue homing and toolchange
-    LoopResult stateWaitHome(); ///< Wait for homing and toolchange to finish
 
     LoopResult stateInitProgressTimeCalculation();
     LoopResult stateCycleMark2() { return LoopResult::MarkLoop2; }

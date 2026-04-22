@@ -7,7 +7,7 @@
 #include <fstream>
 #include <stdio.h>
 
-bool CompareStringViews(string_view_utf8 s, string_view_utf8 s2, set<unichar> &nonAsciiChars, const char *langCode) {
+bool CompareStringViews(string_view_utf8 s, string_view_utf8 s2, const char *langCode) {
     unichar c;
     size_t i = 0;
     StringReaderUtf8 r(s);
@@ -15,7 +15,6 @@ bool CompareStringViews(string_view_utf8 s, string_view_utf8 s2, set<unichar> &n
     while ((c = r.getUtf8Char()) != 0) {
         i++;
         if (c > 128) {
-            nonAsciiChars.insert(c); // just stats how many non-ASCII UTF-8 characters do we have for now
             if (!NonASCIICharKnown(c)) {
                 // this string wants a new non-ascii character - force fail the whole test immediately
                 // When this happens, one must either add the character into unaccent.cpp, if the character is meaningfull
@@ -40,7 +39,7 @@ bool CompareStringViews(string_view_utf8 s, string_view_utf8 s2, set<unichar> &n
 };
 
 bool CheckAllTheStrings(const deque<string> &rawStringKeys, const deque<string> &translatedStrings,
-    ITranslationProvider &provider, set<unichar> &nonAsciiChars, const char *langCode) {
+    ITranslationProvider &provider, const char *langCode) {
     // prepare a map for comparison
     map<string, string> stringControlMap;
     {
@@ -83,14 +82,14 @@ bool CheckAllTheStrings(const deque<string> &rawStringKeys, const deque<string> 
         // If it fails at this spot with garbage in the outString - one of the reasons may be that
         // we need to increase CPUFLASH memory dedicated to the raw texts in
         // tests/unit/lang/translator/providerCPUFLASH.cpp: constexpr size_t maxUtf8Raw = 100000;
-        CHECK(CompareStringViews(s, s2, nonAsciiChars, langCode));
+        CHECK(CompareStringViews(s, s2, langCode));
     });
 
     { // check for a non-existing string
         static const char nex[] = "NoN_ExIsTiNg:string";
         string_view_utf8 s = provider.GetText(nex);
         string_view_utf8 s2 = string_view_utf8::MakeRAM(nex);
-        CHECK(CompareStringViews(s, s2, nonAsciiChars, langCode));
+        CHECK(CompareStringViews(s, s2, langCode));
     }
 
     return true;

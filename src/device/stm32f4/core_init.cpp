@@ -1,5 +1,6 @@
 #include <device/hal.h>
 #include <device/cmsis.h>
+#include <bsod/bsod.h>
 
 inline constexpr RCC_OscInitTypeDef RCC_OscInitStruct = [] {
     RCC_OscInitTypeDef rcc_OscInit {};
@@ -41,12 +42,12 @@ void system_core_init(void) {
 
     // Initializes the CPU, AHB and APB busses clocks
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-        system_core_error_handler();
+        bsod_system();
     }
 
     // Initializes the CPU, AHB and APB busses clocks
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) {
-        system_core_error_handler();
+        bsod_system();
     }
 
     // TODO: shouldn't we call SystemCoreClockUpdate instead?
@@ -62,6 +63,6 @@ void system_core_init(void) {
 #endif
         ;
     if (HAL_RCCEx_PeriphCLKConfig(&periph_clk_init) != HAL_OK) {
-        system_core_error_handler();
+        bsod_system();
     }
 }

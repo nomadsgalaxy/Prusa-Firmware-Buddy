@@ -14,6 +14,7 @@
 #undef protected
 
 #include <test_tools/gcode_provider.hpp>
+#include <test_utils/formatters.hpp>
 
 using namespace media_prefetch;
 
@@ -673,4 +674,45 @@ TEST_CASE("media_prefetch::cropped_flag") {
     mp.read_command(c);
     REQUIRE(c.cropped);
     REQUIRE(std::string(c.gcode.data()) == fullGcodeLateSemicolon.substr(0, MAX_CMD_SIZE - 1));
+}
+
+TEST_CASE("media_prefetch::not_open") {
+    // Check that the prefetch returns a correct error (usb_error) if file opening failed
+
+    MediaPrefetchManager::ReadResult c;
+
+    MediaPrefetchManager mp;
+    mp.start("FAIL", {});
+    mp.issue_fetch();
+    CHECK(mp.read_command(c).status == MediaPrefetchManager::Status::usb_error);
+
+    StubGcodeProviderMemory p;
+    p.add_gcode("G0");
+    mp.start(p.filename(), {});
+    mp.issue_fetch();
+    CHECK(mp.read_command(c).status == MediaPrefetchManager::Status::ok);
+    CHECK(std::string(c.gcode.data()) == "G0");
+    CHECK(mp.read_command(c).status == MediaPrefetchManager::Status::end_of_file);
+}
+
+TEST_CASE("media_prefetch::not_valid_for_print") {
+    // Check that the prefetch returns a correct error (not_downloaded) if not valid for print
+
+    MediaPrefetchManager::ReadResult c;
+
+    StubGcodeProviderMemory p;
+    p.add_gcode("G0");
+
+    MediaPrefetchManager mp;
+
+    p.valid_for_print = false;
+    mp.start(p.filename(), {});
+    mp.issue_fetch();
+    CHECK(mp.read_command(c).status == MediaPrefetchManager::Status::not_downloaded);
+
+    p.valid_for_print = true;
+    mp.issue_fetch();
+    CHECK(mp.read_command(c).status == MediaPrefetchManager::Status::ok);
+    CHECK(std::string(c.gcode.data()) == "G0");
+    CHECK(mp.read_command(c).status == MediaPrefetchManager::Status::end_of_file);
 }

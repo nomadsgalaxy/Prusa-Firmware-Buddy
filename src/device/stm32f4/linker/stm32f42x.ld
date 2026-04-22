@@ -41,11 +41,18 @@ _estack = 0x20030000;    /* end of 128K RAM */
 _Min_Heap_Size = 0x800;      /* required amount of heap  */
 _Min_Stack_Size = 0x800; /* required amount of stack */
 
+/* RAM is split into Data-eXchange-RAM and regular RAM */
+DXRAM_BASE = 0x20000000;
+DXRAM_SIZE = 100;
+RAM_BASE = DXRAM_BASE + DXRAM_SIZE;
+RAM_SIZE = 192K - DXRAM_SIZE;
+
 /* Specify the memory areas */
 MEMORY
 {
   FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 2048K
-  RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 192K
+  DXRAM (xrw)     : ORIGIN = DXRAM_BASE, LENGTH = DXRAM_SIZE
+  RAM (xrw)       : ORIGIN = RAM_BASE,   LENGTH = RAM_SIZE
   CCMRAM (rw)     : ORIGIN = 0x10000000, LENGTH = 64K
   BACKUP_RAM (rw) : ORIGIN = 0x40024000, LENGTH = 4K
 }
@@ -126,16 +133,6 @@ SECTIONS
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH
-
- /* to exchnage data between bootloader and application */
- /* this section is filled with zeros on each application start */
-  .boot_fw_data_exchange 0x20000000 :
-  {
-    _sboot_fw_data_exchange = .;  /* global symbol at start */
-    KEEP (*(.boot_fw_data_exchange))
-    . = ALIGN(4); /* allignment is important as 4 bytes are written to zero at once in startup code*/
-    _eboot_fw_data_exchange = .;  /* global symbol at the end */
-  } >RAM AT> FLASH /* AT> FLASH added to avoid the binary size increase*/
 
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);

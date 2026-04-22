@@ -70,15 +70,9 @@ extern fil_change_settings_t fc_settings[EXTRUDERS];
 
 extern uint8_t did_pause_print;
 
-#if ENABLED(DUAL_X_CARRIAGE)
-  #define DXC_PARAMS , const int8_t DXC_ext=-1
-  #define DXC_ARGS   , const int8_t DXC_ext
-  #define DXC_PASS   , DXC_ext
-#else
-  #define DXC_PARAMS
-  #define DXC_ARGS
-  #define DXC_PASS
-#endif
+#define DXC_PARAMS
+#define DXC_ARGS
+#define DXC_PASS
 
 void do_pause_e_move(const float &length, const feedRate_t &fr_mm_s);
 

@@ -1,6 +1,6 @@
 #include "hal/HAL_System.hpp"
-#include "hal/HAL_Common.hpp"
 #include <interrupt_disabler.hpp>
+#include <bsod/bsod.h>
 
 #include "stm32g0xx_hal.h"
 
@@ -47,7 +47,7 @@ void SystemClock_Config() {
     RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV28;
     RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV5;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 
     // Initializes the CPU, AHB and APB buses clocks
@@ -58,7 +58,7 @@ void SystemClock_Config() {
     RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 

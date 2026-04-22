@@ -10,20 +10,10 @@ protected:
     window_header_t header;
     StatusFooter footer;
 
-    static IScreenPrinting *ths;
-    static void StopAction();
-    static void PauseAction();
-    static void TuneAction();
     virtual void stopAction() = 0;
     virtual void pauseAction() = 0;
     virtual void tuneAction() = 0;
 
 public:
     IScreenPrinting(const string_view_utf8 &caption);
-    ~IScreenPrinting();
-    static IScreenPrinting *GetInstance();
-    static void NotifyMarlinStart();
-
-private:
-    virtual void notifyMarlinStart() {};
 };

@@ -3,11 +3,14 @@
 #include <buddy/main.h>
 #include <device/board.h>
 #include <device/hal.h>
-#include <espif.h>
 #include <option/has_mmu2.h>
 #include <option/has_mmu2_over_uart.h>
 #include <option/has_puppies.h>
 #include <option/has_tmc_uart.h>
+
+#if HAS_ESP()
+    #include <espif.h>
+#endif
 
 #if HAS_PUPPIES()
     #include <puppies/PuppyBus.hpp>
@@ -53,7 +56,7 @@ void uart_init_tmc() {
     uart_handle_for_tmc.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     uart_handle_for_tmc.Init.OverSampling = UART_OVERSAMPLING_16;
     if (HAL_HalfDuplex_Init(&uart_handle_for_tmc) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 #endif
@@ -69,9 +72,9 @@ buddy::hw::BufferedSerial uart_for_puppies {
     sizeof(uart_for_puppies_rx_data),
     buddy::hw::BufferedSerial::CommunicationMode::DMA,
 };
-void uart_init_puppies() {
+void uart_init_puppies(bool tester_mode) {
     uart_handle_for_puppies.Instance = UART_PUPPIES;
-    uart_handle_for_puppies.Init.BaudRate = 230'400;
+    uart_handle_for_puppies.Init.BaudRate = tester_mode ? 115'200 : 230'400;
     uart_handle_for_puppies.Init.WordLength = UART_WORDLENGTH_8B;
     uart_handle_for_puppies.Init.StopBits = UART_STOPBITS_1;
     uart_handle_for_puppies.Init.Parity = UART_PARITY_NONE;
@@ -79,7 +82,7 @@ void uart_init_puppies() {
     uart_handle_for_puppies.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     uart_handle_for_puppies.Init.OverSampling = UART_OVERSAMPLING_16;
     if (HAL_UART_Init(&uart_handle_for_puppies) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 #endif
@@ -104,11 +107,12 @@ void uart_init_mmu() {
     uart_handle_for_mmu.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     uart_handle_for_mmu.Init.OverSampling = UART_OVERSAMPLING_16;
     if (HAL_UART_Init(&uart_handle_for_mmu) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 #endif
 
+#if HAS_ESP()
 UART_HandleTypeDef uart_handle_for_esp;
 void uart_init_esp() {
     uart_handle_for_esp.Instance = UART_ESP;
@@ -124,9 +128,10 @@ void uart_init_esp() {
     uart_handle_for_esp.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     uart_handle_for_esp.Init.OverSampling = UART_OVERSAMPLING_8;
     if (HAL_UART_Init(&uart_handle_for_esp) != HAL_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
+#endif
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 #if HAS_TMC_UART()
@@ -147,9 +152,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
     }
 #endif
 
+#if HAS_ESP()
     if (huart == &uart_handle_for_esp) {
         return espif_tx_callback();
     }
+#endif
 }
 
 void HAL_UART_RxHalfCpltCallback([[maybe_unused]] UART_HandleTypeDef *huart) {

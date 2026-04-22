@@ -6,13 +6,12 @@
  */
 #pragma once
 
-#include "option/has_gui.h"
-#if HAS_GUI()
-    #include "guitypes.hpp"
-#endif
-#include "i18n.h"
-#include "marlin_stubs/PrusaGcodeSuite.hpp"
+#include <utils/color.hpp>
 #include <option/has_toolchanger.h>
+#include <option/has_mmu2.h>
+#include <option/has_gcode_compatibility.h>
+#include <common/filament.hpp>
+#include <common/hw_check.hpp>
 #include <config_store/store_instance.hpp>
 #include "gcode_buffer.hpp"
 #include "gcode_reader_any.hpp"
@@ -48,7 +47,8 @@ inline constexpr const char *m109_wait_hotend_temp = "M109";
 /// Check code in PrintPreview::Loop for an example.
 class GCodeInfo {
 public:
-    static constexpr uint32_t gcode_level = GCODE_LEVEL;
+    // GCODE_LEVEL from PrusaGcodeSuite.hpp, but we don't want to include the header.
+    static constexpr uint32_t gcode_level = 2;
 
     static constexpr auto supported_features = std::to_array({ "Input shaper" });
 
@@ -69,7 +69,7 @@ public:
 
         inline bool used() const {
             /// At least this much filament [g] to be considered used (just purge is about 0.06 g on both XL and MK3)
-            static constexpr float FILAMENT_USED_MIN_G = 0.03;
+            static constexpr float FILAMENT_USED_MIN_G = 0.0003;
             return filament_used_g.has_value() && filament_used_g.value() > FILAMENT_USED_MIN_G;
         }
 
@@ -139,6 +139,11 @@ private:
 
     std::atomic<const char *> error_str_ = nullptr; ///< If there is an error, this variable can be used to report the error string
 
+#if HAS_E2EE_SUPPORT()
+    mutable freertos::Mutex identity_mutex;
+    std::optional<e2ee::IdentityInfo> identity_info;
+#endif
+
     time_buff printing_time; ///< Stores string representation of printing time left
 #if EXTRUDERS > 1
     std::optional<float> filament_wipe_tower_g = { std::nullopt }; ///< Grams of filament used for wipe tower
@@ -160,7 +165,7 @@ public:
     void reset_info();
 
     const time_buff &get_printing_time() const { return printing_time; } ///< Get string representation of printing time left
-    bool is_loaded() const { return is_loaded_; } ///< Check if file has preview thumbnail
+    bool is_loaded() const { return is_loaded_; }
 
     inline bool has_error() const { return error_str_; } ///< Returns whether there is an (unrecoverable) error detected. The error message can then be obtained using error_str
     inline const char *error_str() const { return error_str_; } ///< If there is any reportable error, returns it. Otherwise returns nullptr.
@@ -169,6 +174,22 @@ public:
         assert(error);
         error_str_ = error;
     }
+
+#if HAS_E2EE_SUPPORT()
+    bool has_identity_info() const {
+        std::unique_lock lock(identity_mutex);
+        return identity_info.has_value();
+    }
+    e2ee::IdentityInfo get_identity_info() const {
+        std::unique_lock lock(identity_mutex);
+        return identity_info.value();
+    }
+
+    void set_identity_info(e2ee::IdentityInfo info) {
+        std::unique_lock lock(identity_mutex);
+        identity_info = info;
+    }
+#endif
 
     bool has_preview_thumbnail() const { return has_preview_thumbnail_; } ///< Check if file has preview thumbnail
     bool has_progress_thumbnail() const { return has_progress_thumbnail_; } ///< Check if file has progress thumbnail
@@ -272,20 +293,17 @@ private:
     /// LFN filename (used for display)
     std::array<char, FILE_NAME_BUFFER_LEN> gcode_file_name = { '\0' };
 
-#if HAS_GUI()
-    /** Set static variable for gcode filename
-     *  @param[in] file - gcode file reference
-     *  @param[in] size - thumbnail wanted size
-     *  @return True - if has thumbnail with those size parameters
-     */
-    bool hasThumbnail(IGcodeReader &reader, size_ui16_t size);
+#ifdef UNITTESTS
+public:
 #endif
     GCodeInfo();
+
+private:
     GCodeInfo(const GCodeInfo &) = delete;
 
     void parse_m555(GcodeBuffer::String cmd);
     void parse_m862(GcodeBuffer::String cmd);
     void parse_gcode(GcodeBuffer::String cmd, uint32_t &gcode_counter);
-    void parse_comment(GcodeBuffer::String cmd);
+    void parse_comment(GcodeBuffer::String cmd, bool plaintext_gcodes);
     bool is_up_to_date(const char *new_version);
 };

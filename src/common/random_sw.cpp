@@ -1,4 +1,5 @@
-// Software implementation of random.h
+/// @file
+/// @brief Software implementation of random.h
 
 #include "random.h"
 
@@ -6,10 +7,6 @@
 
 RAND_DECL uint32_t rand_u() {
     return rand_u_sw();
-}
-
-RAND_DECL uint32_t rand_u_sw() {
-    return uint32_t(std::rand());
 }
 
 // Do not implement this function - we cannot provide secure rand with just SW implementation

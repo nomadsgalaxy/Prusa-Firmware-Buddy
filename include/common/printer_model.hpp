@@ -23,6 +23,8 @@ enum class PrinterModel : uint8_t {
     xl_dev_kit,
     ix,
     coreone,
+    coreonel,
+    coreone_oak,
 
     _cnt
 };
@@ -36,6 +38,7 @@ enum class PrinterModelCompatibilityGroup : uint8_t {
     ix,
     mini,
     coreone,
+    coreonel,
 };
 
 struct PrinterVersion {

@@ -6,6 +6,10 @@
 
 namespace freertos {
 
+void yield() {
+    taskYIELD();
+}
+
 void delay(size_t milliseconds) {
     // When calling vTaskDelay() you should use pdMS_TO_TICKS()
     // but the compiler generated multiplication and division combo.

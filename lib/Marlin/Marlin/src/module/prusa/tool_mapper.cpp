@@ -107,7 +107,7 @@ void ToolMapper::reset() {
 
 void ToolMapper::set_all_unassigned() {
     std::unique_lock lock(mutex);
-    EXTRUDER_LOOP() {
+    for (int8_t e = 0; e < EXTRUDERS; e++) {
         set_unassigned_unlocked(e);
     }
 }
@@ -117,7 +117,7 @@ void ToolMapper::serialize(serialized_state_t &to) {
     // the objekt at this point (they do that before starting the print). If this ever changes
     // we should rethink this, this is called from default task, not ISR, so it might be ok to lock.
     to.enabled = enabled;
-    EXTRUDER_LOOP() {
+    for (int8_t e = 0; e < EXTRUDERS; e++) {
         to.gcode_to_physical[e] = gcode_to_physical[e];
     }
 }
@@ -125,7 +125,7 @@ void ToolMapper::serialize(serialized_state_t &to) {
 void ToolMapper::deserialize(serialized_state_t &from) {
     std::unique_lock lock(mutex);
     enabled = from.enabled;
-    EXTRUDER_LOOP() {
+    for (int8_t e = 0; e < EXTRUDERS; e++) {
         gcode_to_physical[e] = from.gcode_to_physical[e];
     }
 }

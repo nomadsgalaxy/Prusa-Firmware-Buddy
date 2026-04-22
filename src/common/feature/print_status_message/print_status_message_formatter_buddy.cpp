@@ -102,7 +102,19 @@ void PrintStatusMessageFormatterBuddy::format(StringBuilder &target, const Messa
         break;
     }
 
-    case Message::Type::waiting_for_hotend_temp:
+    case Message::Type::waiting_for_hotend_temp: {
+        const auto d = std::get<PrintStatusMessageDataToolProgress>(msg.data);
+
+        target.append_char('\n');
+#if HAS_TOOLCHANGER()
+        if (prusa_toolchanger.is_toolchanger_enabled()) {
+            target.append_printf("T%i ", (int)(d.tool + 1));
+        }
+#endif
+        target.append_printf("%i/%i °C", (int)std::round(d.progress.current), (int)std::round(d.progress.target));
+        break;
+    }
+
     case Message::Type::waiting_for_bed_temp:
 #if HAS_CHAMBER_API()
     case Message::Type::waiting_for_chamber_temp:

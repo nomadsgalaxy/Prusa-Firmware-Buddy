@@ -3,6 +3,7 @@
 #include <bitset>
 
 #include <utils/enum_array.hpp>
+#include <option/has_e2ee_support.h>
 
 class FactoryReset {
 
@@ -20,6 +21,9 @@ public:
         features,
         printer_state,
         user_profiles,
+#if HAS_E2EE_SUPPORT()
+        security,
+#endif
 
         _cnt
     };
@@ -35,14 +39,17 @@ public:
 
     static constexpr EnumArray<Item, FactoryReset::ItemConfig, FactoryReset::Item::_cnt> items_config {
         { Item::calibrations, { N_("Calibrations"), ItemFlag::calibrations } },
-        { Item::common_misconfigurations, { N_("Common Misconfigurations"), ItemFlag::common_misconfigurations | ItemFlag::dev_items } },
-        { Item::network, { N_("Network Settings"), ItemFlag::network } },
-        { Item::user_interface, { N_("UI Settings"), ItemFlag::user_interface } },
-        { Item::stats, { N_("Statistics"), ItemFlag::stats } },
-        { Item::hw_config, { N_("HW Configuration"), ItemFlag::hw_config } },
-        { Item::features, { N_("Printer Functions"), ItemFlag::features } },
-        { Item::printer_state, { N_("Printer State"), ItemFlag::printer_state } },
-        { Item::user_profiles, { N_("User Presets"), ItemFlag::user_presets } },
+            { Item::common_misconfigurations, { N_("Common Misconfigurations"), ItemFlag::common_misconfigurations | ItemFlag::dev_items } },
+            { Item::network, { N_("Network Settings"), ItemFlag::network } },
+            { Item::user_interface, { N_("UI Settings"), ItemFlag::user_interface } },
+            { Item::stats, { N_("Statistics"), ItemFlag::stats } },
+            { Item::hw_config, { N_("HW Configuration"), ItemFlag::hw_config } },
+            { Item::features, { N_("Printer Functions"), ItemFlag::features } },
+            { Item::printer_state, { N_("Printer State"), ItemFlag::printer_state } },
+            { Item::user_profiles, { N_("User Presets"), ItemFlag::user_presets } },
+#if HAS_E2EE_SUPPORT()
+            { Item::security, { N_("Security"), ItemFlag::security } },
+#endif
     };
 
 public:

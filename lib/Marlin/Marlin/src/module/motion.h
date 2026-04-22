@@ -50,14 +50,17 @@ struct MoveHints {
 /** Holds flags related to configuration and segment generation
  */
 struct PrepareMoveHints {
-  /// Apply modifiers (MBL, skew correction, ...)
-  bool apply_modifiers : 1 = true;
-
   /// Apply feedrate scaling
   bool scale_feedrate : 1 = true;
 
   /// Segment the move to be able to append correct leveling values
   bool do_segment : 1 = true;
+
+  /// Whether motion limits should be applied (not allowing moves outside of MIN/MAX coordinates)
+  bool apply_motion_limits : 1 = true;
+
+  /// Whether extrusion safety checks (PREVENT_COLD_EXTRUSION, PREVENT_LENGTHY_EXTRUDE) should be applied
+  bool extrusion_safety_checks : 1 = true;
   
   MoveHints move = {}; 
 
@@ -254,16 +257,12 @@ void sync_plan_position_e();
 void line_to_current_position(const feedRate_t &fr_mm_s=feedrate_mm_s);
 
 /// Plans (non-blocking) linear move to relative distance.
-/// It uses prepare_move_to_destination() for the planning which
-/// is suitable with UBL.
 void plan_move_by(const feedRate_t fr, const float dx, const float dy = 0, const float dz = 0, const float de = 0);
 
 enum class Segmented {
     yes,
     no,
 };
-
-void prepare_move_to_destination(const PrepareMoveHints &hints = {});
 
 void prepare_internal_move_to_destination(const feedRate_t &fr_mm_s=0.0f, const PrepareMoveHints &hints = {});
 
@@ -337,7 +336,7 @@ void homing_failed(stdext::inplace_function<void()> fallback_error, bool crash_w
 
 // Home a single logical axis
 [[nodiscard]] bool homeaxis(const AxisEnum axis, const feedRate_t fr_mm_s=0.0, bool invert_home_dir = false,
-  void (*enable_wavetable)(AxisEnum) = NULL, bool can_calibrate = true, bool homing_z_with_probe = true);
+  void (*enable_wavetable)(AxisEnum) = NULL, bool can_calibrate = true, bool homing_z_with_probe = true, bool throw_homing_failed = true);
 
 // Perform a single homing probe on a logical axis
 float homeaxis_single_run(const AxisEnum axis, const int axis_home_dir, const feedRate_t fr_mm_s = 0.0,
@@ -349,14 +348,16 @@ float homeaxis_single_run(const AxisEnum axis, const int axis_home_dir, const fe
  * @param distance Distance relative to current position
  * @param fr_mm_s Move feedrate
  * @warning Trashes the current axis position!
+ * @warning Does not set up the printer for the homing! (endstops enable, stallguards enable, ...) Use do_homing_move instead.
  */
 void do_homing_move_axis_rel(const AxisEnum axis, const float distance, const feedRate_t fr_mm_s);
 
-// Perform a single homing move on a logical axis
+/// Perform a single homing move on a logical axis
+/// @warning Trashes the current axis position!
 uint8_t do_homing_move(const AxisEnum axis, const float distance, const feedRate_t fr_mm_s=0.0, bool can_move_back_before_homing = false, bool homing_z_with_probe = true);
 
 /// Prepares the move to the target. Can apply segmentation based on MBL and other mechanisms requirements.
-void prepare_move_to(const xyze_pos_t &target, feedRate_t fr_mm_s, PrepareMoveHints hints);
+void prepare_move_to(xyze_pos_t target, feedRate_t fr_mm_s, PrepareMoveHints hints);
 
 /**
  * Workspace offsets
@@ -416,38 +417,27 @@ void prepare_move_to(const xyze_pos_t &target, feedRate_t fr_mm_s, PrepareMoveHi
  * position_is_reachable family of functions
  */
 
-#if 1 // CARTESIAN
+// Return true if the given position is within the machine bounds.
+inline bool position_is_reachable(const float &rx, const float &ry) {
+  if (!WITHIN(ry, Y_MIN_POS - slop, Y_MAX_POS + slop)) return false;
+  return WITHIN(rx, X_MIN_POS - slop, X_MAX_POS + slop);
+}
+inline bool position_is_reachable(const xy_pos_t &pos) { return position_is_reachable(pos.x, pos.y); }
 
-  // Return true if the given position is within the machine bounds.
-  inline bool position_is_reachable(const float &rx, const float &ry) {
-    if (!WITHIN(ry, Y_MIN_POS - slop, Y_MAX_POS + slop)) return false;
-    #if ENABLED(DUAL_X_CARRIAGE)
-      if (active_extruder)
-        return WITHIN(rx, X2_MIN_POS - slop, X2_MAX_POS + slop);
-      else
-        return WITHIN(rx, X1_MIN_POS - slop, X1_MAX_POS + slop);
-    #else
-      return WITHIN(rx, X_MIN_POS - slop, X_MAX_POS + slop);
-    #endif
+#if HAS_BED_PROBE
+  /**
+   * Return whether the given position is within the bed, and whether the nozzle
+   * can reach the position required to put the probe at the given position.
+   *
+   * Example: For a probe offset of -10,+10, then for the probe to reach 0,0 the
+   *          nozzle must be be able to reach +10,-10.
+   */
+  inline bool position_is_reachable_by_probe(const float &rx, const float &ry) {
+    return position_is_reachable(rx - probe_offset.x - TERN0(HAS_HOTEND_OFFSET, hotend_currently_applied_offset.x), ry - probe_offset.y - TERN0(HAS_HOTEND_OFFSET, hotend_currently_applied_offset.y))
+        && WITHIN(rx, probe_min_x() - slop, probe_max_x() + slop)
+        && WITHIN(ry, probe_min_y() - slop, probe_max_y() + slop);
   }
-  inline bool position_is_reachable(const xy_pos_t &pos) { return position_is_reachable(pos.x, pos.y); }
-
-  #if HAS_BED_PROBE
-    /**
-     * Return whether the given position is within the bed, and whether the nozzle
-     * can reach the position required to put the probe at the given position.
-     *
-     * Example: For a probe offset of -10,+10, then for the probe to reach 0,0 the
-     *          nozzle must be be able to reach +10,-10.
-     */
-    inline bool position_is_reachable_by_probe(const float &rx, const float &ry) {
-      return position_is_reachable(rx - probe_offset.x - TERN0(HAS_HOTEND_OFFSET, hotend_currently_applied_offset.x), ry - probe_offset.y - TERN0(HAS_HOTEND_OFFSET, hotend_currently_applied_offset.y))
-          && WITHIN(rx, probe_min_x() - slop, probe_max_x() + slop)
-          && WITHIN(ry, probe_min_y() - slop, probe_max_y() + slop);
-    }
-  #endif
-
-#endif // CARTESIAN
+#endif
 
 #if !HAS_BED_PROBE
   FORCE_INLINE bool position_is_reachable_by_probe(const float &rx, const float &ry) { return position_is_reachable(rx, ry); }
@@ -466,33 +456,7 @@ FORCE_INLINE bool position_is_reachable_by_probe(const xy_pos_t &pos) { return p
   #endif
 #endif
 
-/**
- * Dual X Carriage
- */
-#if ENABLED(DUAL_X_CARRIAGE)
-
-  enum DualXMode : char {
-    DXC_FULL_CONTROL_MODE,
-    DXC_AUTO_PARK_MODE,
-    DXC_DUPLICATION_MODE,
-    DXC_MIRRORED_MODE
-  };
-
-  extern DualXMode dual_x_carriage_mode;
-  extern float inactive_extruder_x_pos,           // Used in mode 0 & 1
-               duplicate_extruder_x_offset;       // Used in mode 2 & 3
-  extern xyz_pos_t raised_parked_position;        // Used in mode 1
-  extern bool active_extruder_parked;             // Used in mode 1, 2 & 3
-  extern millis_t delayed_move_time;              // Used in mode 1
-  extern int16_t duplicate_extruder_temp_offset;  // Used in mode 2 & 3
-
-  FORCE_INLINE bool dxc_is_duplicating() { return dual_x_carriage_mode >= DXC_DUPLICATION_MODE; }
-
-  float x_home_pos(const int extruder);
-
-  FORCE_INLINE int x_home_dir(const uint8_t extruder) { return extruder ? X2_HOME_DIR : X_HOME_DIR; }
-
-#elif ENABLED(MULTI_NOZZLE_DUPLICATION)
+#if ENABLED(MULTI_NOZZLE_DUPLICATION)
 
   enum DualXMode : char {
     DXC_DUPLICATION_MODE = 2

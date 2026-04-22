@@ -23,12 +23,9 @@
 #include "hwio_pindef.h"
 #include <device/board.h>
 
+static_assert(BOARD_IS_DWARF());
+
 #define DEFAULT_MACHINE_NAME "Prusa-Dwarf"
-#define BOARD_NAME "Dwarf"
-
-//#define I2C_EEPROM
-
-//#define E2END 0x03ff // EEPROM end address (1kB)
 
 #if HOTENDS > 1 || E_STEPPERS > 1
   #error "Buddy supports up to 1 hotends / E-steppers."

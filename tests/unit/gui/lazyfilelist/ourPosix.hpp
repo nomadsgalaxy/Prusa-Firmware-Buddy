@@ -54,5 +54,8 @@ dirent *readdir(DIR *dp);
 
 DIR *opendir(const char *path);
 
+void seekdir(DIR *dirp, long int loc);
+long int telldir(DIR *dirp);
+
     #endif
 #endif

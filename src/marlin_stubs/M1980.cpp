@@ -8,17 +8,29 @@ namespace PrusaGcodeSuite {
  */
 
 /**
- *### M1979: Door Sensor Calibration
+ *### M1980: Door Sensor Calibration
  *
  * Internal GCode
  *
  *#### Usage
  *
- *    M1979
+ *    M1980 [O]
+ *
+ *### Parameters
+ *
+ * - 'O' - Only ask the user whether they want to enable the emergency stop or not.
  *
  */
 void M1980() {
-    door_sensor_calibration::run();
+    GCodeParser2 p;
+    if (!p.parse_marlin_command()) {
+        return;
+    }
+
+    door_sensor_calibration::RunArgs args;
+    p.store_option('O', args.ask_enable_only);
+
+    door_sensor_calibration::run(args);
 }
 
 /** @}*/

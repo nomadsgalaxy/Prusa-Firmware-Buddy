@@ -1,11 +1,11 @@
 #include "gcode_info.hpp"
 #include "option/has_gui.h"
 #if HAS_GUI()
-    #include <guiconfig/GuiDefaults.hpp>
+    #include <common/thumbnail_sizes.hpp>
 #endif
+#include <algorithm>
 #include <cstring>
 #include <option/developer_mode.h>
-#include <Marlin/src/module/motion.h>
 #include <version.h>
 #include <tools_mapping.hpp>
 #include <module/prusa/spool_join.hpp>
@@ -44,12 +44,6 @@ void GCodeInfo::set_gcode_file(const char *filepath_sfn, const char *filename_lf
     strlcpy(gcode_file_name.data(), filename_lfn, gcode_file_name.size());
 }
 
-#if HAS_GUI()
-bool GCodeInfo::hasThumbnail(IGcodeReader &reader, size_ui16_t size) {
-    return reader.stream_thumbnail_start(size.w, size.h, IGcodeReader::ImgType::QOI);
-}
-#endif
-
 GCodeInfo::GCodeInfo()
     : printing_time { "?" }
     , has_preview_thumbnail_(false)
@@ -71,23 +65,45 @@ bool GCodeInfo::check_still_valid() {
 
 bool GCodeInfo::check_valid_for_print(IGcodeReader &reader) {
     reader.update_validity(GetGcodeFilepath());
-    is_printable_ = reader.valid_for_print();
+    // Simpler check, that does not do all the things needed
+    // to fully verify encrypted gcodes, that one is done in
+    // the prefetch only
+    is_printable_ = reader.valid_for_print(false);
 
     if (reader.has_error()) {
         error_str_ = reader.error_str();
     }
+#if HAS_E2EE_SUPPORT()
+    if (reader.has_identity_info()) {
+        set_identity_info(reader.get_identity_info());
+    }
+#endif
 
     return is_printable_;
 }
 
 void GCodeInfo::load(IGcodeReader &reader) {
+    // Note: We are still checking integrity while printing, i.e. when media
+    //       prefetch calls stream_gcode_start(). Ignoring CRC check here in
+    //       print preview screen saves around 800ms which is quite noticable.
+    const bool ignore_crc = true;
+
+    // Perform pre-indexing, if applicable for this type. Seeking will be faster.
+    IGcodeReader::Index index;
+    static_assert(index.thumbnails.size() >= 3);
+    index.thumbnails[0] = { thumbnail_sizes::preview_thumbnail_width, thumbnail_sizes::preview_thumbnail_height, IGcodeReader::ImgType::QOI };
+    index.thumbnails[1] = { thumbnail_sizes::progress_thumbnail_width, thumbnail_sizes::progress_thumbnail_height, IGcodeReader::ImgType::QOI };
+    index.thumbnails[2] = { thumbnail_sizes::old_progress_thumbnail_width, thumbnail_sizes::progress_thumbnail_height, IGcodeReader::ImgType::QOI };
+    reader.generate_index(index, ignore_crc);
+
 #if HAS_GUI()
-    has_preview_thumbnail_ = hasThumbnail(reader, GuiDefaults::PreviewThumbnailRect.Size());
-    has_progress_thumbnail_ = hasThumbnail(reader, GuiDefaults::ProgressThumbnailRect.Size());
-    if (!has_progress_thumbnail_) {
-        has_progress_thumbnail_ = hasThumbnail(reader, { GuiDefaults::OldSlicerProgressImgWidth, GuiDefaults::ProgressThumbnailRect.Height() });
-    }
+    has_preview_thumbnail_ = IGcodeReader::Index::present(index.thumbnails[0].position);
+    has_progress_thumbnail_ = IGcodeReader::Index::present(index.thumbnails[1].position) || IGcodeReader::Index::present(index.thumbnails[2].position);
 #endif
+
+    // If we didn't get any thumbnails in the index, it means they are mixed into the metadata.
+    // This is a workaround way how to check that the reader is PlainGCodeReader (we don't have RTTI)
+    const bool plaintext_gcodes = std::find_if(index.thumbnails.begin(), index.thumbnails.end(), [](const auto &t) { return t.position == IGcodeReader::Index::not_indexed; }) != index.thumbnails.end();
 
     // scan info G-codes and comments
     valid_printer_settings = ValidPrinterSettings(); // reset to valid state
@@ -100,7 +116,7 @@ void GCodeInfo::load(IGcodeReader &reader) {
     GcodeBuffer buffer;
 
     // parse metadata
-    if (reader.stream_metadata_start()) {
+    if (reader.stream_metadata_start(&index)) {
         while (true) {
             auto res = reader.stream_get_line(buffer, IGcodeReader::Continuations::Discard);
 
@@ -110,15 +126,16 @@ void GCodeInfo::load(IGcodeReader &reader) {
                 break;
             }
 
-            parse_comment(buffer.line);
+            parse_comment(buffer.line, plaintext_gcodes);
         }
 
     } else {
-        log_error(Buddy, "Metadata in gcode not found");
+        log_warning(Buddy, "Metadata in gcode not found");
     }
 
     // parse first few gcodes
-    if (reader.stream_gcode_start() == IGcodeReader::Result_t::RESULT_OK) {
+    const uint32_t offset = 0;
+    if (reader.stream_gcode_start(offset, ignore_crc, &index) == IGcodeReader::Result_t::RESULT_OK) {
         uint32_t gcode_counter = 0;
         while (true) {
             // valid_for_print should is supposed to make sure that file is downloaded-enough to not run out of bounds here.
@@ -131,7 +148,7 @@ void GCodeInfo::load(IGcodeReader &reader) {
             parse_gcode(buffer.line, gcode_counter);
         }
         // If we didnt find any M862.6 "Input Shaper" command, we assume that the gcode was not sliced with input shaper.
-        if (!sliced_with_input_shaper_) {
+        if (!sliced_with_input_shaper_ && !PRINTER_IS_PRUSA_iX()) {
             valid_printer_settings.sliced_without_input_shaper.fail();
         }
     }
@@ -160,6 +177,9 @@ void GCodeInfo::reset_info() {
     per_extruder_info.fill({});
     printing_time[0] = 0;
     error_str_ = {};
+#if HAS_E2EE_SUPPORT()
+    identity_info = std::nullopt;
+#endif
 }
 
 void GCodeInfo::EvaluateToolsValid() {
@@ -214,7 +234,7 @@ void GCodeInfo::ValidPrinterSettings::add_unsupported_feature(const char *featur
     size_t occupied = strlen(unsupported_features_text);
     size_t free = sizeof(unsupported_features_text) - occupied;
     if (occupied == 0) {
-        strncpy(unsupported_features_text, feature, min(length, free));
+        strncpy(unsupported_features_text, feature, std::min(length, free));
     } else if (free > length + 2) {
         strcat(unsupported_features_text, ", ");
         strncat(unsupported_features_text, feature, length);
@@ -475,7 +495,7 @@ void GCodeInfo::parse_m862(GcodeBuffer::String cmd) {
         // Makes the pre-print screen hide the nozzle sizes, which is both good and bad at the same time
         // -> "?.??" is gone, but no actual diameter is shown anymore - that can be tweaked further on the visualization side.
         // Here, we must set the correct nozzle diameter for all tools if specified.
-        EXTRUDER_LOOP() {
+        for (int8_t e = 0; e < EXTRUDERS; e++) {
             visitor(per_extruder_info[e]);
         }
 #else
@@ -498,14 +518,14 @@ void GCodeInfo::parse_m862(GcodeBuffer::String cmd) {
 
 void GCodeInfo::parse_gcode(GcodeBuffer::String cmd, uint32_t &gcode_counter) {
     cmd.skip_ws();
-    if (cmd.front() == ';' || cmd.is_empty()) {
+    if (cmd.is_empty() || cmd.front() == ';') {
         return;
     }
     gcode_counter++;
 
     // skip line number if present
     if (cmd.front() == 'N') {
-        cmd.skip(2u);
+        cmd.skip(static_cast<size_t>(2));
         cmd.skip([](auto c) -> bool { return isdigit(c) || isspace(c); });
     }
 
@@ -524,7 +544,7 @@ void GCodeInfo::parse_gcode(GcodeBuffer::String cmd, uint32_t &gcode_counter) {
 
             if (!is_up_to_date(cmd.c_str())) {
                 valid_printer_settings.outdated_firmware.fail();
-                strlcpy(valid_printer_settings.latest_fw_version, cmd.c_str(), min(sizeof(valid_printer_settings.latest_fw_version), cmd.len() + 1 /* +1 for the null terminator */));
+                strlcpy(valid_printer_settings.latest_fw_version, cmd.c_str(), std::min(sizeof(valid_printer_settings.latest_fw_version), cmd.len() + 1 /* +1 for the null terminator */));
                 // Cut the string at the comment start
                 char *comment_start = strchr(valid_printer_settings.latest_fw_version, ';');
                 if (comment_start) {
@@ -558,10 +578,31 @@ void GCodeInfo::parse_gcode(GcodeBuffer::String cmd, uint32_t &gcode_counter) {
     }
 }
 
-void GCodeInfo::parse_comment(GcodeBuffer::String comment) {
+void GCodeInfo::parse_comment(GcodeBuffer::String comment, bool plaintext_gcodes) {
+    comment.skip_ws();
+
+#if HAS_GUI()
+    if (plaintext_gcodes) {
+        if (const auto details = PlainGcodeReader::thumbnail_details(comment); details != std::nullopt) {
+            auto check = [&](uint16_t w_exp, uint16_t h_exp, bool &has_thumbnail) {
+                if (details->width == w_exp && details->height == h_exp && details->type == IGcodeReader::ImgType::QOI) {
+                    has_thumbnail = true;
+                }
+            };
+            check(thumbnail_sizes::preview_thumbnail_width, thumbnail_sizes::preview_thumbnail_height, has_preview_thumbnail_);
+            check(thumbnail_sizes::progress_thumbnail_width, thumbnail_sizes::progress_thumbnail_height, has_progress_thumbnail_);
+            check(thumbnail_sizes::old_progress_thumbnail_width, thumbnail_sizes::progress_thumbnail_height, has_progress_thumbnail_);
+
+            return;
+        }
+    }
+#else
+    (void)plaintext_gcodes;
+#endif
+
     auto [name, val] = comment.parse_metadata();
     if (name.begin == nullptr || val.begin == nullptr) {
-        // not a metadata
+        // not a metadatum
         return;
     }
 
@@ -586,7 +627,7 @@ void GCodeInfo::parse_comment(GcodeBuffer::String comment) {
 
                 } else if (is_filament_type) {
                     filament_buff filament_name;
-                    snprintf(filament_name.begin(), filament_name.size(), "%.*s", item->size(), item->data());
+                    snprintf(filament_name.begin(), filament_name.size(), "%.*s", static_cast<int>(item->size()), item->data());
                     per_extruder_info[extruder].filament_name = filament_name;
                     filament_described = true;
 
@@ -659,7 +700,7 @@ bool GCodeInfo::is_singletool_gcode() const {
 }
 
 void GCodeInfo::for_each_used_extruder(const stdext::inplace_function<void(uint8_t logical_ix, uint8_t physical_ix, const ExtruderInfo &info)> &callback) {
-    EXTRUDER_LOOP() {
+    for (int8_t e = 0; e < EXTRUDERS; e++) {
         const auto &info = get_extruder_info(e);
         if (!info.used()) {
             continue;

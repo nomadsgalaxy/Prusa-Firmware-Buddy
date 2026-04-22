@@ -1,6 +1,6 @@
 #pragma once
 #include <sstream>
-#include <leds/color.hpp>
+#include <utils/led_color.hpp>
 #include "catch2/catch.hpp"
 #include <array>
 

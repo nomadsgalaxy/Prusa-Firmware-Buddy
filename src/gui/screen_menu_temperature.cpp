@@ -24,7 +24,7 @@ ScreenMenuTemperature::ScreenMenuTemperature()
 #endif // PRINTER_IS_PRUSA_MINI()
 
     Item<screen_menu_temperature::MI_COOLDOWN>().callback = [this] {
-        HOTEND_LOOP() {
+        for (int8_t e = 0; e < HOTENDS; e++) {
             marlin_client::set_target_nozzle(0, e);
             marlin_client::set_display_nozzle(0, e);
         }

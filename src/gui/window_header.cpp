@@ -8,12 +8,17 @@
 #include "cpu_utils.hpp"
 #include "img_resources.hpp"
 #include "netdev.h"
-#include <espif.h>
 #include "transfers/monitor.hpp"
 #include <config_store/store_instance.hpp>
 #include <guiconfig/guiconfig.h>
 #include <marlin_vars.hpp>
 #include "timing.h"
+
+#include <option/has_esp.h>
+#if HAS_ESP()
+    #include <espif.h>
+#endif
+
 #if BUDDY_ENABLE_CONNECT()
     #include <connect/connect.hpp>
     #include <connect/marlin_printer.hpp>
@@ -51,7 +56,9 @@ void window_header_t::updateNetwork() {
     const auto interface_status = netdev_get_status(active_interface);
 
     const bool shadow = (interface_status != NETDEV_NETIF_UP);
-    const img::Resource *net_icon = nullptr;
+    const img::Resource *net_icon = &img::lan_16x16;
+
+#if HAS_ESP()
     if (active_interface == NETDEV_ESP_ID) {
         const auto ticks_now = ticks_ms();
         if (ticks_diff(ticks_now, last_wifi_strength_update_ms_) > 1000) {
@@ -72,9 +79,8 @@ void window_header_t::updateNetwork() {
         } else {
             net_icon = &img::wifi_low_16x16;
         }
-    } else {
-        net_icon = &img::lan_16x16;
     }
+#endif
 
     icon_network.SetRes(net_icon);
 
@@ -162,7 +168,7 @@ void window_header_t::updateTransfer() {
     if (transfer_progress && transfer_val_on && (transfer_progress != last_transfer_progress || transfer_has_issue != last_transfer_has_issue)) {
         snprintf(transfer_str, sizeof(transfer_str), "%d%%", transfer_progress.value());
         transfer_val.SetText(string_view_utf8::MakeRAM(transfer_str));
-        transfer_val.SetTextColor(transfer_has_issue ? COLOR_ORANGE : COLOR_WHITE);
+        transfer_val.SetTextColor(transfer_has_issue ? COLOR_BRAND : COLOR_WHITE);
         transfer_val.Invalidate();
     }
     last_transfer_progress = transfer_progress;
@@ -204,8 +210,8 @@ void window_header_t::update_bed_info() {
     static constexpr uint32_t blink_period_ms { 500 };
     uint32_t now = ticks_ms();
     if (now - bed_last_change_ms > blink_period_ms) {
-        if (bed_text.GetTextColor() != COLOR_ORANGE) {
-            bed_text.SetTextColor(COLOR_ORANGE);
+        if (bed_text.GetTextColor() != COLOR_BRAND) {
+            bed_text.SetTextColor(COLOR_BRAND);
         } else {
             bed_text.SetTextColor(COLOR_WHITE);
         }
@@ -360,9 +366,6 @@ void window_header_t::windowEvent(window_t *sender, GUI_event_t event, void *par
             break;
         case layout_color::red:
             SetRedLayout();
-            break;
-        case layout_color::blue:
-            SetBlueLayout();
             break;
         case layout_color::leave_it:
             break;

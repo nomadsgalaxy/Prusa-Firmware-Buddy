@@ -3,14 +3,14 @@
 
 #include "hal.hpp"
 #include <freertos/timing.hpp>
-#include <xbuddy_extension_shared/mmu_bridge.hpp>
+#include <xbuddy_extension/mmu_bridge.hpp>
 
 using namespace modules::protocol;
-using namespace xbuddy_extension_shared::mmu_bridge;
+using namespace xbuddy_extension::mmu_bridge;
 
 // #define SIMULATE_MMU
 #ifdef SIMULATE_MMU
-modbus::Callbacks::Status MMU::read_register(uint8_t, uint16_t address, uint16_t &out) {
+modbus::Callbacks::Status MMU::read_register(uint16_t address, uint16_t &out) {
     switch (address) {
     case 0: // first registers need to be read via the 'S' query. MMU FW would handle the 'R' query as well, but the bootloader wouldn't
         out = 3;
@@ -50,7 +50,7 @@ modbus::Callbacks::Status MMU::read_register(uint8_t, uint16_t address, uint16_t
     return Status::Ok;
 }
 
-modbus::Callbacks::Status MMU::write_register(uint8_t, uint16_t address, uint16_t) {
+modbus::Callbacks::Status MMU::write_register(uint16_t address, uint16_t) {
     switch (address) {
     case 7:
     case 9:
@@ -89,7 +89,7 @@ modbus::Callbacks::Status MMU::write_register(uint8_t, uint16_t address, uint16_
 }
 #else
 
-modbus::Callbacks::Status MMU::read_register(uint8_t, uint16_t address, uint16_t &out) {
+modbus::Callbacks::Status MMU::read_register(uint16_t address, uint16_t &out) {
     uint8_t txbuff[32];
     switch (address) {
     case 0: // first registers need to be read via the 'S' query. MMU FW would handle the 'R' query as well, but the bootloader wouldn't
@@ -144,7 +144,7 @@ modbus::Callbacks::Status MMU::read_register(uint8_t, uint16_t address, uint16_t
     return Status::IllegalAddress;
 }
 
-modbus::Callbacks::Status MMU::write_register(uint8_t, uint16_t address, uint16_t value) {
+modbus::Callbacks::Status MMU::write_register(uint16_t address, uint16_t value) {
     uint8_t txbuff[32];
     switch (address) {
     // name writable registers explicitly and group them by 16 or 8bit writes
@@ -243,6 +243,25 @@ modbus::Callbacks::Status MMU::write_register(uint8_t, uint16_t address, uint16_
     }
 }
 #endif
+
+modbus::Callbacks::Status MMU::read_registers(uint16_t address, std::span<uint16_t> out) {
+    for (uint16_t i = 0; i < out.size(); i++) {
+        if (auto status = read_register(address + i, out[i]); status != Status::Ok) {
+            return status;
+        }
+    }
+    return Status::Ok;
+}
+
+modbus::Callbacks::Status MMU::write_registers(uint16_t address, std::span<const uint16_t> in) {
+    for (uint16_t i = 0; i < in.size(); i++) {
+        if (auto status = write_register(address + i, in[i]); status != Status::Ok) {
+            return status;
+        }
+    }
+
+    return Status::Ok;
+}
 
 MMU::StepStatus MMU::ExpectingMessage() {
     int bytesConsumed = 0;

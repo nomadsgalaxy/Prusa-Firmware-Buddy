@@ -46,8 +46,8 @@ bool phaseAxis(IPartHandler *&m_pAxis, const AxisConfig_t &config_axis, Separate
         case Z_AXIS:
             // clang-format off
         m_pAxis = selftest::Factory::CreateDynamical<CSelftestPart_Axis>(config_axis, staticResults[config_axis.axis],
+            &CSelftestPart_Axis::stateCycleMark2, // A small hack to cause initial fsm_change
             &CSelftestPart_Axis::stateHomeZ,
-            &CSelftestPart_Axis::stateWaitHome,
             &CSelftestPart_Axis::stateInitProgressTimeCalculation,
 
             &CSelftestPart_Axis::stateCycleMark2,
@@ -61,10 +61,8 @@ bool phaseAxis(IPartHandler *&m_pAxis, const AxisConfig_t &config_axis, Separate
         case X_AXIS:
         case Y_AXIS:
             m_pAxis = selftest::Factory::CreateDynamical<CSelftestPart_Axis>(config_axis, staticResults[config_axis.axis],
-                &CSelftestPart_Axis::stateActivateHomingReporter,
+                &CSelftestPart_Axis::stateCycleMark2, // A small hack to cause initial fsm_change
                 &CSelftestPart_Axis::stateHomeXY,
-                &CSelftestPart_Axis::stateWaitHomingReporter,
-                &CSelftestPart_Axis::stateEvaluateHomingXY,
                 &CSelftestPart_Axis::stateInitProgressTimeCalculation,
 
                 &CSelftestPart_Axis::stateCycleMark2,
@@ -80,6 +78,28 @@ bool phaseAxis(IPartHandler *&m_pAxis, const AxisConfig_t &config_axis, Separate
         }
     }
 
+    auto set_selftest_result = [&](TestResult new_result) {
+        auto result = config_store().selftest_result.get();
+        switch (config_axis.axis) {
+        case X_AXIS:
+            result.xaxis = new_result;
+            break;
+        case Y_AXIS:
+            result.yaxis = new_result;
+            break;
+        case Z_AXIS:
+            result.zaxis = new_result;
+            break;
+        default:
+            bsod_unreachable();
+            break;
+        }
+        config_store().selftest_result.set(result);
+    };
+
+    // mark test as failed (so it will be failed after reset - disconnected cables can cause rsod)
+    set_selftest_result(TestResult_Failed);
+
     bool in_progress = m_pAxis->Loop();
     SelftestAxis_t result = SelftestAxis_t(staticResults[0], staticResults[1], staticResults[2], (separate == Separate::yes) ? config_axis.axis : (Z_AXIS + 1)); // If separate, use >Z_AXIS
     marlin_server::fsm_change(IPartHandler::GetFsmPhase(), result.Serialize());
@@ -88,22 +108,7 @@ bool phaseAxis(IPartHandler *&m_pAxis, const AxisConfig_t &config_axis, Separate
         return true;
     }
 
-    SelftestResult eeres = config_store().selftest_result.get();
-    switch (config_axis.axis) {
-    case X_AXIS:
-        eeres.xaxis = m_pAxis->GetResult();
-        break;
-    case Y_AXIS:
-        eeres.yaxis = m_pAxis->GetResult();
-        break;
-    case Z_AXIS:
-        eeres.zaxis = m_pAxis->GetResult();
-        break;
-
-    default:
-        break;
-    }
-    config_store().selftest_result.set(eeres);
+    set_selftest_result(m_pAxis->GetResult());
 
     delete m_pAxis;
     m_pAxis = nullptr;

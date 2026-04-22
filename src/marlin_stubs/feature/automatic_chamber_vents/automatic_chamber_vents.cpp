@@ -23,7 +23,16 @@ namespace {
     static constexpr auto X_CLOSE_START_POS = 11.f; ///< An X-axis position to the left of the lever, where closing move starts.
     static constexpr auto X_CLOSE_END_POS = 26.f; ///< The X-axis position to move to on Y_LEVER to close the vents.
     static constexpr auto X_LEVER_MOVE_AWAY = 4.f; ///< The X-axis distance to move away from the lever after switch
-    static constexpr auto lever_move_feedrate = feedRate_t(200.0f);
+    static constexpr auto lever_move_feedrate = feedRate_t(40.0f);
+#elif PRINTER_IS_PRUSA_COREONEL()
+    static constexpr auto Y_SAFE = 10.f; ///< Safe Y line with no risk of coming in contact with lever
+    static constexpr auto Y_LEVER = -7.f; ///< In line with the lever
+    static constexpr auto X_OPEN_START_POS = 25.f; ///< An X-axis position to the left of the lever, where opening move starts.
+    static constexpr auto X_OPEN_END_POS = 42.f; ///< The X-axis position to move to on Y_LEVER to open the vents.
+    static constexpr auto X_CLOSE_START_POS = 50.f; ///< An X-axis position to the right of the lever, where closing move starts.
+    static constexpr auto X_CLOSE_END_POS = 35.f; ///< The X-axis position to move to on Y_LEVER to close the vents.
+    static constexpr auto X_LEVER_MOVE_AWAY = -4.f; ///< The X-axis distance to move away from the lever after switch (COREONEL has inverted open/close direction)
+    static constexpr auto lever_move_feedrate = feedRate_t(17.0f);
 #else
     #error
 #endif
@@ -39,8 +48,7 @@ namespace {
     void plan_to_x(float x, feedRate_t feedrate = feedRate_t(XY_PROBE_FEEDRATE_MM_S)) {
         xyze_pos_t xyz = current_position;
         xyz.x = x;
-        destination = xyz;
-        prepare_internal_move_to_destination(feedrate, { .apply_modifiers = false /*XY move doesn't need MBL*/ });
+        prepare_move_to(xyz, feedrate, {});
     }
 
     /// @brief Plans a move to a new Y-axis coordinate.
@@ -49,8 +57,7 @@ namespace {
     void plan_to_y(float y, feedRate_t feedrate = feedRate_t(XY_PROBE_FEEDRATE_MM_S)) {
         xyze_pos_t xyz = current_position;
         xyz.y = y;
-        destination = xyz;
-        prepare_internal_move_to_destination(feedrate, { .apply_modifiers = false /*XY move doesn't need MBL*/ });
+        prepare_move_to(xyz, feedrate, {});
     }
 
     /// @brief Prepares the printer for a vent lever switch.
@@ -69,17 +76,17 @@ namespace {
 
     void switch_lever(VentState wanted_state) {
         // Move to a safe Y-axis position to avoid the lever.
-        plan_to_y(Y_SAFE, lever_move_feedrate);
+        plan_to_y(Y_SAFE);
         // Move to a horizontal position (left or right) of the lever.
-        plan_to_x(wanted_state == VentState::open ? X_OPEN_START_POS : X_CLOSE_START_POS, lever_move_feedrate);
+        plan_to_x(wanted_state == VentState::open ? X_OPEN_START_POS : X_CLOSE_START_POS);
         // Move into the lever's Y-axis line.
-        plan_to_y(Y_LEVER, lever_move_feedrate);
+        plan_to_y(Y_LEVER);
         // Move horizontally to engage the lever and switch it.
         plan_to_x(wanted_state == VentState::open ? X_OPEN_END_POS : X_CLOSE_END_POS, lever_move_feedrate);
         // Move horizontally to release the lever tension
         plan_to_x(wanted_state == VentState::open ? X_OPEN_END_POS + X_LEVER_MOVE_AWAY : X_CLOSE_END_POS - X_LEVER_MOVE_AWAY, lever_move_feedrate);
         // Back out to the safe Y-axis position to avoid a collision on future moves.
-        plan_to_y(Y_SAFE, lever_move_feedrate);
+        plan_to_y(Y_SAFE);
     }
 
 }; // namespace

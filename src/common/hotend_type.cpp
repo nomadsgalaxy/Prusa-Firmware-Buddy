@@ -2,7 +2,7 @@
 
 #include <buddy/unreachable.hpp>
 
-#include <option/has_loadcell.h>
+#include <option/has_nextruder.h>
 
 const char *hotend_type_name(HotendType t) {
     switch (t) {
@@ -36,7 +36,7 @@ int8_t hotend_type_heater_selftest_offset(HotendType t) {
 #if PRINTER_IS_PRUSA_MK3_5()
     case HotendType::stock_with_sock:
         return -25;
-#elif HAS_LOADCELL() // Approximation of HAS_NEXTRUDER(), which we don't have
+#elif HAS_NEXTRUDER()
     case HotendType::stock_with_sock:
         return -20;
 #endif

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core >=0.4.3", "nanobind >= 2.0.0", "typing_extensions >= 4.9.0"]
+requires = ["scikit-build-core == 0.11.1", "nanobind == 2.8.0", "typing_extensions == 4.9.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -18,6 +18,13 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/prusa3d/Prusa-Firmware-Buddy"
 
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "CMakeLists.txt" },
+    { file = "fsm_python_binding.cpp" },
+    { file = "marlin_server_types/**/*.py" },
+]
 
 [tool.scikit-build]
 cmake.version = ">=3.27"
@@ -30,7 +37,7 @@ cmake.args = ["--preset=xl_release_boot", "-DCMAKE_TOOLCHAIN_FILE=", "-DUNITTEST
 cmake.source-dir = "../../../../"
 
 # Just build the python module, not entire firmware
-cmake.targets = ["marlin_server_types_python_module_impl"]
+build.targets = ["marlin_server_types_python_module"]
 
 # include __init__.py script from this folder, to load this module in more efficient manner
 wheel.packages = ["marlin_server_types"]

@@ -18,10 +18,10 @@
  * - Centered text (alignment can be changed)
  * - A FSM radio
  */
-class FrameProgressPrompt : public window_frame_t {
+class FrameProgressPrompt {
 
 public:
-    FrameProgressPrompt(window_t *parent, FSMAndPhase fsm_phase, const string_view_utf8 &txt_title, const string_view_utf8 &txt_info, Align_t info_alignment = Align_t::CenterTop());
+    FrameProgressPrompt(window_frame_t *parent, FSMAndPhase fsm_phase, const string_view_utf8 &txt_title, const string_view_utf8 &txt_info, Align_t info_alignment = Align_t::CenterTop());
 
     /** Takes title and text from the error code
      *  Construct the frame with \param error_code_mapper function (phase -> ErrCode), to extract useful information from ErrDesc related to given phase.
@@ -36,7 +36,7 @@ public:
 
 protected:
     window_text_t title;
-    window_numberless_progress_t progress_bar;
+    WindowProgressBar progress_bar;
     window_text_t info;
     RadioButtonFSM radio;
 };

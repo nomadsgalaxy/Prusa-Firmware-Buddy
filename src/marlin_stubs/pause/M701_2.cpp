@@ -18,13 +18,13 @@
 #include <atomic>
 #include <functional> // std::invoke
 #include <cmath>
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "M70X.hpp"
 #include <config_store/store_instance.hpp>
 #include <filament_to_load.hpp>
 #include <Marlin/src/gcode/gcode.h>
 #include <mapi/parking.hpp>
-#include <common/RAII.hpp>
+#include <raii/auto_restore.hpp>
 
 #include <option/has_bowden.h>
 #include <option/has_human_interactions.h>
@@ -34,7 +34,7 @@
     #include <feature/auto_retract/auto_retract.hpp>
 #endif
 
-#include <scope_guard.hpp>
+#include <raii/scope_guard.hpp>
 
 uint filament_gcodes::InProgress::lock = 0;
 
@@ -76,7 +76,7 @@ static bool load_unload(Pause::LoadType load_type, pause::Settings &rSettings) {
     return res;
 }
 
-void filament_gcodes::M701_no_parser(FilamentType filament_to_be_loaded, const std::optional<float> &fast_load_length, float z_min_pos, std::optional<RetAndCool_t> op_preheat, uint8_t target_extruder, int8_t mmu_slot, std::optional<Color> color_to_be_loaded, ResumePrint_t resume_print_request) {
+void filament_gcodes::M701_load(FilamentType filament_to_be_loaded, const std::optional<float> &fast_load_length, float z_min_pos, std::optional<RetAndCool_t> op_preheat, uint8_t target_extruder, int8_t mmu_slot, std::optional<Color> color_to_be_loaded, ResumePrint_t resume_print_request) {
     InProgress progress;
 
     const bool do_purge_only = fast_load_length.has_value() && fast_load_length <= 0.0f;
@@ -137,7 +137,7 @@ void filament_gcodes::M701_no_parser(FilamentType filament_to_be_loaded, const s
     }
 }
 
-void filament_gcodes::M702_no_parser(std::optional<float> unload_length, float z_min_pos, std::optional<RetAndCool_t> op_preheat, uint8_t target_extruder, bool ask_unloaded) {
+void filament_gcodes::M702_unload(std::optional<float> unload_length, float z_min_pos, std::optional<RetAndCool_t> op_preheat, uint8_t target_extruder, bool ask_unloaded) {
     InProgress progress;
 
 #if HAS_AUTO_RETRACT()
@@ -225,7 +225,7 @@ void filament_gcodes::M70X_process_user_response(PreheatStatus::Result res, uint
     PreheatStatus::SetResult(res);
 }
 
-void filament_gcodes::M1701_no_parser(const std::optional<float> &fast_load_length, float z_min_pos, uint8_t target_extruder) {
+void filament_gcodes::M1701_autoload(const std::optional<float> &fast_load_length, float z_min_pos, uint8_t target_extruder) {
     filament::set_type_to_load(FilamentType::none);
     filament::set_color_to_load(std::nullopt);
 
@@ -236,7 +236,7 @@ void filament_gcodes::M1701_no_parser(const std::optional<float> &fast_load_leng
 
     if constexpr (option::has_bowden) {
         config_store().set_filament_type(target_extruder, FilamentType::none);
-        M701_no_parser(FilamentType::none, fast_load_length, z_min_pos, RetAndCool_t::Return, target_extruder, 0, std::nullopt, ResumePrint_t::No);
+        M701_load(FilamentType::none, fast_load_length, z_min_pos, RetAndCool_t::Return, target_extruder, 0, std::nullopt, ResumePrint_t::No);
         return;
     }
 
@@ -312,7 +312,7 @@ void filament_gcodes::M1701_no_parser(const std::optional<float> &fast_load_leng
     PreheatStatus::SetResult(PreheatStatus::Result::DoneHasFilament);
 }
 
-void filament_gcodes::M1600_no_parser(FilamentType filament_to_be_loaded, uint8_t target_extruder, RetAndCool_t preheat, AskFilament_t ask_filament, std::optional<Color> color_to_be_loaded) {
+void filament_gcodes::M1600_change_filament(FilamentType filament_to_be_loaded, uint8_t target_extruder, RetAndCool_t preheat, AskFilament_t ask_filament, std::optional<Color> color_to_be_loaded) {
     InProgress progress;
 
     FilamentType filament = config_store().get_filament_type(target_extruder);
@@ -323,7 +323,7 @@ void filament_gcodes::M1600_no_parser(FilamentType filament_to_be_loaded, uint8_
 
     if (ask_filament == AskFilament_t::Always || (filament == FilamentType::none && ask_filament == AskFilament_t::IfUnknown)) {
         // need to save filament to check if operation went well, PreheatMode::Unload for user info in header
-        M1700_no_parser(M1700Args {
+        M1700_preheat(M1700Args {
             .preheat = preheat,
             .mode = PreheatMode::Unload,
             .target_extruder = static_cast<int8_t>(target_extruder),

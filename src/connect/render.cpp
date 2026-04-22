@@ -11,7 +11,7 @@
 #include <transfers/transfer.hpp>
 #include <filament.hpp>
 #include <filament_list.hpp>
-#include <filament_sensor_states.hpp>
+#include <feature/filament_sensor/filament_sensor_states.hpp>
 
 #include <option/has_cancel_object.h>
 #if HAS_CANCEL_OBJECT()
@@ -202,7 +202,7 @@ namespace {
                     JSON_OBJ_END JSON_COMMA;
                 }
 #endif
-#if PRINTER_IS_PRUSA_COREONE()
+#if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
                 JSON_FIELD_OBJ("chamber");
                     JSON_FIELD_FFIXED("temp", params.chamber_info.current_temp, 1) JSON_COMMA;
                     JSON_FIELD_INT("target_temp", params.chamber_info.target_temp) JSON_COMMA;
@@ -375,6 +375,7 @@ namespace {
                             JSON_MAC("lan_mac", state.lan->mac) JSON_COMMA;
                             JSON_IP("lan_ipv4", state.lan->ip) JSON_COMMA;
                         }
+#if HAS_ESP()
                         if (state.wifi.has_value()) {
                             if (strlen(creds.ssid) > 0) {
                                 JSON_FIELD_STR("wifi_ssid", creds.ssid) JSON_COMMA;
@@ -382,6 +383,7 @@ namespace {
                             JSON_MAC("wifi_mac", state.wifi->mac) JSON_COMMA;
                             JSON_IP("wifi_ipv4", state.wifi->ip) JSON_COMMA;
                         }
+#endif
                         JSON_FIELD_STR("hostname", creds.hostname);
                     JSON_OBJ_END JSON_COMMA;
 
@@ -433,7 +435,7 @@ namespace {
                         JSON_FIELD_STR_FORMAT("version", "%d.%d.%d", params.mmu_version.major, params.mmu_version.minor, params.mmu_version.build);
                     JSON_OBJ_END JSON_COMMA;
 #endif
-#if PRINTER_IS_PRUSA_COREONE()
+#if PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
                     JSON_FIELD_BOOL("addon_power", params.addon_power) JSON_COMMA;
 #endif
                     JSON_FIELD_INT("slots", params.enabled_tool_cnt());
@@ -1003,7 +1005,7 @@ tuple<JsonResult, size_t> GcodeMetaRenderer::render(uint8_t *buffer, size_t buff
     return make_tuple(JsonResult::Complete, pos);
 }
 
-DirRenderer::DirRenderer(const char *base_path, unique_dir_ptr dir)
+DirRenderer::DirRenderer(const char *base_path, Directory dir)
     : JsonRenderer(DirState { move(dir), base_path }) {}
 
 JsonResult DirRenderer::renderState(size_t resume_point, json::JsonOutput &output, DirState &state) const {
@@ -1011,7 +1013,7 @@ JsonResult DirRenderer::renderState(size_t resume_point, json::JsonOutput &outpu
     // clang-format off
     JSON_START;
     JSON_FIELD_ARR("children");
-    while (state.dir.get() && (state.ent = readdir(state.dir.get()))) {
+    while ((state.ent = state.dir.read())) {
         if (const char *lfn = dirent_lfn(state.ent); lfn && lfn[0] == '.') {
             // Skip dot-files (should be hidden).
             continue;
@@ -1075,14 +1077,16 @@ FileExtra::FileExtra(std::unique_ptr<AnyGcodeFormatReader> gcode_reader_)
     : gcode_reader(std::move(gcode_reader_))
     , renderer(std::move(GcodeExtra(PreviewRenderer(gcode_reader->get()), GcodeMetaRenderer(gcode_reader->get())))) {}
 
-FileExtra::FileExtra(const char *base_path, unique_dir_ptr dir)
+FileExtra::FileExtra(const char *base_path, Directory dir)
     : renderer(move(DirRenderer(base_path, move(dir)))) {}
 
 RenderState::RenderState(const Printer &printer, const Action &action, optional<CommandId> background_command_id)
     : printer(printer)
     , action(action)
     , lan(printer.net_info(Printer::Iface::Ethernet))
+#if HAS_ESP()
     , wifi(printer.net_info(Printer::Iface::Wifi))
+#endif
     , transfer_id(Monitor::instance.id())
     , background_command_id(background_command_id) {
     memset(&st, 0, sizeof st);
@@ -1118,8 +1122,8 @@ RenderState::RenderState(const Printer &printer, const Action &action, optional<
                     //   trigger on our own), we try to avoid some of it.
                     file_extra = FileExtra();
                 }
-            } else if (unique_dir_ptr d(opendir(path)); d.get() != nullptr) {
-                file_extra = FileExtra(path, std::move(d));
+            } else if (Directory dir { path }; dir) {
+                file_extra = FileExtra(path, std::move(dir));
             } else if (unique_file_ptr f(fopen(path, "r")); f != nullptr) {
                 // Non-gcode but existing file
                 file_extra = FileExtra();

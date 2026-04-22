@@ -1,12 +1,17 @@
 #include "gcode_reader_any.hpp"
 
-#include "lang/i18n.h"
+#include <i18n.h>
 #include "transfers/transfer.hpp"
 #include <cassert>
 #include <errno.h> // for EAGAIN
 #include <filename_type.hpp>
 #include <sys/stat.h>
 #include <type_traits>
+
+#include <config_store/store_instance.hpp>
+#if HAS_E2EE_SUPPORT()
+    #include <e2ee/identity_check_levels.hpp>
+#endif
 
 AnyGcodeFormatReader::~AnyGcodeFormatReader() {
 }
@@ -26,13 +31,28 @@ AnyGcodeFormatReader::AnyGcodeFormatReader()
     : storage { ClosedReader {} } {
 }
 
-AnyGcodeFormatReader::AnyGcodeFormatReader(const char *filename)
+AnyGcodeFormatReader::AnyGcodeFormatReader(const char *filename, bool allow_decryption
+#if HAS_E2EE_SUPPORT()
+    ,
+    e2ee::IdentityCheckLevel identity_check_lvl
+#endif
+    )
     : storage { ClosedReader {} } {
 
-    open(filename);
+    open(filename, allow_decryption
+#if HAS_E2EE_SUPPORT()
+        ,
+        identity_check_lvl
+#endif
+    );
 }
 
-bool AnyGcodeFormatReader::open(const char *filename) {
+bool AnyGcodeFormatReader::open(const char *filename, bool allow_decryption
+#if HAS_E2EE_SUPPORT()
+    ,
+    e2ee::IdentityCheckLevel identity_check_lvl
+#endif
+) {
     close();
 
     transfers::Transfer::Path path(filename);
@@ -53,21 +73,25 @@ bool AnyGcodeFormatReader::open(const char *filename) {
         is_partial = true;
     }
 
-    FILE *file = fopen(is_partial ? path.as_partial() : path.as_destination(), "rb");
+    unique_file_ptr file = unique_file_ptr(fopen(is_partial ? path.as_partial() : path.as_destination(), "rb"));
     if (!file) {
         return false;
     }
 
     if (filename_is_bgcode(filename)) {
-        storage.emplace<PrusaPackGcodeReader>(*file, info);
+        storage.emplace<PrusaPackGcodeReader>(std::move(file), info, allow_decryption
+#if HAS_E2EE_SUPPORT()
+            ,
+            identity_check_lvl
+#endif
+        );
     }
 
     else if (filename_is_plain_gcode(filename)) {
-        storage.emplace<PlainGcodeReader>(*file, info);
+        storage.emplace<PlainGcodeReader>(std::move(file), info);
     }
 
     else {
-        fclose(file);
         return false;
     }
 

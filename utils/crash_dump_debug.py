@@ -47,7 +47,7 @@ if (args.elf == None):
     args.elf = project_root_dir / Path('build-vscode-buddy/firmware')
     print(f"ELF file not provided, using default: {args.elf}")
 if (args.gdb == None):
-    args.gdb = f'{project_root_dir}/.dependencies/gcc-arm-none-eabi-13.2.1/bin/arm-none-eabi-gdb'
+    args.gdb = f'{project_root_dir}/.dependencies/gcc-arm-none-eabi-13.3.1/bin/arm-none-eabi-gdb'
     print(f"GDB executable not provided, using default: {args.gdb}")
 
 if not os.path.isfile(args.elf):

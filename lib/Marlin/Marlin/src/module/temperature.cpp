@@ -79,20 +79,22 @@
   #include "tool_change.h"
 #endif
 
-#if USE_BEEPER
-  #include "../libs/buzzer.h"
-#endif
-
 #include <option/board_is_master_board.h>
 #if BOARD_IS_MASTER_BOARD()
   #include <feature/safety_timer/safety_timer.hpp>
 #endif
 
+#include <option/has_ac_controller.h>
 #include <option/has_dwarf.h>
 #include <option/has_local_bed.h>
 #include <option/has_remote_bed.h>
 #include <option/has_modular_bed.h>
-#include <scope_guard.hpp>
+#include <utils/serial_logging_disabler.hpp>
+#include <raii/scope_guard.hpp>
+
+#if HAS_AC_CONTROLLER()
+    #include <puppies/ac_controller.hpp>
+#endif
 
 LOG_COMPONENT_REF(MarlinServer);
 
@@ -107,6 +109,9 @@ LOG_COMPONENT_REF(MarlinServer);
   static constexpr uint8_t soft_pwm_bit_shift = 1;
 #endif
 
+// Rough estimate of room temperature
+static constexpr float room_temperature = 25.0f;
+
 Temperature thermalManager;
 
 /**
@@ -119,18 +124,13 @@ Temperature thermalManager;
 #else
   #define _BED_PSTR(h)
 #endif
-#if HAS_HEATED_CHAMBER
-  #define _CHAMBER_PSTR(h) (h) == H_CHAMBER ? GET_TEXT(MSG_CHAMBER) :
-#else
-  #define _CHAMBER_PSTR(h)
-#endif
 #if HAS_TEMP_HEATBREAK_CONTROL
   #define _HEATBREAK_PSTR(h,N) ((HOTENDS) > N && (H_HEATBREAK_E0 + h) == N) ? GET_TEXT(MSG_HEATBREAK) :
 #else
   #define _HEATBREAK_PSTR(h,N)
 #endif
 #define _E_PSTR(h,N) ((HOTENDS) > N && (h) == N) ? PSTR(LCD_STR_E##N) :
-#define HEATER_PSTR(h) _BED_PSTR(h) _CHAMBER_PSTR(h) _E_PSTR(h,1) _E_PSTR(h,2) _E_PSTR(h,3) _E_PSTR(h,4) _E_PSTR(h,5) _HEATBREAK_PSTR(h,0) _HEATBREAK_PSTR(h,1) _HEATBREAK_PSTR(h,2) _HEATBREAK_PSTR(h,3) _HEATBREAK_PSTR(h,4) _HEATBREAK_PSTR(h,5) PSTR(LCD_STR_E0)
+#define HEATER_PSTR(h) _BED_PSTR(h) _E_PSTR(h,1) _E_PSTR(h,2) _E_PSTR(h,3) _E_PSTR(h,4) _E_PSTR(h,5) _HEATBREAK_PSTR(h,0) _HEATBREAK_PSTR(h,1) _HEATBREAK_PSTR(h,2) _HEATBREAK_PSTR(h,3) _HEATBREAK_PSTR(h,4) _HEATBREAK_PSTR(h,5) PSTR(LCD_STR_E0)
 
 #define MIN_BED_POWER 0
 #define MAX_BED_POWER 255
@@ -163,26 +163,6 @@ Temperature thermalManager;
 
   uint8_t Temperature::fan_speed[FAN_COUNT] = {};
   uint8_t Temperature::applied_fan_speed[FAN_COUNT] = {};
-
-  #if ENABLED(EXTRA_FAN_SPEED)
-    uint8_t Temperature::old_fan_speed[FAN_COUNT], Temperature::new_fan_speed[FAN_COUNT];
-
-    void Temperature::set_temp_fan_speed(const uint8_t fan, const uint16_t tmp_temp) {
-      switch (tmp_temp) {
-        case 1:
-          set_fan_speed(fan, old_fan_speed[fan]);
-          break;
-        case 2:
-          old_fan_speed[fan] = fan_speed[fan];
-          set_fan_speed(fan, new_fan_speed[fan]);
-          break;
-        default:
-          new_fan_speed[fan] = _MIN(tmp_temp, 255U);
-          break;
-      }
-    }
-
-  #endif
 
   #if EITHER(PROBING_FANS_OFF, ADVANCED_PAUSE_FANS_PAUSE)
     bool Temperature::fans_paused; // = false;
@@ -257,9 +237,9 @@ Temperature thermalManager;
   #endif
 
   #if WATCH_HEATBREAK
-      heater_watch_t Temperature::watch_heatbreak[HOTENDS] = {0};
-    #endif
-    millis_t Temperature::next_heatbreak_check_ms;
+    heater_watch_t Temperature::watch_heatbreak[HOTENDS] = {0};
+  #endif
+  millis_t Temperature::next_heatbreak_check_ms;
 
 #endif
 
@@ -299,18 +279,6 @@ Temperature thermalManager;
 
 #if HAS_TEMP_CHAMBER
   chamber_info_t Temperature::temp_chamber; // = { 0 }
-  #if HAS_HEATED_CHAMBER
-    #ifdef CHAMBER_MINTEMP
-      int16_t Temperature::mintemp_raw_CHAMBER = HEATER_CHAMBER_RAW_LO_TEMP;
-    #endif
-    #ifdef CHAMBER_MAXTEMP
-      int16_t Temperature::maxtemp_raw_CHAMBER = HEATER_CHAMBER_RAW_HI_TEMP;
-    #endif
-    #if WATCH_CHAMBER
-      heater_watch_t Temperature::watch_chamber{0};
-    #endif
-    millis_t Temperature::next_chamber_check_ms;
-  #endif // HAS_HEATED_CHAMBER
 #endif // HAS_TEMP_CHAMBER
 
 // Initialized by settings.load()
@@ -420,10 +388,15 @@ volatile bool Temperature::temp_meas_ready = false;
       #endif
       #define ONHEATINGSTART() printerEventLEDs.onBedHeatingStart()
       #define ONHEATING(S,C,T) printerEventLEDs.onBedHeating(S,C,T)
-    #else
+    #else /* ENABLED(PIDTEMP) && DISABLED(PIDTEMPBED) */
       #define GHV(B,H) H
       #if ENABLED(HW_PWM_HEATERS)
-        #define SHV(B,H) analogWrite_HEATER_BED(H)
+        // Need to write soft_pwm_amount even when using hardware pwm heater to prevent
+        // power manager from shutting us down, leading to temperature check failure.
+        #define SHV(B,H) do {                         \
+            analogWrite(HEATER_0_PIN, H);             \
+            temp_hotend[heater].soft_pwm_amount = H;  \
+        } while (0)
       #else
         #define SHV(B,H) (temp_hotend[heater].soft_pwm_amount = H)
       #endif
@@ -507,9 +480,17 @@ volatile bool Temperature::temp_meas_ready = false;
             t_low = t2 - t1;
             if (cycles > 0) {
               const long max_pow = GHV(MAX_BED_POWER, PID_MAX);
+              float last_bias = bias;
+              float last_d = d;
               bias += (d * (t_high - t_low)) / (t_low + t_high);
               LIMIT(bias, 20, max_pow - 20);
+              float delta_bias = bias - last_bias;
+              if(delta_bias > 10) bias = last_bias + 10;
+              if(delta_bias < -10) bias = last_bias - 10;
               d = (bias > max_pow >> 1) ? max_pow - 1 - bias : bias;
+              float delta_d = d - last_d;
+              if(delta_d > 10) d = last_d + 10;
+              if(delta_d < -10) d = last_d - 10;
 
               SERIAL_ECHOPAIR(MSG_BIAS, bias, MSG_D, d, MSG_T_MIN, minT, MSG_T_MAX, maxT);
               if (cycles > 2) {
@@ -565,6 +546,9 @@ volatile bool Temperature::temp_meas_ready = false;
 
       // Report heater states every 2 seconds
       if (ELAPSED(ms, next_temp_ms)) {
+        // Do not log heater states, only print to serial
+        SerialLoggingDisabler sld;
+        
         #if HAS_TEMP_SENSOR
           print_heater_states(isbed ? active_extruder : heater);
           SERIAL_EOL();
@@ -678,11 +662,6 @@ int16_t Temperature::getHeaterPower(const heater_ind_t heater_id) {
       #endif
     }
   #endif
-  #if HAS_HEATED_CHAMBER
-    if (heater_id == H_CHAMBER) {
-      return temp_chamber.soft_pwm_amount;
-    }
-  #endif
   #if HOTENDS
     if (heater_id >= H_E0 && heater_id <= H_E5) {
       const uint8_t tool_id = heater_id - (uint8_t)H_E0;
@@ -739,7 +718,7 @@ int16_t Temperature::getHeaterPower(const heater_ind_t heater_id) {
     };
     uint8_t fanState = 0;
 
-    HOTEND_LOOP()
+    for (int8_t e = 0; e < HOTENDS; e++)
       if (temp_hotend[e].celsius >= EXTRUDER_AUTO_FAN_TEMPERATURE)
         SBI(fanState, pgm_read_byte(&fanBit[e]));
 
@@ -808,13 +787,6 @@ int16_t Temperature::getHeaterPower(const heater_ind_t heater_id) {
 
 inline void loud_kill(PGM_P const lcd_msg, const heater_ind_t heater) {
   Running = false;
-  #if USE_BEEPER
-    for (uint8_t i = 20; i--;) {
-      WRITE(BEEPER_PIN, HIGH); delay(25);
-      WRITE(BEEPER_PIN, LOW); delay(80);
-    }
-    WRITE(BEEPER_PIN, HIGH);
-  #endif
   kill(lcd_msg, HEATER_PSTR(heater));
 }
 
@@ -824,9 +796,6 @@ void Temperature::_temp_error(const heater_ind_t heater, PGM_P const serial_msg,
     serialprintPGM(serial_msg);
     SERIAL_ECHOPGM(MSG_STOPPED_HEATER);
     if (heater >= 0) SERIAL_ECHO((int)heater);
-    #if HAS_HEATED_CHAMBER
-      else if (heater == H_CHAMBER) SERIAL_ECHOPGM(MSG_HEATER_CHAMBER);
-    #endif
     else SERIAL_ECHOPGM(MSG_HEATER_BED);
     SERIAL_EOL();
   }
@@ -846,12 +815,6 @@ void Temperature::max_temp_error(const heater_ind_t heater) {
       return;
     }
   #endif
-  #if HAS_HEATED_CHAMBER
-    if (H_CHAMBER == heater) {
-      _temp_error(heater, PSTR(MSG_T_MAXTEMP), GET_TEXT(MSG_ERR_MAXTEMP_CHAMBER));
-      return;
-    }
-  #endif
   #if HAS_TEMP_HEATBREAK
     //we have multiple heartbreak thermistors and they have always the highest ID
     if(heater >= H_HEATBREAK_E0){
@@ -865,12 +828,6 @@ void Temperature::min_temp_error(const heater_ind_t heater) {
   #if HAS_HEATED_BED
     if (H_BED == heater) {
       _temp_error(heater, PSTR(MSG_T_MINTEMP), GET_TEXT(MSG_ERR_MINTEMP_BED));
-      return;
-    }
-  #endif
-  #if HAS_HEATED_CHAMBER
-    if (H_CHAMBER == heater) {
-      _temp_error(heater, PSTR(MSG_T_MINTEMP), GET_TEXT(MSG_ERR_MINTEMP_CHAMBER));
       return;
     }
   #endif
@@ -1469,7 +1426,7 @@ void Temperature::manage_heater() {
 
   #if HOTENDS
 
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
       #if ENABLED(THERMAL_PROTECTION_HOTENDS)
         if (degHotend(e) > temp_range[e].maxtemp)
          _temp_error((heater_ind_t)e, PSTR(MSG_T_THERMAL_RUNAWAY), GET_TEXT(MSG_THERMAL_RUNAWAY));
@@ -1589,75 +1546,20 @@ void Temperature::manage_heater() {
 
   #endif
 
-  #if HAS_HEATED_CHAMBER
-
-    #ifndef CHAMBER_CHECK_INTERVAL
-      #define CHAMBER_CHECK_INTERVAL 1000UL
-    #endif
-
-    #if ENABLED(THERMAL_PROTECTION_CHAMBER)
-      if (degChamber() > CHAMBER_MAXTEMP)
-        _temp_error(H_CHAMBER, PSTR(MSG_T_THERMAL_RUNAWAY), GET_TEXT(MSG_THERMAL_RUNAWAY_CHAMBER));
-    #endif
-
-    #if WATCH_CHAMBER
-      // Make sure temperature is increasing
-      if (watch_chamber.elapsed(ms)) {              // Time to check the chamber?
-        if (degChamber() < watch_chamber.target)    // Failed to increase enough?
-          _temp_error(H_CHAMBER, PSTR(MSG_T_HEATING_FAILED), GET_TEXT(MSG_HEATING_FAILED_LCD_CHAMBER));
-        else
-          start_watching_chamber();                 // Start again if the target is still far off
-      }
-    #endif
-
-    if (ELAPSED(ms, next_chamber_check_ms)) {
-      next_chamber_check_ms = ms + CHAMBER_CHECK_INTERVAL;
-
-      if (WITHIN(temp_chamber.celsius, CHAMBER_MINTEMP, CHAMBER_MAXTEMP)) {
-        #if ENABLED(CHAMBER_LIMIT_SWITCHING)
-          if (temp_chamber.celsius >= temp_chamber.target + TEMP_CHAMBER_HYSTERESIS)
-            temp_chamber.soft_pwm_amount = 0;
-          else if (temp_chamber.celsius <= temp_chamber.target - (TEMP_CHAMBER_HYSTERESIS))
-            temp_chamber.soft_pwm_amount = MAX_CHAMBER_POWER >> 1;
-        #else
-          temp_chamber.soft_pwm_amount = temp_chamber.celsius < temp_chamber.target ? MAX_CHAMBER_POWER >> 1 : 0;
-        #endif
-      }
-      else {
-        temp_chamber.soft_pwm_amount = 0;
-        WRITE_HEATER_CHAMBER(LOW);
-      }
-
-      #if ENABLED(THERMAL_PROTECTION_CHAMBER)
-        thermal_runaway_protection(tr_state_machine_chamber, temp_chamber.celsius, temp_chamber.target, H_CHAMBER, THERMAL_PROTECTION_CHAMBER_PERIOD, THERMAL_PROTECTION_CHAMBER_HYSTERESIS);
-      #endif
-    }
-
-    // TODO: Implement true PID pwm
-    //temp_bed.soft_pwm_amount = WITHIN(temp_chamber.celsius, CHAMBER_MINTEMP, CHAMBER_MAXTEMP) ? (int)get_pid_output_chamber() >> 1 : 0;
-
-  #endif // HAS_HEATED_CHAMBER
-
-
   #if HAS_TEMP_HEATBREAK
 
     #ifndef HEATBREAK_CHECK_INTERVAL
       #define HEATBREAK_CHECK_INTERVAL 1000UL
     #endif
 
-    #if ENABLED(THERMAL_PROTECTION_HEATBREAK)
-      #error TODO: this is not implemented properly, fix if you want to use THERMAL_PROTECTION_HEATBREAK
-      if (degChamber() > CHAMBER_MAXTEMP)
-        _temp_error(H_CHAMBER, PSTR(MSG_T_THERMAL_RUNAWAY), GET_TEXT(MSG_THERMAL_RUNAWAY));
-    #endif
-
     #if WATCH_HEATBREAK
-      // Make sure temperature is increasing
-      if (watch_heatbreak.elapsed(ms)) {              // Time to check the chamber?
-        if (degChamber() < watch_heatbreak.target)    // Failed to increase enough?
-          _temp_error(H_HEATBREAK, PSTR(MSG_T_HEATING_FAILED), GET_TEXT(MSG_HEATING_FAILED_LCD));
-        else
-          start_watching_heatbreak();                 // Start again if the target is still far off
+    static_assert(HOTENDS == 1, "Multiple hotends not implemented" );
+    if (watch_heatbreak[0].elapsed(ms)) { // Time to check the heatbreak?
+        if (degHeatbreak(0) > watch_heatbreak[0].target) { // Failed to cool down enough
+          fatal_error(ErrCode::ERR_TEMPERATURE_HEATBREAK_COOLING_TOO_SLOW); // Red screen
+        } else {
+          start_watching_heatbreak(0); // Start again if the target still was not reached
+        }
       }
     #endif
 
@@ -1671,7 +1573,13 @@ void Temperature::manage_heater() {
         #if HOTENDS > 1
           #error not supported
         #endif
-        if (WITHIN(temp_heatbreak[0].celsius, HEATBREAK_MINTEMP, HEATBREAK_MAXTEMP)) {
+        // iX has a non-constant maxtemp for the heatbreak, so we need to explicitly set it
+        #if PRINTER_IS_PRUSA_iX()
+        int16_t heatbreak_maxtemp = degTargetHeatbreak(active_extruder) + HEATBREAK_MAXTEMP_OFFSET;
+        #else
+        int16_t heatbreak_maxtemp = HEATBREAK_MAXTEMP;
+        #endif
+        if (WITHIN(temp_heatbreak[0].celsius, HEATBREAK_MINTEMP, heatbreak_maxtemp)) {
           #if ENABLED(HEATBREAK_LIMIT_SWITCHING)
             if (temp_heatbreak[0].celsius >= temp_heatbreak[0].target + TEMP_HEATBREAK_HYSTERESIS)
               temp_heatbreak[0].soft_pwm_amount = 0;
@@ -1682,14 +1590,14 @@ void Temperature::manage_heater() {
             set_fan_speed(HEATBREAK_FAN_ID, temp_heatbreak[0].soft_pwm_amount);
           #endif
         } else {
+          #if WATCH_HEATBREAK
+          if(watch_heatbreak[0].next_ms == 0) { // if we are not watching heatbreak (not in process of cooling down)
+            fatal_error(ErrCode::ERR_TEMPERATURE_HEATBREAK_MAXTEMP_ERR); // Red screen
+          }
+          #endif
           temp_heatbreak[0].soft_pwm_amount = 255;
           set_fan_speed(HEATBREAK_FAN_ID, temp_heatbreak[0].soft_pwm_amount);
         }
-      #endif
-
-      #if ENABLED(THERMAL_PROTECTION_HEATBREAK)
-        #error TODO: this is not implemented properly, fix if you want to use THERMAL_PROTECTION_HEATBREAK
-        thermal_runaway_protection(tr_state_machine_heatbreak, temp_heatbreak.celsius, temp_heatbreak.target, H_HEATBREAK, THERMAL_PROTECTION_HEATBREAK_PERIOD, THERMAL_PROTECTION_HEATBREAK_HYSTERESIS);
       #endif
     }
   #endif // HAS_TEMP_HEATBREAK
@@ -1701,9 +1609,9 @@ void Temperature::manage_heater() {
     #elif HOTENDS
       #error "This is made for one hotend!"
     #endif /* HOTENDS */
-    #if HAS_HEATED_BED
+    #if HAS_LOCAL_BED()
       analogWrite_HEATER_BED(temp_bed.soft_pwm_amount);
-    #endif /* HAS_HEATED_BED */
+    #endif
   #endif
 
   #if HAS_FAN0
@@ -1744,7 +1652,7 @@ void Temperature::suspend_heatbreak_fan(millis_t ms) {
   // TODO: why do have next_heatbreak_check_ms instead of using the nicer watch_heatbreak?
   next_heatbreak_check_ms = millis() + ms;
 
-  HOTEND_LOOP(){
+  for (int8_t e = 0; e < HOTENDS; e++){
     temp_heatbreak[e].soft_pwm_amount = 0;
   }
   WRITE_HEATER_HEATBREAK(LOW);
@@ -1818,7 +1726,7 @@ constexpr float compensate_bed_temperature(float celsius) {
   }
   return celsius;
 }
-#elif PRINTER_IS_PRUSA_MINI() || PRINTER_IS_PRUSA_XL() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_XL_DEV_KIT()
+#elif PRINTER_IS_PRUSA_MINI() || PRINTER_IS_PRUSA_XL() || PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_XL_DEV_KIT() || PRINTER_IS_PRUSA_COREONEL()
 constexpr float compensate_bed_temperature(float celsius) {
   return celsius;
 }
@@ -1862,9 +1770,7 @@ constexpr float compensate_bed_temperature(float celsius) {
   float Temperature::analog_to_celsius_heatbreak(const int raw) {
     #if ENABLED(HEATBREAK_USES_THERMISTOR)
       #if (BOARD_IS_XBUDDY())
-          uint8_t loveboard_bom = hwio_get_loveboard_bomid();
-          if ((loveboard_bom < 33 && loveboard_bom != 0) // error -> expect more common variant
-              || loveboard_bom == 0xff) { // error when run in simulator -> simulator uses table 5
+          if (buddy::hw::Configuration::Instance().needs_heatbreak_thermistor_table_5()) {
               SCAN_THERMISTOR_TABLE((TT_NAME(5)), (COUNT(TT_NAME(5))));
           } else {
               SCAN_THERMISTOR_TABLE(HEATBREAK_TEMPTABLE, HEATBREAK_TEMPTABLE_LEN);
@@ -1890,6 +1796,58 @@ constexpr float compensate_bed_temperature(float celsius) {
   }
 #endif // HAS_TEMP_BOARD
 
+#if HAS_AC_CONTROLLER()
+
+static void translate_ac_controller_faults(const char* pubby_name, ac_controller::Faults faults) {
+  if (!faults) return;
+
+  // Some faults are intentionally missing, because they shouldn't occur in normal printer operation.
+  // We might as well BSOD when they do. No need to waste FLASH for them and error page would be pointless too.
+
+  if (faults & ac_controller::Faults::RCD_TRIPPED) return fatal_error(ErrCode::ERR_ELECTRO_AC_CONTROLLER_RCD_TRIPPED);
+  if (faults & ac_controller::Faults::POWERPANIC) return fatal_error(ErrCode::ERR_ELECTRO_AC_CONTROLLER_POWERPANIC);
+  // ac_controller::Faults::OVERHEAT intentionally missing
+  // Neither PSU NTC nor triac NTC are physically present on CORE One L version of AC controller
+  if (faults & ac_controller::Faults::PSU_FAN_NOK) return fatal_error(ErrCode::ERR_ELECTRO_AC_CONTROLLER_PSU_FAN_NOK);
+  // ac_controller::Faults::PSU_NTC_DISCONNECT intentionally missing
+  // ac_controller::Faults::PSU_NTC_SHORT intentionally missing
+  // PSU NTC is not physically present on CORE One L version of AC controller
+  if (faults & ac_controller::Faults::BED_NTC_DISCONNECT) return fatal_error(ErrCode::ERR_TEMPERATURE_AC_CONTROLLER_BED_NTC_DISCONNECT);
+  if (faults & ac_controller::Faults::BED_NTC_SHORT) return fatal_error(ErrCode::ERR_TEMPERATURE_AC_CONTROLLER_BED_NTC_SHORT);
+  // ac_controller::Faults::TRIAC_NTC_DISCONNECT intentionally missing
+  // ac_controller::Faults::TRIAC_NTC_SHORT intentionally missing
+  // Triac NTC is not physically present on CORE One L version of AC controller
+  if (faults & ac_controller::Faults::BED_FAN0_NOK) return fatal_error(ErrCode::ERR_ELECTRO_AC_CONTROLLER_BED_FAN0_NOK);
+  if (faults & ac_controller::Faults::BED_FAN1_NOK) return fatal_error(ErrCode::ERR_ELECTRO_AC_CONTROLLER_BED_FAN1_NOK);
+  // ac_controller::Faults::TRIAC_FAN_NOK intentionally missing
+  // Triac fan is not physically present on CORE One L version of AC controller
+  if (faults & ac_controller::Faults::GRID_NOK) return fatal_error(ErrCode::ERR_ELECTRO_AC_CONTROLLER_GRID_NOK);
+  // ac_controller::Faults::CHAMBER_LOAD_NOK intentionally missing
+  // Chamber heater is not physically present on CORE One L version of AC controller
+  if (faults & ac_controller::Faults::BED_LOAD_NOK) return fatal_error(ErrCode::ERR_ELECTRO_AC_CONTROLLER_BED_LOAD_NOK);
+  if (faults & ac_controller::Faults::PSU_NOK) return fatal_error(ErrCode::ERR_ELECTRO_AC_CONTROLLER_PSU_NOK);
+  if (faults & ac_controller::Faults::BED_RUNAWAY) return fatal_error(ErrCode::ERR_TEMPERATURE_BED_THERMAL_RUNAWAY);
+  if (faults & ac_controller::Faults::MCU_OVERHEAT) return fatal_error(ErrCode::ERR_TEMPERATURE_PUBBY_MCU_OVERHEAT, pubby_name);
+  if (faults & ac_controller::Faults::PCB_OVERHEAT) return fatal_error(ErrCode::ERR_TEMPERATURE_PUBBY_PCB_OVERHEAT, pubby_name);
+  if (faults & ac_controller::Faults::DATA_TIMEOUT) return fatal_error(ErrCode::ERR_ELECTRO_PUBBY_DATA_TIMEOUT, pubby_name);
+  if (faults & ac_controller::Faults::HEARTBEAT_MISSING) return fatal_error(ErrCode::ERR_ELECTRO_PUBBY_HEARTBEAT_MISSING, pubby_name);
+  // ac_controller::Faults::UNKNOWN intentionally missing
+  // This fault is only ever triggered by development version of the AC controller
+
+  // We still want to provide some details if the fault slips to production.
+  bsod("%s faults=%" PRIu32, pubby_name, static_cast<uint32_t>(faults));
+}
+
+void translate_ac_controller_faults() {
+  static constexpr const char* pubby_name = "AC controller";
+  if (const auto faults = buddy::puppies::ac_controller.get_faults()) {
+    translate_ac_controller_faults(pubby_name, *faults);
+  } else {
+    fatal_error(ErrCode::ERR_SYSTEM_PUPPY_NOT_RESPONDING, pubby_name);
+  }
+}
+#endif
+
 /**
  * Get the raw values into the actual temperatures.
  * The raw values are created in interrupt context,
@@ -1899,14 +1857,17 @@ constexpr float compensate_bed_temperature(float celsius) {
 void Temperature::updateTemperaturesFromRawValues() {
   #if HOTENDS
     #if ENABLED(PRUSA_TOOLCHANGER)
-      HOTEND_LOOP() temp_hotend[e].celsius = prusa_toolchanger.getTool(e).get_hotend_temp();
+      for (int8_t e = 0; e < HOTENDS; e++) temp_hotend[e].celsius = prusa_toolchanger.getTool(e).get_hotend_temp();
     #else
-      HOTEND_LOOP() temp_hotend[e].celsius = analog_to_celsius_hotend(temp_hotend[e].raw, e);
+      for (int8_t e = 0; e < HOTENDS; e++) temp_hotend[e].celsius = analog_to_celsius_hotend(temp_hotend[e].raw, e);
     #endif
   #endif
   #if HAS_HEATED_BED
     #if HAS_MODULAR_BED()
       updateModularBedTemperature();
+    #elif HAS_AC_CONTROLLER()
+      translate_ac_controller_faults();
+      temp_bed.celsius = buddy::puppies::ac_controller.get_bed_temp().value_or(0);
     #else
       temp_bed.celsius = analog_to_celsius_bed(temp_bed.raw);
     #endif
@@ -1935,9 +1896,9 @@ void Temperature::updateTemperaturesFromRawValues() {
   #endif
   #if HAS_TEMP_HEATBREAK
     #if ENABLED(PRUSA_TOOLCHANGER)
-      HOTEND_LOOP() temp_heatbreak[e].celsius = prusa_toolchanger.getTool(e).get_heatbreak_temp();
+      for (int8_t e = 0; e < HOTENDS; e++) temp_heatbreak[e].celsius = prusa_toolchanger.getTool(e).get_heatbreak_temp();
     #else
-      HOTEND_LOOP() temp_heatbreak[e].celsius = analog_to_celsius_heatbreak(temp_heatbreak[e].raw);
+      for (int8_t e = 0; e < HOTENDS; e++) temp_heatbreak[e].celsius = analog_to_celsius_heatbreak(temp_heatbreak[e].raw);
     #endif
   #endif
   #if HAS_TEMP_BOARD
@@ -2014,10 +1975,6 @@ void Temperature::init() {
 
   #if HAS_LOCAL_BED()
     WRITE_HEATER_BED(LOW);
-  #endif
-
-  #if HAS_HEATED_CHAMBER
-    OUT_WRITE(HEATER_CHAMBER_PIN, HEATER_CHAMBER_INVERTING);
   #endif
 
   #if HAS_FAN0
@@ -2161,15 +2118,6 @@ void Temperature::init() {
     #endif
   #endif // HAS_HEATED_BED
 
-  #if HAS_HEATED_CHAMBER
-    #ifdef CHAMBER_MINTEMP
-      while (analog_to_celsius_chamber(mintemp_raw_CHAMBER) < CHAMBER_MINTEMP) mintemp_raw_CHAMBER += TEMPDIR(CHAMBER) * (OVERSAMPLENR);
-    #endif
-    #ifdef CHAMBER_MAXTEMP
-      while (analog_to_celsius_chamber(maxtemp_raw_CHAMBER) > CHAMBER_MAXTEMP) maxtemp_raw_CHAMBER -= TEMPDIR(CHAMBER) * (OVERSAMPLENR);
-    #endif
-  #endif
-
   #if HAS_TEMP_HEATBREAK
     #ifdef HEATBREAK_MINTEMP
       while (analog_to_celsius_heatbreak(mintemp_raw_HEATBREAK) < HEATBREAK_MINTEMP) mintemp_raw_HEATBREAK += TEMPDIRHEATBREAK * (OVERSAMPLENR);
@@ -2186,6 +2134,9 @@ void Temperature::init() {
       while (analog_to_celsius_board(maxtemp_raw_BOARD) > BOARD_MAXTEMP) maxtemp_raw_BOARD -= TEMPDIRBOARD * (OVERSAMPLENR);
     #endif
   #endif
+
+  // At the end of init, load the temperatures
+  updateTemperaturesFromRawValues();
 }
 
 #if WATCH_HOTENDS
@@ -2221,20 +2172,26 @@ void Temperature::init() {
   }
 #endif
 
-#if WATCH_CHAMBER
+#if WATCH_HEATBREAK
   /**
-   * Start Heating Sanity Check for chamber that is below
+   * Start cooling check for heatbreak that is above
    * its target temperature by a configurable margin.
-   * This is called when the temperature is set. (M141, M191)
+   * This is called when the target temperature for heatbreak is set. 
    */
-  void Temperature::start_watching_chamber() {
-    if (degChamber() < degTargetChamber() - (WATCH_CHAMBER_TEMP_INCREASE + TEMP_CHAMBER_HYSTERESIS + 1)) {
-      watch_chamber.target = degChamber() + WATCH_CHAMBER_TEMP_INCREASE;
-      watch_chamber.next_ms = millis() + (WATCH_CHAMBER_TEMP_PERIOD) * 1000UL;
+  void Temperature::start_watching_heatbreak(const uint8_t E_NAME) {
+    const uint8_t ee = HOTEND_INDEX;
+
+    // If the target temperature is set and the heatbreak is above the target + offset, keep watching the cooling
+    if (degTargetHeatbreak(ee) > 0 && degHeatbreak(ee) > degTargetHeatbreak(ee) + HEATBREAK_MAXTEMP_OFFSET) {
+      watch_heatbreak[ee].target = degHeatbreak(ee) - WATCH_HEATBREAK_TEMP_DECREASE;
+      watch_heatbreak[ee].next_ms = millis() + (WATCH_HEATBREAK_TEMP_PERIOD) * 1000UL;
     }
-    else
-      watch_chamber.next_ms = 0;
+    else {
+      // We have reached the target temperature or the target temperature is not set -> stop watching
+      watch_heatbreak[ee].next_ms = 0;
+    }
   }
+
 #endif
 
 #if HAS_THERMAL_PROTECTION
@@ -2418,7 +2375,7 @@ void Temperature::disable_heaters(Temperature::disable_bed_t disable_bed) {
   #endif
 
   #if HOTENDS
-    HOTEND_LOOP() setTargetHotend(0, e);
+    for (int8_t e = 0; e < HOTENDS; e++) setTargetHotend(0, e);
   #endif
 
   #if HAS_HEATED_BED
@@ -2429,10 +2386,6 @@ void Temperature::disable_heaters(Temperature::disable_bed_t disable_bed) {
       WRITE_HEATER_BED(LOW);
       #endif
     }
-  #endif
-
-  #if HAS_HEATED_CHAMBER
-    setTargetChamber(0);
   #endif
 
   #define DISABLE_HEATER(NR) { \
@@ -2458,12 +2411,6 @@ void Temperature::disable_heaters(Temperature::disable_bed_t disable_bed) {
         #endif // HOTENDS > 3
       #endif // HOTENDS > 2
     #endif // HOTENDS > 1
-  #endif
-
-  #if HAS_HEATED_CHAMBER
-    temp_chamber.target = 0;
-    temp_chamber.soft_pwm_amount = 0;
-    WRITE_HEATER_CHAMBER(LOW);
   #endif
 }
 
@@ -2501,7 +2448,7 @@ void Temperature::set_current_temp_raw() {
   #endif
 
   #if HAS_TEMP_HEATBREAK
-    HOTEND_LOOP() temp_heatbreak[e].update();
+    for (int8_t e = 0; e < HOTENDS; e++) temp_heatbreak[e].update();
   #endif
 
   #if HAS_TEMP_BOARD
@@ -2522,7 +2469,7 @@ void Temperature::readings_ready() {
   if (!temp_meas_ready) set_current_temp_raw();
 
   #if HOTENDS
-    HOTEND_LOOP() temp_hotend[e].reset();
+    for (int8_t e = 0; e < HOTENDS; e++) temp_hotend[e].reset();
   #endif
 
   #if HAS_HEATED_BED
@@ -2534,7 +2481,7 @@ void Temperature::readings_ready() {
   #endif
 
   #if HAS_TEMP_HEATBREAK
-    HOTEND_LOOP() temp_heatbreak[e].reset();
+    for (int8_t e = 0; e < HOTENDS; e++) temp_heatbreak[e].reset();
   #endif
 
   #if HAS_TEMP_BOARD
@@ -2618,19 +2565,8 @@ void Temperature::readings_ready() {
     #endif
   #endif
 
-  #if HAS_HEATED_CHAMBER
-    #if TEMPDIR(CHAMBER) < 0
-      #define CHAMBERCMP(A,B) ((A)<=(B))
-    #else
-      #define CHAMBERCMP(A,B) ((A)>=(B))
-    #endif
-    const bool chamber_on = (temp_chamber.target > 0);
-    if (CHAMBERCMP(temp_chamber.raw, maxtemp_raw_CHAMBER)) max_temp_error(H_CHAMBER);
-    if (chamber_on && CHAMBERCMP(mintemp_raw_CHAMBER, temp_chamber.raw)) min_temp_error(H_CHAMBER);
-  #endif
-
   #if HAS_TEMP_HEATBREAK
-    HOTEND_LOOP(){
+    for (int8_t e = 0; e < HOTENDS; e++){
       #if TEMPDIRHEATBREAK < 0
         #define HEATBREAKCMP(A,B) ((A)<=(B))
       #else
@@ -2670,7 +2606,6 @@ void Temperature::readings_ready() {
  *  - Prepare or Measure one of the raw ADC sensor values
  *  - Check new temperature values for MIN/MAX errors (kill on error)
  *  - Step the babysteps value for each axis towards 0
- *  - For PINS_DEBUGGING, monitor and report endstop pins
  *  - For ENDSTOP_INTERRUPTS_FEATURE check endstops if flagged
  *  - Call planner.tick to count down its "ignore" time
  */
@@ -2711,11 +2646,7 @@ void Temperature::isr() {
       static SoftPWM soft_pwm_bed;
     #endif
 
-    #if HAS_HEATED_CHAMBER
-      static SoftPWM soft_pwm_chamber;
-    #endif
-
-      #if HOTENDS || HAS_HEATED_BED || HAS_HEATED_CHAMBER
+      #if HOTENDS || HAS_HEATED_BED
         constexpr uint8_t pwm_mask =
           #if ENABLED(SOFT_PWM_DITHER)
             _BV(SOFT_PWM_SCALE) - 1
@@ -2758,10 +2689,6 @@ void Temperature::isr() {
         #if HAS_LOCAL_BED()
           _PWM_MOD(BED,soft_pwm_bed,temp_bed);
         #endif
-
-        #if HAS_HEATED_CHAMBER
-          _PWM_MOD(CHAMBER,soft_pwm_chamber,temp_chamber);
-        #endif
       }
       else {
         #define _PWM_LOW(N,S) do{ if (S.count <= pwm_count_tmp) WRITE_HEATER_##N(LOW); }while(0)
@@ -2787,10 +2714,6 @@ void Temperature::isr() {
 
         #if HAS_LOCAL_BED()
           _PWM_LOW(BED, soft_pwm_bed);
-        #endif
-
-        #if HAS_HEATED_CHAMBER
-          _PWM_LOW(CHAMBER, soft_pwm_chamber);
         #endif
       }
 
@@ -2989,11 +2912,7 @@ void Temperature::isr() {
     #endif
     #if HAS_TEMP_CHAMBER
       print_heater_state(degChamber()
-        #if HAS_HEATED_CHAMBER
-          , degTargetChamber()
-        #else
           , 0
-        #endif
         , H_CHAMBER
       );
     #endif // HAS_TEMP_CHAMBER
@@ -3013,7 +2932,7 @@ void Temperature::isr() {
     #endif // HAS_TEMP_BOARD
 
     #if HOTENDS > 1
-      HOTEND_LOOP() print_heater_state(degHotend(e), degTargetHotend(e)
+      for (int8_t e = 0; e < HOTENDS; e++) print_heater_state(degHotend(e), degTargetHotend(e)
         , (heater_ind_t)e
       );
     #endif
@@ -3021,9 +2940,7 @@ void Temperature::isr() {
     #if HAS_HEATED_BED
       SERIAL_ECHOPAIR(" B@:", getHeaterPower(H_BED));
     #endif
-    #if HAS_HEATED_CHAMBER
-      SERIAL_ECHOPAIR(" C@:", getHeaterPower(H_CHAMBER));
-    #elif HAS_CHAMBER_API()
+    #if HAS_CHAMBER_API()
       auto current_chamber_temperature = buddy::chamber().current_temperature();
       if (current_chamber_temperature.has_value()) SERIAL_ECHOPAIR(" C@:", current_chamber_temperature.value());
     #endif
@@ -3032,7 +2949,7 @@ void Temperature::isr() {
       SERIAL_ECHOPAIR(" HBR@:", getHeaterPower((heater_ind_t)(H_HEATBREAK_E0 + target_extruder)));
     #endif
     #if HOTENDS > 1
-      HOTEND_LOOP() {
+      for (int8_t e = 0; e < HOTENDS; e++) {
         SERIAL_ECHOPAIR(" @", e);
         SERIAL_CHAR(':');
         SERIAL_ECHO(getHeaterPower((heater_ind_t)e));
@@ -3064,6 +2981,9 @@ void Temperature::isr() {
 
     void Temperature::auto_report_temperatures() {
       if (auto_report_temp_interval && ELAPSED(millis(), next_temp_report_ms)) {
+        // Do not log heater states, only print to serial
+        SerialLoggingDisabler sld;
+
         next_temp_report_ms = millis() + 1000UL * auto_report_temp_interval;
         PORT_REDIRECT(SERIAL_BOTH);
         print_heater_states(active_extruder);
@@ -3171,6 +3091,9 @@ void Temperature::isr() {
 
         now = millis();
         if (ELAPSED(now, next_temp_ms)) { // Print temp & remaining time every 1s while waiting
+          // Do not log heater states, only print to serial
+          SerialLoggingDisabler sld;
+
           next_temp_ms = now + 1000UL;
           print_heater_states(target_extruder);
           SERIAL_ECHOPGM(" W:");
@@ -3188,7 +3111,7 @@ void Temperature::isr() {
         idle(true);
 
         const float temp = degHotend(target_extruder);
-        statusGuard.update<PrintStatusMessage::waiting_for_hotend_temp>({.current = temp, .target = target_temp});
+        statusGuard.update<PrintStatusMessage::waiting_for_hotend_temp>({.progress{ .current = temp, .target = target_temp }, .tool=target_extruder});
 
         // Prevent a wait-forever situation if R is misused i.e. M109 R0
         if (wants_to_cool) {
@@ -3252,6 +3175,10 @@ void Temperature::isr() {
         advanced_modular_bed->update_bedlet_temps(temp_bed.enabled_mask, temp_bed.target);
     #endif
 
+    #if HAS_AC_CONTROLLER()
+        buddy::puppies::ac_controller.set_bed_target_temp(temp_bed.target);
+    #endif
+
         start_watching_bed();
     }
 
@@ -3298,6 +3225,9 @@ void Temperature::isr() {
 
         now = millis();
         if (ELAPSED(now, next_temp_ms)) { //Print Temp Reading every 1 second while heating up.
+          // Do not log heater states, only print to serial
+          SerialLoggingDisabler sld;
+
           next_temp_ms = now + 1000UL;
           print_heater_states(active_extruder);
           #if TEMP_BED_RESIDENCY_TIME > 0
@@ -3354,8 +3284,6 @@ void Temperature::isr() {
     }
 
     void Temperature::init_bed_frame_est_celsius() {
-        static constexpr float room_temperature = 25.0f;
-
         if (temp_bed.celsius < room_temperature) {
           // If around room temperature, init directly to bed temperature
           bed_frame_est_celsius = temp_bed.celsius;
@@ -3374,6 +3302,22 @@ void Temperature::isr() {
         if (fabs(temp_bed.target - bed_frame_est_celsius) < 0.5f) {
             log_info(MarlinServer, "Absorbing heat: already stable, continuing");
             return;
+        }
+
+        if (marlin_debug_flags & MARLIN_DEBUG_DRYRUN) {
+            // In dry run, the bed is left cold. The temperature would never stabilize.
+            return;
+        }
+
+        if (temp_bed.target < bed_frame_est_celsius) {
+          // Do not wait for cooldown. Cooling is slow and propagated evenly across the bed, it won't warp the bed differently.
+          log_info(MarlinServer, "Absorbing heat: target lower than actual temp, continuing");
+          return;
+        }
+
+        if (temp_bed.target <= room_temperature) {
+          log_info(MarlinServer, "Absorbing heat: target lower than room temp, continuing");
+          return;
         }
 
         SkippableGCode::Guard skippable_operation;
@@ -3403,106 +3347,6 @@ void Temperature::isr() {
     }
 
   #endif // HAS_HEATED_BED
-
-  #if HAS_HEATED_CHAMBER
-
-    #ifndef MIN_COOLING_SLOPE_DEG_CHAMBER
-      #define MIN_COOLING_SLOPE_DEG_CHAMBER 1.50
-    #endif
-    #ifndef MIN_COOLING_SLOPE_TIME_CHAMBER
-      #define MIN_COOLING_SLOPE_TIME_CHAMBER 60
-    #endif
-
-    bool Temperature::wait_for_chamber(const bool no_wait_for_cooling/*=true*/) {
-      #if TEMP_CHAMBER_RESIDENCY_TIME > 0
-        millis_t residency_start_ms = 0;
-        // Loop until the temperature has stabilized
-        #define TEMP_CHAMBER_CONDITIONS (!residency_start_ms || PENDING(now, residency_start_ms + (TEMP_CHAMBER_RESIDENCY_TIME) * 1000UL))
-      #else
-        // Loop until the temperature is very close target
-        #define TEMP_CHAMBER_CONDITIONS (wants_to_cool ? isCoolingChamber() : isHeatingChamber())
-      #endif
-
-      float target_temp = -1, old_temp = 9999;
-      bool wants_to_cool = false, first_loop = true;
-      wait_for_heatup = true;
-      millis_t now, next_temp_ms = 0, next_cool_check_ms = 0;
-
-      #if DISABLED(BUSY_WHILE_HEATING) && ENABLED(HOST_KEEPALIVE_FEATURE)
-        KEEPALIVE_STATE(NOT_BUSY);
-      #endif
-
-      do {
-        // Check if we're aborting
-        if (planner.draining()) break;
-
-        // Target temperature might be changed during the loop
-        if (target_temp != degTargetChamber()) {
-          wants_to_cool = isCoolingChamber();
-          target_temp = degTargetChamber();
-
-          // Exit if S<lower>, continue if S<higher>, R<lower>, or R<higher>
-          if (no_wait_for_cooling && wants_to_cool) break;
-        }
-
-        now = millis();
-        if (ELAPSED(now, next_temp_ms)) { //Print Temp Reading every 1 second while heating up.
-          next_temp_ms = now + 1000UL;
-          print_heater_states(active_extruder);
-          #if TEMP_CHAMBER_RESIDENCY_TIME > 0
-            SERIAL_ECHOPGM(" W:");
-            if (residency_start_ms)
-              SERIAL_ECHO(long((((TEMP_CHAMBER_RESIDENCY_TIME) * 1000UL) - (now - residency_start_ms)) / 1000UL));
-            else
-              SERIAL_CHAR('?');
-          #endif
-          SERIAL_EOL();
-        }
-
-        idle(true);
-        gcode.reset_stepper_timeout(); // Keep steppers powered
-
-        const float temp = degChamber();
-
-        #if TEMP_CHAMBER_RESIDENCY_TIME > 0
-
-          const float temp_diff = ABS(target_temp - temp);
-
-          if (!residency_start_ms) {
-            // Start the TEMP_CHAMBER_RESIDENCY_TIME timer when we reach target temp for the first time.
-            if (temp_diff < TEMP_CHAMBER_WINDOW) {
-              residency_start_ms = now;
-              if (first_loop) residency_start_ms += (TEMP_CHAMBER_RESIDENCY_TIME) * 1000UL;
-            }
-          }
-          else if (temp_diff > TEMP_CHAMBER_HYSTERESIS) {
-            // Restart the timer whenever the temperature falls outside the hysteresis.
-            residency_start_ms = now;
-          }
-
-        #endif // TEMP_CHAMBER_RESIDENCY_TIME > 0
-
-        // Prevent a wait-forever situation if R is misused i.e. M191 R0
-        if (wants_to_cool) {
-          // Break after MIN_COOLING_SLOPE_TIME_CHAMBER seconds
-          // if the temperature did not drop at least MIN_COOLING_SLOPE_DEG_CHAMBER
-          if (!next_cool_check_ms || ELAPSED(now, next_cool_check_ms)) {
-            if (old_temp - temp < float(MIN_COOLING_SLOPE_DEG_CHAMBER)) break;
-            next_cool_check_ms = now + 1000UL * MIN_COOLING_SLOPE_TIME_CHAMBER;
-            old_temp = temp;
-          }
-        }
-
-        first_loop = false;
-
-      } while (wait_for_heatup && TEMP_CHAMBER_CONDITIONS);
-
-      if (wait_for_heatup) ui.reset_status();
-
-      return wait_for_heatup;
-    }
-
-  #endif // HAS_HEATED_CHAMBER
 
 #endif // HAS_TEMP_SENSOR
 

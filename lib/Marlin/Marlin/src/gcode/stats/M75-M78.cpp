@@ -64,46 +64,4 @@ void GcodeSuite::M77() {
  print_job_timer.stop();
 }
 
-#if ENABLED(PRINTCOUNTER)
-
-/**
- *### M78: Show statistical information about the print jobs <a href="https://reprap.org/wiki/G-code#M78:_Show_statistical_information_about_the_print_jobs">M78: Show statistical information about the print jobs</a>
- *
- * Not active
- *
- *#### Usage
- *
- *    M78 [ S | R ]
- *
- *#### Parameters
- *
- *  - `S78` - Reset the statistics
- *  - `R` - Reset service interval
- *
- *#### Examples
- *
- *    M78     ; Show statistics
- *    M78 S78 ; Reset statistics
- *    M78 R   ; Reset service interval
- */
-void GcodeSuite::M78() {
-  if (parser.intval('S') == 78) {
-    print_job_timer.initStats();
-    ui.reset_status();
-    return;
-  }
-
-  #if HAS_SERVICE_INTERVALS
-    if (parser.seenval('R')) {
-      print_job_timer.resetServiceInterval(parser.value_int());
-      ui.reset_status();
-      return;
-    }
-  #endif
-
-  print_job_timer.showStats();
-}
-
 /** @}*/
-
-#endif // PRINTCOUNTER

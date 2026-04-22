@@ -117,5 +117,40 @@ function(define_enum_option)
   configure_file(${input_file} ${output_file} COPYONLY)
 endfunction()
 
+function(define_int_option)
+  set(one_value_args NAME VALUE)
+  cmake_parse_arguments(ARG "" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+  if(NOT ARG_VALUE MATCHES "^-?[0-9]+$")
+    message(FATAL_ERROR "Option ${ARG_NAME} is not valid integer: \"${ARG_VALUE}\"")
+  endif()
+
+  set(option_name "${ARG_NAME}")
+  set(option_value "${ARG_VALUE}")
+  string(TOLOWER "${option_name}" option_name_lower)
+  string(TOUPPER "${option_name}" option_name_upper)
+
+  # create file with C header
+  set(input_file_prefix "${OPTIONS_INCLUDE_DIR}/option/${option_name_lower}")
+  set(input_file "${input_file_prefix}.in")
+  set(output_file "${input_file_prefix}.h")
+  file(WRITE "${input_file}" "#pragma once\n\n")
+
+  # create main option getter: #define OPTION_NAME() <value>
+  file(APPEND "${input_file}" "#define ${option_name_upper}() ${option_value}\n")
+  file(APPEND "${input_file}" "\n")
+
+  file(APPEND "${input_file}" "#ifdef __cplusplus\n")
+  file(APPEND "${input_file}" "namespace option {\n\n")
+
+  string(TOLOWER "${option_value}" option_value_lower)
+  file(APPEND "${input_file}" "inline constexpr int ${option_name_lower} = ${option_value};\n\n")
+
+  file(APPEND "${input_file}" "};\n")
+  file(APPEND "${input_file}" "#endif // __cplusplus\n")
+
+  configure_file(${input_file} ${output_file} COPYONLY)
+endfunction()
+
 add_library(options INTERFACE)
 target_include_directories(options INTERFACE ${OPTIONS_INCLUDE_DIR})

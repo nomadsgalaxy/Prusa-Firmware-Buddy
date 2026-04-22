@@ -279,10 +279,3 @@ class WindowMenuItem : public IWindowMenuItem {
 public:
     using IWindowMenuItem::IWindowMenuItem;
 };
-
-template <typename T>
-concept UpdatableMenuItem = requires(T a) {
-    requires std::is_base_of_v<IWindowMenuItem, T>;
-
-    { a.update() };
-};

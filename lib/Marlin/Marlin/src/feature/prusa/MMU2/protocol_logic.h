@@ -44,7 +44,7 @@ public:
     #include "mmu2_serial.h"
 #elif HAS_XBUDDY_EXTENSION()
     #include <puppies/xbuddy_extension.hpp>
-    #include <xbuddy_extension_shared/mmu_bridge.hpp>
+    #include <xbuddy_extension/mmu_bridge.hpp>
 #else
     #error
 #endif
@@ -72,13 +72,25 @@ enum StepStatus : uint_fast8_t {
     PrinterError, ///< printer's explicit error - MMU is fine, but the printer was unable to complete the requested operation
     CommunicationRecovered,
     ButtonPushed, ///< The MMU reported the user pushed one of its three buttons.
+    PrematureFinish, ///< shortly before the MMU operation has been accomplished, the printer decided to move on with it's own work - used to break from manage_response() before a real Finish occurs
 };
 
-inline constexpr uint32_t linkLayerTimeout = 2000; ///< default link layer communication timeout
-inline constexpr uint32_t dataLayerTimeout = linkLayerTimeout * 3; ///< data layer communication timeout
-inline constexpr uint32_t heartBeatPeriod = linkLayerTimeout / 2; ///< period of heart beat messages (Q0)
+// Querying the MMU is performed every heartBeatPeriod_ms.
+// On UART, we can go down to 10ms as the MMU responds aways within 1ms.
+// On Modbus with all the translation layers, this is 10x slower and that must be accounted for - hence 100ms period seems to be fine.
+// Why do we want the fastest possible heartBeatPeriod_ms?
+// Achieving faster load/unload speeds requires a more precise overview of MMU's states
+// - esp. when the MMU is pushing fillament fast and looking for the fillament sensor.
+// The printer starts spinning the E-motor when the MMU transfers from FeedingToBondtech to FeedingToFSensor state.
+// This change must be caught fast.
+// The MMU has no way of informing the printer asynchronously, therefore the printer must issue queries faster.
+// The original 1s delay was just too slow (originally set for MK3S which has a different extruder design)
+// and even with 140mm/s sometimes caused the extruder starting too late.
+inline constexpr uint32_t linkLayerTimeout_ms = 200; ///< default link layer communication timeout
+inline constexpr uint32_t dataLayerTimeout_ms = linkLayerTimeout_ms * 3; ///< data layer communication timeout
+inline constexpr uint32_t heartBeatPeriod_ms = linkLayerTimeout_ms / 2; ///< period of heart beat messages (Q0)
 
-static_assert(heartBeatPeriod < linkLayerTimeout && linkLayerTimeout < dataLayerTimeout, "Incorrect ordering of timeouts");
+static_assert(heartBeatPeriod_ms < linkLayerTimeout_ms && linkLayerTimeout_ms < dataLayerTimeout_ms, "Incorrect ordering of timeouts");
 
 ///< Filter of short consecutive drop outs which are recovered instantly
 class DropOutFilter {

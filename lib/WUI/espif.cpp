@@ -29,7 +29,7 @@
 #include <buddy/esp_uart_dma_buffer_rx.hpp>
 #include "data_exchange.hpp"
 #include "pbuf_rx.h"
-#include "scope_guard.hpp"
+#include <raii/scope_guard.hpp>
 #include "wui.h"
 #include <tasks.hpp>
 #include <option/has_embedded_esp32.h>

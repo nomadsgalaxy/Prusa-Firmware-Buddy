@@ -69,8 +69,6 @@ void safe_delay(millis_t ms) {
 
   void log_machine_info() {
     SERIAL_ECHOLNPGM("Machine Type: "
-      TERN_(DELTA,         "Delta")
-      TERN_(IS_SCARA,      "SCARA")
       TERN_(IS_CORE,       "Core")
       TERN_(MARKFORGED_XY, "MarkForgedXY")
       TERN_(MARKFORGED_YX, "MarkForgedYX")
@@ -107,9 +105,9 @@ void safe_delay(millis_t ms) {
           SERIAL_ECHOPGM(" (Aligned With");
 
         if (probe.offset_xy.y > 0)
-          SERIAL_ECHOF(F(TERN(IS_SCARA, "-Distal", "-Back")));
+          SERIAL_ECHOF(F("-Back"));
         else if (probe.offset_xy.y < 0)
-          SERIAL_ECHOF(F(TERN(IS_SCARA, "-Proximal", "-Front")));
+          SERIAL_ECHOF(F("-Front"));
         else if (probe.offset_xy.x != 0)
           SERIAL_ECHOPGM("-Center");
 

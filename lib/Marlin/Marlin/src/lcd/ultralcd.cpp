@@ -40,21 +40,6 @@
   char MarlinUI::status_message[MAX_MESSAGE_LENGTH + 1];
 #endif
 
-#if ENABLED(LCD_SET_PROGRESS_MANUALLY)
-  MarlinUI::progress_t MarlinUI::progress_override; // = 0
-#endif
-
-#if HAS_BUZZER
-  #include "../libs/buzzer.h"
-  void MarlinUI::buzz(const long duration, const uint16_t freq) {
-    #if ENABLED(LCD_USE_I2C_BUZZER)
-      lcd.buzz(duration, freq);
-    #elif USE_BEEPER
-      buzzer.tone(duration, freq);
-    #endif
-  }
-#endif
-
 #if HAS_GUI()
 
   #if ENABLED(EXTENSIBLE_UI)
@@ -65,33 +50,8 @@
   /////////////// Status Line ////////////////
   ////////////////////////////////////////////
 
-  #if ENABLED(STATUS_MESSAGE_SCROLLING)
-    void MarlinUI::advance_status_scroll() {
-      // Advance by one UTF8 code-word
-      if (status_scroll_offset < utf8_strlen(status_message))
-        while (!START_OF_UTF8_CHAR(status_message[++status_scroll_offset]));
-      else
-        status_scroll_offset = 0;
-    }
-    char* MarlinUI::status_and_len(uint8_t &len) {
-      char *out = status_message + status_scroll_offset;
-      len = utf8_strlen(out);
-      return out;
-    }
-  #endif
-
   void MarlinUI::finish_status(const bool persist) {
-
-    #if !(ENABLED(LCD_PROGRESS_BAR) && (PROGRESS_MSG_EXPIRE > 0))
-      UNUSED(persist);
-    #endif
-
-    #if ENABLED(LCD_PROGRESS_BAR)
-      progress_bar_ms = millis();
-      #if PROGRESS_MSG_EXPIRE > 0
-        expire_status_ms = persist ? 0 : progress_bar_ms + PROGRESS_MSG_EXPIRE;
-      #endif
-    #endif
+    (void)persist;
 
     #if ENABLED(EXTENSIBLE_UI)
       if (has_status()) {
@@ -180,30 +140,11 @@
    */
   void MarlinUI::reset_status() {
     PGM_P printing = GET_TEXT(MSG_PRINTING);
-    #if SERVICE_INTERVAL_1 > 0
-      static const char service1[] PROGMEM = { "> " SERVICE_NAME_1 "!" };
-    #endif
-    #if SERVICE_INTERVAL_2 > 0
-      static const char service2[] PROGMEM = { "> " SERVICE_NAME_2 "!" };
-    #endif
-    #if SERVICE_INTERVAL_3 > 0
-      static const char service3[] PROGMEM = { "> " SERVICE_NAME_3 "!" };
-    #endif
     PGM_P msg = nullptr;
     if (printingIsPaused())
       msg = print_paused;
     else if (print_job_timer.isRunning())
       msg = printing;
-
-    #if SERVICE_INTERVAL_1 > 0
-      else if (print_job_timer.needsService(1)) msg = service1;
-    #endif
-    #if SERVICE_INTERVAL_2 > 0
-      else if (print_job_timer.needsService(2)) msg = service2;
-    #endif
-    #if SERVICE_INTERVAL_3 > 0
-      else if (print_job_timer.needsService(3)) msg = service3;
-    #endif
 
     if(msg) {
       set_status_P(msg, -1);
@@ -240,18 +181,5 @@
     #endif
     print_job_timer.start(); // Also called by M24
   }
-
-  #if HAS_PRINT_PROGRESS
-
-    MarlinUI::progress_t MarlinUI::_get_progress() {
-      #if ENABLED(LCD_SET_PROGRESS_MANUALLY)
-        const progress_t p = progress_override & PROGRESS_MASK;
-      #else
-        constexpr progress_t p = 0;
-      #endif
-      return p;
-    }
-
-  #endif
 
 #endif // HAS_GUI()

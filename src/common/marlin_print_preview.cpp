@@ -10,22 +10,29 @@
 #include "marlin_server.hpp"
 #include <media_prefetch_instance.hpp>
 #include "timing.h"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "filament.hpp"
 #include "M70X.hpp"
 #include <option/developer_mode.h>
 #include "printers.h"
 #include <Marlin/src/module/motion.h>
 #include <option/has_gui.h>
-#include <selftest_result_evaluation.hpp>
 #if HAS_GUI()
     #include "screen_menu_filament_changeall.hpp"
+#endif
+#if HAS_E2EE_SUPPORT()
+    #include <e2ee/key.hpp>
 #endif
 
 #include <option/has_toolchanger.h>
 #if ENABLED(PRUSA_TOOLCHANGER)
     #include <module/prusa/toolchanger.h>
 #endif /*ENABLED(PRUSA_TOOLCHANGER)*/
+
+#include <option/has_selftest.h>
+#if HAS_SELFTEST()
+    #include <selftest_result_evaluation.hpp>
+#endif
 
 #include <config_store/store_instance.hpp>
 #include "tools_mapping.hpp"
@@ -84,6 +91,10 @@ std::optional<PhasesPrintPreview> IPrintPreview::getCorrespondingPhase(IPrintPre
     case State::wrong_filament_change:
         return PhasesPrintPreview::wrong_filament;
 
+#if HAS_E2EE_SUPPORT()
+    case State::untrusted_identity:
+        return PhasesPrintPreview::untrusted_identity;
+#endif
     case State::file_error_wait_user:
         return PhasesPrintPreview::file_error;
 
@@ -95,6 +106,12 @@ std::optional<PhasesPrintPreview> IPrintPreview::getCorrespondingPhase(IPrintPre
 }
 
 void IPrintPreview::ChangeState(State s) {
+#if HAS_E2EE_SUPPORT()
+    // If we are leaving the print preview early for any reason, we need to clean up the tmp trusted identities
+    if (s == State::inactive) {
+        e2ee::remove_temporary_identites();
+    }
+#endif
     state = s;
     if (s != State::checks_done && s != State::init) { // don't inform about this state, since it's an internal one meant to be as a skip-through to proper state
         setFsm(getCorrespondingPhase(state));
@@ -211,8 +228,10 @@ bool PrintPreview::check_extruder_need_filament_load(uint8_t physical_extruder, 
         return false;
     }
 
-    // when tool doesn't have filament, it needs load
-    return !FSensors_instance().ToolHasFilament(physical_extruder);
+    FilamentSensorState extruder_state = GetExtruderFSensor(physical_extruder) ? GetExtruderFSensor(physical_extruder)->get_state() : FilamentSensorState::Disabled;
+    FilamentSensorState side_state = GetSideFSensor(physical_extruder) ? GetSideFSensor(physical_extruder)->get_state() : FilamentSensorState::Disabled;
+
+    return (extruder_state == FilamentSensorState::NoFilament) || (side_state == FilamentSensorState::NoFilament);
 }
 
 static bool check_extruder_need_filament_load_tools_mapping(uint8_t physical_extruder) {
@@ -281,7 +300,7 @@ IPrintPreview::State PrintPreview::stateFromFilamentPresence() const {
         }
 
         // no MMU, do regular check of filament presence in each tool
-        EXTRUDER_LOOP() { // e == physical_extruder
+        for (int8_t e = 0; e < EXTRUDERS; e++) { // e == physical_extruder
             if (check_extruder_need_filament_load_tools_mapping(e)) {
                 return State::filament_not_inserted_wait_user;
             }
@@ -292,7 +311,7 @@ IPrintPreview::State PrintPreview::stateFromFilamentPresence() const {
 
 static void queue_filament_load_gcodes() {
     // Queue load filament gcode for every tool that doesn't have filament loaded
-    EXTRUDER_LOOP() { // e == physical_extruder
+    for (int8_t e = 0; e < EXTRUDERS; e++) { // e == physical_extruder
         auto gcode_extruder = tools_mapping::to_gcode_tool(e);
         if (gcode_extruder == tools_mapping::no_tool) {
             // if this physical extruder is not printing, no need to load anything for it
@@ -321,7 +340,7 @@ static void queue_filament_load_gcodes() {
 
 static void queue_filament_change_gcodes() {
     // Queue change filament gcode for every tool with mismatched filament type
-    EXTRUDER_LOOP() { // e == physical_extruder
+    for (int8_t e = 0; e < EXTRUDERS; e++) { // e == physical_extruder
         auto gcode_extruder = tools_mapping::to_gcode_tool(e);
         if (gcode_extruder == tools_mapping::no_tool) {
             continue; // this extruder doesn't print anything
@@ -356,7 +375,7 @@ IPrintPreview::State PrintPreview::stateFromFilamentType() const {
     }
 
     // Check match of loaded and G-code types
-    EXTRUDER_LOOP() { // e == physical_extruder
+    for (int8_t e = 0; e < EXTRUDERS; e++) { // e == physical_extruder
         if (!check_correct_filament_type_tools_mapping(e)) {
             return State::wrong_filament_wait_user;
         }
@@ -376,7 +395,7 @@ void PrintPreview::tools_mapping_cleanup(bool leaving_to_print) {
 
 #if PRINTER_IS_PRUSA_XL()
     // set dwarf leds to be handled 'normally'
-    HOTEND_LOOP() {
+    for (int8_t e = 0; e < HOTENDS; e++) {
         prusa_toolchanger.getTool(e).set_cheese_led(); // Default LED config
         prusa_toolchanger.getTool(e).set_status_led(); // Default status LED
     }
@@ -460,6 +479,11 @@ PrintPreview::Result PrintPreview::Loop() {
             ChangeState(State::file_error_wait_user);
             break;
 
+#if HAS_E2EE_SUPPORT()
+        } else if (gcode_info.has_identity_info()) {
+            ChangeState(State::untrusted_identity);
+            break;
+#endif
         } else if (!gcode_info.can_be_printed()) {
             // The file is not fully downloaded, wait till we have downloaded enough for printing
             ChangeState(State::download_wait);
@@ -469,7 +493,6 @@ PrintPreview::Result PrintPreview::Loop() {
             // Wait for the gcode info to fully load
             break;
         }
-
         const auto prefetch_ready = marlin_server::media_prefetch.check_ready_to_start_print();
         if (prefetch_ready == MediaPrefetchManager::ReadyToStartPrintResult::needs_fetching) {
             // Make sure we have the prefetch buffer full before start the print
@@ -700,6 +723,28 @@ PrintPreview::Result PrintPreview::Loop() {
         }
         break;
 
+#if HAS_E2EE_SUPPORT()
+    case State::untrusted_identity:
+        if (response == Response::Abort) {
+            ChangeState(State::inactive);
+            return Result::Abort;
+        } else if (response == Response::Yes) {
+            const auto &info = gcode_info.get_identity_info();
+            if (info.one_time) {
+                e2ee::save_identity_key_temporary(info);
+            } else {
+                e2ee::save_identity_key(info);
+            }
+            ChangeState(State::preview_wait_user);
+            break;
+        } else if (response == Response::No) {
+            e2ee::save_identity_key_temporary(gcode_info.get_identity_info());
+            ChangeState(State::preview_wait_user);
+            break;
+        }
+        break;
+#endif
+
     case State::file_error_wait_user:
         // Only one possible response -> abort
         if (response == Response::Abort) {
@@ -772,6 +817,9 @@ PrintPreview::Result PrintPreview::stateToResult() const {
     case State::mmu_filament_inserted_wait_user:
 #endif
     case State::checks_done:
+#if HAS_E2EE_SUPPORT()
+    case State::untrusted_identity:
+#endif
     case State::file_error_wait_user:
         return Result::Questions;
 

@@ -133,4 +133,8 @@ void tuneIdlerStallguardThreshold() {
     // @@TODO
 }
 
+void UpdateCurrentFilamentType(uint8_t slot) {
+    // @@TODO
+}
+
 } // namespace MMU2

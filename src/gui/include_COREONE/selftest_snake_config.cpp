@@ -99,6 +99,7 @@ uint64_t get_test_mask(Action action) {
     case Action::Fans:
     case Action::Gears:
     case Action::DoorSensor:
+    case Action::FilamentSensorCalibration:
 #if HAS_PRECISE_HOMING_COREXY()
     case Action::PreciseHoming:
 #endif
@@ -111,8 +112,6 @@ uint64_t get_test_mask(Action action) {
         return stmZAxis;
     case Action::Heaters:
         return stmHeaters;
-    case Action::FilamentSensorCalibration:
-        return stmFSensor;
     case Action::Loadcell:
         return stmLoadcell;
     case Action::ZAlign:

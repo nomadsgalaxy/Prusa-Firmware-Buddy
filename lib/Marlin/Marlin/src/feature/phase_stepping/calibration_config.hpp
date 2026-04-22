@@ -16,6 +16,10 @@ struct AxisCalibrationConfig {
     float coarse_movement_duration = 5.f;
 
     float peak_speed_shift = 0.9f;
+    /// If set, skips the speed sweep and uses this as the speed.
+    ///
+    /// This is speed for H1, others are derived appropriately.
+    std::optional<float> speed_override = std::nullopt;
 
     float min_magnitude = 0.008f;
     float max_magnitude = 0.4f;
@@ -28,20 +32,29 @@ struct AxisCalibrationConfig {
 };
 
 #if PRINTER_IS_PRUSA_MK4() || PRINTER_IS_PRUSA_COREONE()
+// 400-step motors
 static inline constexpr const AxisCalibrationConfig xy_axis_calibration_config {
     .speed_range = { 0.2f, 4.f },
     .enabled_harmonics = 0b1010,
 };
 #elif PRINTER_IS_PRUSA_XL()
+// 200-step motors
+static inline constexpr const AxisCalibrationConfig xy_axis_calibration_config {
+    // Unused due to speed_override, but must be set to make compiler happy.
+    .speed_range = { 1.f, 5.f },
+    .enabled_harmonics = 0b1010,
+    .speed_override = 6.0,
+    .min_magnitude = 0.016f,
+    .magnitude_quotient = 1.4f,
+};
+#elif PRINTER_IS_PRUSA_iX() || PRINTER_IS_PRUSA_COREONEL()
 static inline constexpr const AxisCalibrationConfig xy_axis_calibration_config {
     .speed_range = { 0.1f, 3.f },
     .enabled_harmonics = 0b1010,
+    .magnitude_quotient = 1.4f
 };
-#elif PRINTER_IS_PRUSA_iX()
-static inline constexpr const AxisCalibrationConfig xy_axis_calibration_config {
-    .speed_range = { 0.1f, 3.f },
-    .enabled_harmonics = 0b1010,
-};
+#else
+    #error
 #endif
 
 inline const AxisCalibrationConfig &get_calibration_config(AxisEnum axis) {

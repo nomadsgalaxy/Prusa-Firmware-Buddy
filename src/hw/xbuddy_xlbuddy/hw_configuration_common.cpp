@@ -8,16 +8,11 @@
 #include <device/hal.h>
 #include <option/bootloader.h>
 
-static std::pair<XlcdEeprom, OtpStatus> read_xlcd() {
-    return { data_exchange::get_xlcd_eeprom(), data_exchange::get_xlcd_status() };
-}
-
 namespace buddy::hw {
 
-ConfigurationCommon::ConfigurationCommon()
-    : xlcd(read_xlcd()) {
+ConfigurationCommon::ConfigurationCommon() {
     bom_id = otp_get_bom_id().value_or(0);
-    bom_id_xlcd = otp_parse_bom_id(reinterpret_cast<uint8_t *>(&std::get<XlcdEeprom>(xlcd)), sizeof(XlcdEeprom)).value_or(0);
+    bom_id_xlcd = data_exchange::get_xlcd_eeprom().bomID;
 }
 
 } // namespace buddy::hw

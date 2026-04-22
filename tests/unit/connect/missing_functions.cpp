@@ -20,8 +20,4 @@ extern "C" {
 void notify_reconfigure() {}
 
 void netdev_get_hostname(uint32_t netdev_id, char *buffer, size_t buffer_len) {}
-
-void *calloc_fallible(size_t nmemb, size_t size) {
-    return calloc(nmemb, size);
-}
 }

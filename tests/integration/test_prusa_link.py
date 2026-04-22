@@ -321,7 +321,7 @@ async def test_caching(printer_with_files):
 async def test_upload(wui_client: aiohttp.ClientSession):
     data = aiohttp.FormData()
     data.add_field('file', b'', filename='empty.gcode')
-    # TODO: Why does this send the "printer" to bluescreen? Doesn't happen on a
+    # TODO: Why does this send the "printer" to BSOD? Doesn't happen on a
     # real one.
     response = await wui_client.post('/api/files/sdcard',
                                      data=data,

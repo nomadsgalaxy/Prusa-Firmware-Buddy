@@ -1,8 +1,6 @@
 #pragma once
-#include <inttypes.h>
-#include <tuple>
-#include <optional>
-#include <inplace_function.hpp>
+
+#include <cstdint>
 #include <option/bootloader_update.h>
 
 namespace buddy::bootloader {
@@ -32,16 +30,8 @@ bool needs_update();
 /// @returns true if the pre-boot needs to be updated/reflashed
 bool preboot_needs_update();
 
-enum class UpdateStage {
-    LookingForBbf,
-    PreparingUpdate,
-    Updating,
-};
-
-using ProgressHook = stdext::inplace_function<void(int percent_done, UpdateStage stage)>;
-
 /// Update the bootloader (if needed together with preboot) on the MCU
-void update(ProgressHook progress);
+void update();
 
 #endif
 

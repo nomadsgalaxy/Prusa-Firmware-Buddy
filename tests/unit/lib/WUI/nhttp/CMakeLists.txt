@@ -30,7 +30,16 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/lib/WUI/nhttp/transfer_renderer.cpp
   ${CMAKE_SOURCE_DIR}/lib/WUI/nhttp/req_parser.cpp
   ${CMAKE_SOURCE_DIR}/lib/WUI/nhttp/handler.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/path_utils.cpp
   ${CMAKE_SOURCE_DIR}/src/common/crc32.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/directory.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/e2ee.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/sha256_multiuse.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/movable_aes_context.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/key.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/decryptor.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/utils.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/e2ee/hmac.cpp
   ${CMAKE_SOURCE_DIR}/src/common/json_encode.cpp
   ${CMAKE_SOURCE_DIR}/src/common/segmented_json.cpp
   ${CMAKE_SOURCE_DIR}/src/common/automata/core.cpp
@@ -45,6 +54,7 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/src/common/gcode/gcode_buffer.cpp
   ${CMAKE_SOURCE_DIR}/src/common/gcode/meatpack.cpp
   ${CMAKE_SOURCE_DIR}/src/common/stat_retry.cpp
+  ${CMAKE_SOURCE_DIR}/src/common/crash_dump/secret.cpp
   ${CMAKE_SOURCE_DIR}/src/transfers/monitor.cpp
   ${CMAKE_SOURCE_DIR}/src/transfers/changed_path.cpp
   ${CMAKE_SOURCE_DIR}/src/transfers/files.cpp
@@ -84,6 +94,7 @@ add_executable(
   ${CMAKE_SOURCE_DIR}/lib/Middlewares/Third_Party/LwIP/src/core/netif.c
   ${CMAKE_SOURCE_DIR}/lib/Middlewares/Third_Party/LwIP/src/netif/ethernet.c
   ${CMAKE_SOURCE_DIR}/tests/unit/common/printer_state_mock.cpp
+  ${CMAKE_SOURCE_DIR}/tests/stubs/async_job/async_job.cpp
   ${CMAKE_SOURCE_DIR}/tests/stubs/strlcpy.c
   ${CMAKE_SOURCE_DIR}/tests/stubs/jsmn_impl.c
   ${CMAKE_SOURCE_DIR}/tests/unit/mock/bsod.cpp
@@ -103,6 +114,7 @@ target_include_directories(
           ${CMAKE_SOURCE_DIR}/lib/WUI/nhttp
           ${CMAKE_SOURCE_DIR}/src/gui
           ${CMAKE_SOURCE_DIR}/src/common
+          ${CMAKE_SOURCE_DIR}/src/common/utils
           ${CMAKE_SOURCE_DIR}/src/common/http
           ${CMAKE_SOURCE_DIR}/src/common/gcode
           ${CMAKE_SOURCE_DIR}/src/common/utils
@@ -136,6 +148,15 @@ add_custom_target(
 add_dependencies(nhttp_tests generate-http-automata-tests)
 # target_link_libraries(http_tests LwIP)
 
-target_link_libraries(nhttp_tests bgcode_core mbedTLS SG14 freertos_tests buddy_utils)
+target_link_libraries(
+  nhttp_tests
+  bgcode_core
+  mbedTLS
+  SG14
+  freertos_tests
+  buddy_utils
+  raii
+  logging-mock
+  )
 
 add_catch_test(nhttp_tests)

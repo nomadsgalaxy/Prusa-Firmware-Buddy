@@ -10,9 +10,9 @@ add_compile_definitions(UNITTEST)
 target_compile_definitions(mmu2-modbus_tests PRIVATE "PRINTER_MODEL=\"COREONE\"" "BOARD=\"XBUDDY\"")
 
 target_include_directories(
-  mmu2-modbus_tests
-  PRIVATE include ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src/common/utils
-          ${CMAKE_SOURCE_DIR}/src/puppy/xbuddy_extension_shared
+  mmu2-modbus_tests PRIVATE include ${CMAKE_SOURCE_DIR}/include
+                            ${CMAKE_SOURCE_DIR}/src/common/utils
   )
+target_link_libraries(mmu2-modbus_tests freertos-mock logging-mock xbuddy_extension)
 
 add_catch_test(mmu2-modbus_tests)

@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
-#include <xbuddy_extension_shared/xbuddy_extension_shared_enums.hpp>
+#include <xbuddy_extension/shared_enums.hpp>
 
 namespace hal {
 
@@ -69,7 +69,7 @@ namespace temperature {
 }
 
 namespace filament_sensor {
-    using State = xbuddy_extension_shared::FilamentSensorState;
+    using State = xbuddy_extension::FilamentSensorState;
 
     State get();
 } // namespace filament_sensor
@@ -88,12 +88,22 @@ namespace rs485 {
      */
     std::span<std::byte> receive();
 
+    /// Blocks until message is received or timeout occurs.
+    /// Returned span is valid until next transmit()
+    /// Returns empty span if timeout occurs.
+    std::span<std::byte> receive_timeout(uint32_t timeout_ms);
+
     /**
      * Transmit message.
      * Does not block.
      * Supplied span must remain valid until next receive()
      */
     void transmit_and_then_start_receiving(std::span<std::byte>);
+
+    /**
+     * Clear bus errors if needed.
+     */
+    void housekeeping();
 
 } // namespace rs485
 
@@ -153,5 +163,12 @@ namespace memory {
     extern const std::span<std::byte> peripheral_address_region;
 
 }; // namespace memory
+
+namespace rng {
+
+    /// Obtain a truly random number.
+    uint32_t get();
+
+} // namespace rng
 
 } // namespace hal

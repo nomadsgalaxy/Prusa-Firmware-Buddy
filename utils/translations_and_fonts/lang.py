@@ -435,6 +435,9 @@ def cmd_dump_pofiles(args):
                     'unexpected entry %s (%s expected); skipping %s',
                     entry.msgid, key, langcode)
                 break
+            if entry.msgstr == '':
+                logger.warning('empty translation for %s', key)
+
             lines.append(entry.msgstr.replace('\n', '\\n') + '\n')
         open(args.output_dir / f'{langcode}.txt', 'w',
              encoding='utf-8').writelines(lines)

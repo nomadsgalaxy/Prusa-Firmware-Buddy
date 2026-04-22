@@ -511,7 +511,7 @@ inline void calibrate_all_toolheads(measurements_t &m, const float uncertainty) 
   TEMPORARY_BACKLASH_CORRECTION(all_on);
   TEMPORARY_BACKLASH_SMOOTHING(0.0f);
 
-  HOTEND_LOOP() calibrate_toolhead(m, uncertainty, e);
+  for (int8_t e = 0; e < HOTENDS; e++) calibrate_toolhead(m, uncertainty, e);
 
   #if HAS_HOTEND_OFFSET
     normalize_hotend_offsets();
@@ -552,7 +552,7 @@ inline void calibrate_all() {
 
   // Cycle the toolheads so the servos settle into their "natural" positions
   #if HOTENDS > 1
-    HOTEND_LOOP() set_nozzle(m, e);
+    for (int8_t e = 0; e < HOTENDS; e++) set_nozzle(m, e);
   #endif
 
   // Do a slow and precise calibration of the toolheads

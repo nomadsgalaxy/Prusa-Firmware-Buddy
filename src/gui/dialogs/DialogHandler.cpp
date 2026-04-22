@@ -9,7 +9,6 @@
 #include "window_dlg_quickpause.hpp"
 #include "window_dlg_wait.hpp"
 #include "window_dlg_warning.hpp"
-#include <screen_network_setup.hpp>
 #include <option/has_gearbox_alignment.h>
 #include <option/has_phase_stepping_calibration.h>
 #include <option/has_input_shaper_calibration.h>
@@ -35,6 +34,7 @@
 #if HAS_SELFTEST()
     #include <screen_fan_selftest.hpp>
     #include "ScreenSelftest.hpp"
+    #include <gui/screen/selftest/screen_selftest_fsensors.hpp>
 #endif
 
 #if ENABLED(CRASH_RECOVERY)
@@ -54,10 +54,6 @@
     #include "screen_input_shaper_calibration.hpp"
 #endif
 
-#if HAS_BELT_TUNING()
-    #include <gui/wizard/screen_belt_tuning_wizard.hpp>
-#endif
-
 #if HAS_GEARBOX_ALIGNMENT()
     #include "feature/gearbox_alignment/screen_gearbox_alignment.hpp"
 #endif
@@ -66,7 +62,12 @@
     #include <feature/door_sensor_calibration/screen_door_sensor_calibration.hpp>
 #endif
 
-alignas(std::max_align_t) static std::array<uint8_t, 1800> mem_space;
+#include <option/has_esp.h>
+#if HAS_ESP()
+    #include <screen_network_setup.hpp>
+#endif
+
+alignas(std::max_align_t) static std::array<uint8_t, 1300> mem_space;
 
 // safer than make_static_unique_ptr, checks storage size
 template <class T, class... Args>
@@ -75,19 +76,35 @@ static static_unique_ptr<IDialogMarlin> make_dialog_ptr(Args &&...args) {
     return make_static_unique_ptr<T>(mem_space.data(), std::forward<Args>(args)...);
 }
 
-static void open_screen_if_not_opened(ScreenFactory::Creator c) {
-    auto scrns = Screens::Access();
-    if (!scrns->IsScreenOpened(c)) {
-        scrns->Open(c);
+struct FSMScreenDefBase {
+    [[nodiscard]] static bool open_base(ScreenFactory::Creator screen, [[maybe_unused]] fsm::BaseData data) {
+        // We need to get out of the GUI loop to open the screen, windows are on the stack
+        if (gui_get_nesting()) {
+            return false;
+        }
+
+        if (Screens::Access()->IsScreenOpened(screen)) {
+            // Already opened, no need to do anything
+            return true;
+        }
+
+        Screens::Access()->Open(screen);
+
+        // Do loop immediately for the window open to take effect
+        // Otherwise, the change() that follows right after open() would not do anything
+        Screens::Access()->Loop();
+
+        return true;
     }
-}
+};
 
 template <ClientFSM fsm_, typename Screen>
-struct FSMScreenDef {
+struct FSMScreenDef : public FSMScreenDefBase {
     static constexpr ClientFSM fsm = fsm_;
+    static constexpr auto screen = ScreenFactory::Screen<Screen>;
 
-    static void open([[maybe_unused]] fsm::BaseData data) {
-        open_screen_if_not_opened(ScreenFactory::Screen<Screen>);
+    [[nodiscard]] static bool open(fsm::BaseData data) {
+        return open_base(screen, data);
     }
 
     static void close() {
@@ -95,29 +112,69 @@ struct FSMScreenDef {
         Screens::Access()->Close<Screen>();
     }
 
-    static void change(fsm::BaseData data) {
+    [[nodiscard]] static bool change(fsm::BaseData data) {
+        // DO NOT change screens while in the nested loop
+        // We would be potentially changing phases while the GUI widgets are on the stack
+        if (gui_get_nesting()) {
+            return false;
+        }
+
         if (auto s = Screens::Access()->get<Screen>()) {
             s->Change(data);
+            return true;
+
+        } else {
+            // The screen is not on the top of the stack, we cannot notify it about the change
+            // TODO: This should be okay as the screen should read the current state at the creation, but it's not doing that currently
+            return false;
         }
     }
 };
 
-template <ClientFSM fsm_, typename Dialog>
-struct FSMDialogDef {
-    static constexpr ClientFSM fsm = fsm_;
-
-    static void open(fsm::BaseData data) {
-        DialogHandler::Access().ptr = make_dialog_ptr<Dialog>(data);
-    }
+struct FSMDialogDefBase {
 
     static void close() {
-        // Do nothing, is handled elsewhere
+        // Ptr is a static_unique_ptr, it will call the destructor
+        DialogHandler::Access().ptr = nullptr;
     }
 
-    static void change(fsm::BaseData data) {
+    [[nodiscard]] static bool change(fsm::BaseData data) {
+        // We CANNOT check for gui nesting for dialogs - dialogs can be shown blockingly over screens
+        // One just has to hope that noone would call DialogHandler::Loop() inside a FSM dialog function - there's no nice way to check it
+        // assert(!gui_get_nesting())
+
         if (auto &ptr = DialogHandler::Access().ptr) {
             ptr->Change(data);
+            return true;
+
+        } else {
+            // The dialog is not on the stact - should not happen
+            assert(false);
+            return false;
         }
+    }
+};
+
+template <ClientFSM fsm_, typename Dialog_>
+struct FSMDialogDef : public FSMDialogDefBase {
+    using Dialog = Dialog_;
+    static constexpr ClientFSM fsm = fsm_;
+
+    [[nodiscard]] static bool open(fsm::BaseData data) {
+        auto &ptr = DialogHandler::Access().ptr;
+        if (ptr) {
+            // This should never happen - appropriate close() should always be called before
+            bsod("Opening 2nd FSM dialog");
+        }
+
+        // If we're about to close some screen, do it now, so that we can spawn the dialog directly over the new top
+        // This reduces redraws
+        if (!gui_get_nesting()) {
+            Screens::Access()->Loop();
+        }
+
+        ptr = make_dialog_ptr<Dialog>(data);
+        return true;
     }
 };
 
@@ -125,31 +182,51 @@ template <ClientFSM fsm_>
 struct FSMPrintDef {
     static constexpr ClientFSM fsm = fsm_;
 
-    static void open([[maybe_unused]] fsm::BaseData data) {
-        if (IScreenPrinting::GetInstance()) {
-            IScreenPrinting::NotifyMarlinStart();
-            return;
+    [[nodiscard]] static bool open([[maybe_unused]] fsm::BaseData data) {
+        // We need to get out of the GUI loop to open the screen, windows are on the stack
+        if (gui_get_nesting()) {
+            return false;
         }
 
+        ScreenFactory::Creator screen;
+
         if constexpr (fsm == ClientFSM::Serial_printing) {
+            screen = ScreenFactory::Screen<screen_printing_serial_data_t>;
+            if (Screens::Access()->IsScreenOpened(screen)) {
+                // Already opened, no need to do anything
+                return true;
+            }
+
             Screens::Access()->ClosePrinting();
-            Screens::Access()->Open(ScreenFactory::Screen<screen_printing_serial_data_t>);
 
         } else if constexpr (fsm == ClientFSM::Printing) {
+            screen = ScreenFactory::Screen<screen_printing_data_t>;
+            if (Screens::Access()->IsScreenOpened(screen)) {
+                // Already opened, no need to do anything
+                return true;
+            }
+
             Screens::Access()->CloseAll();
-            Screens::Access()->Open(ScreenFactory::Screen<screen_printing_data_t>);
 
         } else {
             static_assert(0);
         }
+
+        Screens::Access()->Open(screen);
+
+        // Do loop immediately for the window open to take effect
+        // Otherwise, the change() that follows right after open() would not do anything
+        Screens::Access()->Loop();
+        return true;
     }
 
     static void close() {
         Screens::Access()->CloseAll();
     }
 
-    static void change([[maybe_unused]] fsm::BaseData data) {
+    [[nodiscard]] static bool change([[maybe_unused]] fsm::BaseData data) {
         // Do nothing
+        return true;
     }
 };
 
@@ -157,9 +234,15 @@ struct FSMPrintDef {
 struct FSMEndDef {
     static constexpr ClientFSM fsm = ClientFSM::_count;
 
-    static void open(fsm::BaseData) {}
+    [[nodiscard]] static bool open(fsm::BaseData) {
+        return true;
+    }
+
     static void close() {}
-    static void change(fsm::BaseData) {}
+
+    [[nodiscard]] static bool change(fsm::BaseData) {
+        return true;
+    }
 };
 
 template <class... T>
@@ -175,8 +258,11 @@ using FSMDisplayConfig = FSMDisplayConfigDef<
 #if HAS_SELFTEST()
     FSMScreenDef<ClientFSM::Selftest, ScreenSelftest>,
     FSMScreenDef<ClientFSM::FansSelftest, ScreenFanSelftest>,
+    FSMScreenDef<ClientFSM::SelftestFSensors, ScreenSelftestFSensors>,
 #endif
+#if HAS_ESP()
     FSMScreenDef<ClientFSM::NetworkSetup, ScreenNetworkSetup>,
+#endif
     FSMPrintDef<ClientFSM::Printing>,
 #if ENABLED(CRASH_RECOVERY)
     FSMScreenDef<ClientFSM::CrashRecovery, ScreenCrashRecovery>,
@@ -192,9 +278,6 @@ using FSMDisplayConfig = FSMDisplayConfigDef<
 #endif
 #if HAS_INPUT_SHAPER_CALIBRATION()
     FSMScreenDef<ClientFSM::InputShaperCalibration, ScreenInputShaperCalibration>,
-#endif
-#if HAS_BELT_TUNING()
-    FSMScreenDef<ClientFSM::BeltTuning, ScreenBeltTuningWizard>,
 #endif
 #if HAS_GEARBOX_ALIGNMENT()
     FSMScreenDef<ClientFSM::GearboxAlignment, ScreenGearboxAlignment>,
@@ -220,50 +303,40 @@ void visit_display_config(ClientFSM fsm, auto f) {
 static constexpr size_t fsm_display_config_size = []<class... T>(FSMDisplayConfigDef<T...>) { return sizeof...(T); }(FSMDisplayConfig());
 static_assert(fsm_display_config_size == std::to_underlying(ClientFSM::_count) + 1);
 
+static constexpr auto dlg_size = []<typename T> {
+    if constexpr (std::is_base_of_v<FSMDialogDefBase, T>) {
+        return sizeof(typename T::Dialog);
+    } else {
+        return 0;
+    }
+};
+static constexpr size_t required_dlg_mem_space = []<class... T>(FSMDisplayConfigDef<T...>) { return std::max(std::initializer_list<size_t> { dlg_size.operator()<T>()... }); }(FSMDisplayConfig {});
+static_assert(sizeof(mem_space) < required_dlg_mem_space + 100, "DialogHandler::mem_space is unnecessarily big");
+
 //*****************************************************************************
 // method definitions
-void DialogHandler::open(ClientFSM fsm_type, fsm::BaseData data) {
-    if (ptr) {
-        if (dialog_cache.has_value()) {
-            // TODO: Make all dialogs screens and use Screens state stack
-            bsod("Can't open more then 2 dialogs at a time.");
-        }
-
-        dialog_cache = last_fsm_change;
-        ptr = nullptr;
-    }
-
-    last_fsm_change = std::make_pair(fsm_type, data);
-
+bool DialogHandler::open(ClientFSM fsm_type, fsm::BaseData data) {
+    bool result = false;
     visit_display_config(fsm_type, [&]<typename Config>(Config) {
-        Config::open(data);
+        result = Config::open(data);
     });
+    return result;
 }
 
 void DialogHandler::close(ClientFSM fsm_type) {
     visit_display_config(fsm_type, []<typename Config>(Config) {
         Config::close();
     });
-
-    // Attempt to restore underlying screen state
-    if (ptr != nullptr) {
-        if (dialog_cache.has_value()) {
-            ptr = nullptr;
-            const auto cache = *dialog_cache;
-            dialog_cache = std::nullopt;
-            open(cache.first, cache.second);
-        } else {
-            ptr = nullptr; // destroy current dialog
-        }
-    }
 }
 
-void DialogHandler::change(ClientFSM fsm_type, fsm::BaseData data) {
-    last_fsm_change = std::make_pair(fsm_type, data);
+bool DialogHandler::change(ClientFSM fsm_type, fsm::BaseData data) {
+    bool result = false;
 
     visit_display_config(fsm_type, [&]<typename Config>(Config) {
-        Config::change(data);
+        result = Config::change(data);
     });
+
+    return result;
 }
 
 bool DialogHandler::IsOpen() const {
@@ -276,53 +349,61 @@ DialogHandler &DialogHandler::Access() {
 }
 
 void DialogHandler::Loop() {
-    const auto old_top = current_fsm_top;
-    const auto new_top = marlin_vars().get_fsm_states().get_top();
+    update_screen();
 
-    if (new_top == old_top) {
+    // If a Screen gets destroyed underneath a FSM Dialog (IDialogMarlin), we have to re-register it to the new screen
+    // Do this after update_screen to reduce GUI redraws
+    if (ptr && !ptr->GetParent()) {
+        auto current_screen = Screens::Access()->Get();
+        ptr->SetParent(current_screen);
+        current_screen->RegisterSubWin(*ptr);
+    }
+}
+
+void DialogHandler::update_screen() {
+    const auto new_top = marlin_vars().peek_fsm_states([](const auto &states) { return states.get_top(); });
+
+    if (new_top == current_fsm_top) {
         return;
     }
 
-    // TODO Investigate whether Screens::Access()->Loop() is really needed.
-    // TODO Update open() so that we won't need to call change() afterwards.
-    if (new_top && old_top) {
-        if (new_top->fsm_type == old_top->fsm_type) {
-            if (new_top->data != old_top->data) {
-                change(new_top->fsm_type, new_top->data);
-            }
-        } else {
-            if (new_top->fsm_type == ClientFSM::Load_unload && (old_top->fsm_type == ClientFSM::PrintPreview
-#if HAS_COLDPULL()
-                    || old_top->fsm_type == ClientFSM::ColdPull
-#endif
-                    )) {
-                // TODO Remove this shitcode/prasohack as soon as possible.
-                //      As a special exception we do not close PrintPreview screen when the LoadUnload dialog
-                //      is requested. It would destroy the ToolsMappingBody while one of its methods is still
-                //      executing, leading to calling refresh_physical_tool_filament_labels() which in turn
-                //      jumped to undefined memory.
-            } else {
-                close(old_top->fsm_type);
-                Screens::Access()->Loop();
-            }
-            open(new_top->fsm_type, new_top->data);
-            Screens::Access()->Loop();
-            change(new_top->fsm_type, new_top->data);
+    // Shortcut - we're just changing the data
+    if (new_top && current_fsm_top && new_top->fsm_type == current_fsm_top->fsm_type) {
+        if (!change(new_top->fsm_type, new_top->data)) {
+            // Failed to change state - try again later
+            return;
         }
-    } else if (new_top && !old_top) {
-        open(new_top->fsm_type, new_top->data);
-        Screens::Access()->Loop();
-        change(new_top->fsm_type, new_top->data);
-    } else if (!new_top && old_top) {
-        close(old_top->fsm_type);
-        Screens::Access()->Loop();
-    } else {
-        std::abort();
+        current_fsm_top = new_top;
+        return;
     }
 
-    current_fsm_top = new_top;
-}
+    // Close the previous screen/dialog
+    if (current_fsm_top) {
+        // Closing should never fail
+        // Dialog - destroys the dialog (we're praying that noone got the idea to call DialogHandler::Loop() inside a FSM dialog function - there's no nice way to check it)
+        // Screen - just marks the screen to be destroyed on the next Screens::Access()->Loop
+        close(current_fsm_top->fsm_type);
+        current_fsm_top = std::nullopt;
+    }
 
-bool DialogHandler::IsAnyOpen() const {
-    return current_fsm_top.has_value();
+    // Do NOT do Screens::Access()->Loop(); here.
+    // The ScreenHandler works faster if it can do both close and open in the same step
+
+    // Open the new one
+    if (new_top) {
+        if (!open(new_top->fsm_type, new_top->data)) {
+            return;
+        }
+
+        if (!change(new_top->fsm_type, new_top->data)) {
+            bsod_unreachable(); // Should never fail, we should just have opened the screen
+        }
+
+        current_fsm_top = new_top;
+    }
+
+    // Make sure all changes are carried over now to reduce redraws
+    if (!gui_get_nesting()) {
+        Screens::Access()->Loop();
+    }
 }

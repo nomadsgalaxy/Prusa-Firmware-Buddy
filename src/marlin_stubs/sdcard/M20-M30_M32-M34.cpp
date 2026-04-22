@@ -5,6 +5,7 @@
 #include "marlin_server.hpp"
 #include <usb_host.h>
 #include "marlin_vars.hpp"
+#include <common/directory.hpp>
 #include <utils/string_builder.hpp>
 
 /** \addtogroup G-Codes
@@ -21,14 +22,12 @@
  */
 void GcodeSuite::M20() {
     SERIAL_ECHOLNPGM(MSG_BEGIN_FILE_LIST);
-    DIR *dir;
-    dir = opendir("/usb/");
-    if (dir != NULL) {
+    Directory dir { "/usb/" };
+    if (dir) {
         struct dirent *entry;
-        while ((entry = readdir(dir)) != NULL && entry->d_name[0]) {
+        while ((entry = dir.read()) != NULL && entry->d_name[0]) {
             SERIAL_ECHOLN(entry->d_name);
         }
-        closedir(dir);
     }
     SERIAL_ECHOLNPGM(MSG_END_FILE_LIST);
 }

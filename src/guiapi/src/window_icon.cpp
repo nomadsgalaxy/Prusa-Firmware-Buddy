@@ -174,7 +174,7 @@ void WindowMultiIconButton::windowEvent(window_t *sender, GUI_event_t event, voi
 window_icon_hourglass_t::window_icon_hourglass_t(window_t *parent, point_i16_t pt, padding_ui8_t padding, is_closed_on_click_t close)
     : window_icon_t(parent, &img::hourglass_26x39, pt, padding, close)
     , start_time(gui::GetTick())
-    , animation_color(COLOR_ORANGE)
+    , animation_color(COLOR_BRAND)
     , phase(0) {
 }
 
@@ -197,7 +197,7 @@ struct LineColored : public Line {
 
 void window_icon_hourglass_t::unconditionalDraw() {
 
-    static constexpr Color animation_color = COLOR_ORANGE;
+    static constexpr Color animation_color = COLOR_BRAND;
     static constexpr Color back_color = COLOR_BLACK;
 
     static constexpr LineColored lines[] = {

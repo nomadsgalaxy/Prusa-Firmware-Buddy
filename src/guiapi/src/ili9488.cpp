@@ -1,5 +1,6 @@
 #include "ili9488.hpp"
 
+#include <common/sys.hpp>
 #include <device/board.h>
 #include <device/hal.h>
 #include <span>
@@ -41,6 +42,7 @@ struct ili9488_config_t {
 
 constexpr static uint8_t DEFAULT_MADCTL = 0xE0; // memory data access control (mirror XY)
 constexpr static uint8_t DEFAULT_COLMOD = 0x66; // interface pixel format (6-6-6, hi-color)
+constexpr static uint8_t TRIBIT_COLMOD = 0x61; // interface pixel format (6-6-6, hi-color)
 
 static ili9488_config_t ili9488_config = {
     .flg = ILI9488_FLG_DMA, // flags (DMA, MISO)
@@ -159,12 +161,6 @@ static void ili9488_clr_rst(void) {
     displayRst.write(Pin::State::low);
 }
 
-static inline void ili9488_fill_ui16(uint16_t *p, uint16_t v, uint16_t c) {
-    while (c--) {
-        *(p++) = v;
-    }
-}
-
 static void ili9488_fill_ui24(uint8_t *p, uint32_t v, int c) {
     while (c--) {
         p[0] = 0xFF & v;
@@ -174,12 +170,8 @@ static void ili9488_fill_ui24(uint8_t *p, uint32_t v, int c) {
     }
 }
 
-static inline int is_interrupt(void) {
-    return (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0;
-}
-
 void ili9488_delay_ms(uint32_t ms) {
-    if (is_interrupt() || (ili9488_flg & ILI9488_FLG_SAFE)) {
+    if (sys_is_interrupt() || (ili9488_flg & ILI9488_FLG_SAFE)) {
         volatile uint32_t temp;
         while (ms--) {
             do {
@@ -342,24 +334,6 @@ bool ili9488_is_reset_required() {
     return false;
 }
 
-/*void ili9488_test_miso(void)
-{
-//	uint16_t data_out[8] = {CLR565_WHITE, CLR565_WHITE, CLR565_RED, CLR565_RED, CLR565_GREEN, CLR565_GREEN, CLR565_BLUE, CLR565_BLUE};
-        uint8_t data_out[16] = {0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-        uint8_t data_in[32];
-        memset(data_in, 0, sizeof(data_in));
-        ili9488_clr_cs();
-        ili9488_cmd_caset(0, ILI9488_COLS - 1);
-        ili9488_cmd_raset(0, ILI9488_ROWS - 1);
-        ili9488_cmd_ramwr((uint8_t*)data_out, 16);
-        ili9488_set_cs();
-        ili9488_clr_cs();
-        ili9488_cmd_caset(0, ILI9488_COLS - 1);
-        ili9488_cmd_raset(0, ILI9488_ROWS - 1);
-        ili9488_cmd_ramrd(data_in, 32);
-        ili9488_set_cs();
-}*/
-
 void ili9488_reset(void) {
     // some extra step based on new manufacturer recommendation
     if (Configuration::Instance().has_display_backlight_control()) {
@@ -505,29 +479,7 @@ void ili9488_done(void) {
 }
 
 void ili9488_clear(uint32_t clr666) {
-    assert(!ili9488_buff_borrowed && "Buffer lent to someone");
-
-    int i;
-    uint8_t *p_byte = (uint8_t *)ili9488_buff;
-
-    for (i = 0; i < ILI9488_COLS * ILI9488_BUFF_ROWS - 1; i++) {
-        *((uint32_t *)p_byte) = clr666;
-        p_byte += 3; // increase the address by 3 because the color has 3 bytes
-    }
-    uint8_t *clr_ptr = (uint8_t *)&clr666;
-    for (int j = 0; j < 3; j++) {
-        *(p_byte + j) = *(clr_ptr + j);
-    }
-
-    ili9488_clr_cs();
-    ili9488_cmd_caset(0, ILI9488_COLS - 1);
-    ili9488_cmd_raset(0, ILI9488_ROWS - 1);
-    ili9488_cmd_ramwr(0, 0);
-    for (i = 0; i < ILI9488_ROWS / ILI9488_BUFF_ROWS; i++) {
-        ili9488_wr(ili9488_buff, sizeof(ili9488_buff));
-    }
-    ili9488_set_cs();
-    //	ili9488_test_miso();
+    ili9488_fill_rect_colorFormat666(0, 0, ILI9488_COLS, ILI9488_ROWS, clr666);
 }
 
 void ili9488_set_pixel(uint16_t point_x, uint16_t point_y, uint32_t clr666) {
@@ -558,11 +510,43 @@ uint32_t ili9488_get_pixel_colorFormat666(uint16_t point_x, uint16_t point_y) {
     return ret; // directColor;
 }
 
+static void ili9488_fill_rect_color_fast(uint16_t rect_x, uint16_t rect_y, uint16_t rect_w, uint16_t rect_h, uint8_t clr33) {
+    // prepare buffer; we are writing two pixels per byte
+    const uint32_t pixel_count = (uint32_t)rect_w * rect_h;
+    const uint32_t size = (pixel_count + 1) / 2;
+    const int n = size / sizeof(ili9488_buff);
+    const int s = size % sizeof(ili9488_buff);
+    memset(ili9488_buff, clr33, n ? sizeof(ili9488_buff) : s);
+
+    // issue commands; note that COLMOD needs to be issued just before RAMWR
+    ili9488_clr_cs();
+    ili9488_cmd_caset(rect_x, rect_x + rect_w - 1);
+    ili9488_cmd_raset(rect_y, rect_y + rect_h - 1);
+    ili9488_cmd_colmod(TRIBIT_COLMOD);
+    ili9488_cmd_ramwr(0, 0);
+    for (int i = 0; i < n; i++) {
+        ili9488_wr(ili9488_buff, sizeof(ili9488_buff));
+    }
+    if (s) {
+        ili9488_wr(ili9488_buff, s);
+    }
+    ili9488_cmd_colmod(DEFAULT_COLMOD);
+    ili9488_set_cs();
+}
+
 void ili9488_fill_rect_colorFormat666(uint16_t rect_x, uint16_t rect_y, uint16_t rect_w, uint16_t rect_h, uint32_t clr666) {
     // BFW-6328 Some displays possibly problematic with higher baudrate, reduce 40 -> 20 MHz
     SPIBaudRatePrescalerGuard _g(&SPI_HANDLE_FOR(lcd), SPI_BAUDRATEPRESCALER_4, reduce_display_baudrate);
 
     assert(!ili9488_buff_borrowed && "Buffer lent to someone");
+
+    // fast path for black and white pixels; no need to support more colors at the moment
+    static const auto fast_draw_enabled = config_store().fast_draw_enabled.get();
+    if (fast_draw_enabled && (clr666 == 0x00000000 || clr666 == 0x00fcfcfc)) {
+        const uint8_t clr33 = clr666 == 0 ? 0 : 0x3f;
+        ili9488_fill_rect_color_fast(rect_x, rect_y, rect_w, rect_h, clr33);
+        return;
+    }
 
     int i;
     uint32_t size = (uint32_t)rect_w * rect_h * 3;

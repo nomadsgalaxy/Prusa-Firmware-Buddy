@@ -6,7 +6,6 @@
 #include <cstring>
 #include <ranges>
 
-#include <http/post_file_request.hpp>
 #include <puppies/puppy_constants.hpp>
 
 LOG_COMPONENT_REF(Puppies);
@@ -118,31 +117,6 @@ bool save_dumps_to_usb() {
         if (errored) {
             continue;
         }
-        rc = true;
-    }
-    return rc;
-}
-
-bool upload_dumps_to_server() {
-    bool rc { false };
-    for (const auto dock : DOCKS) {
-        // for (const auto &info : buddy::puppies::dock_info) {
-        const auto &info = get_dock_info(dock);
-
-        struct stat fs;
-        if (stat(info.crash_dump_path, &fs) != 0) {
-            continue;
-        }
-
-        std::array<char, ::crash_dump::url_buff_size> url_buff;
-        std::array<char, ::crash_dump::url_buff_size> escaped_url_string;
-
-        ::crash_dump::create_url_string(url_buff, escaped_url_string, get_puppy_info(to_puppy_type(dock)).name);
-        http::PostFile req(info.crash_dump_path, escaped_url_string.data(), fs.st_size);
-        if (!::crash_dump::upload_dump_to_server(req)) {
-            continue;
-        }
-
         rc = true;
     }
     return rc;

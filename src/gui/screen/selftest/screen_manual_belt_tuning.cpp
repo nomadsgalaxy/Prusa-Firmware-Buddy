@@ -77,12 +77,11 @@ constexpr Rect16 rect_joe = Rect16(0, rect_text_joe.Bottom(), GuiDefaults::Scree
 
 namespace frames {
 
-class FrameWait : public window_frame_t {
+class FrameWait {
 public:
-    FrameWait(window_t *parent)
-        : window_frame_t(parent, parent->GetRect())
-        , hourglass(this, rect_hourglass, &img::hourglass_26x39)
-        , wait(this, rect_wait, is_multiline::no, is_closed_on_click_t::no, _(txt_wait)) {
+    FrameWait(window_frame_t *parent)
+        : hourglass(parent, rect_hourglass, &img::hourglass_26x39)
+        , wait(parent, rect_wait, is_multiline::no, is_closed_on_click_t::no, _(txt_wait)) {
         hourglass.SetAlignment(Align_t::CenterBottom());
         wait.SetAlignment(Align_t::Center());
     }
@@ -92,15 +91,13 @@ protected:
     window_text_t wait;
 };
 
-class FrameTitle : public window_frame_t {
+class FrameTitle {
 public:
-    FrameTitle(window_t *parent, const char *txt_title)
-        : window_frame_t(parent, parent->GetRect())
-        , line(this, rect_line)
-        , title(this, rect_title, is_multiline::no, is_closed_on_click_t::no, _(txt_title)) {
+    FrameTitle(window_frame_t *parent, const char *txt_title)
+        : line(parent, rect_line)
+        , title(parent, rect_title, is_multiline::no, is_closed_on_click_t::no, _(txt_title)) {
         line.SetBackColor(COLOR_WHITE);
         title.set_font(Font::big);
-        static_cast<window_frame_t *>(parent)->CaptureNormalWindow(*this);
     }
 
 protected:
@@ -111,10 +108,10 @@ protected:
 class FrameTitleRadio : public FrameTitle {
 
 public:
-    FrameTitleRadio(window_t *parent, Phase phase, const char *txt_title)
+    FrameTitleRadio(window_frame_t *parent, Phase phase, const char *txt_title)
         : FrameTitle(parent, txt_title)
-        , radio(this, WizardDefaults::RectRadioButton(0), phase) {
-        CaptureNormalWindow(radio);
+        , radio(parent, WizardDefaults::RectRadioButton(0), phase) {
+        parent->CaptureNormalWindow(radio);
     }
 
 protected:
@@ -124,11 +121,11 @@ protected:
 class FrameTitleDescRadio : public FrameTitleRadio {
 
 public:
-    FrameTitleDescRadio(window_t *parent, Phase phase, const char *title, const char *desc)
+    FrameTitleDescRadio(window_frame_t *parent, Phase phase, const char *title, const char *desc)
         : FrameTitleRadio(parent, phase, title)
         , phase(phase)
         , desc_ptr(desc)
-        , desc(this, rect_desc, is_multiline::yes) {}
+        , desc(parent, rect_desc, is_multiline::yes) {}
 
     void update(fsm::PhaseData data) {
         if (phase == PhaseManualBeltTuning::show_tension) {
@@ -148,10 +145,10 @@ protected:
 
 class FrameFinishJoe : public FrameTitleRadio {
 public:
-    FrameFinishJoe(window_t *parent, Phase phase, const char *title, const char *desc)
+    FrameFinishJoe(window_frame_t *parent, Phase phase, const char *title, const char *desc)
         : FrameTitleRadio(parent, phase, title)
-        , desc(this, rect_text_joe, is_multiline::yes, is_closed_on_click_t::no, _(desc))
-        , joe(this, rect_joe, &img::pepa_42x64) {
+        , desc(parent, rect_text_joe, is_multiline::yes, is_closed_on_click_t::no, _(desc))
+        , joe(parent, rect_joe, &img::pepa_42x64) {
         joe.SetAlignment(Align_t::Center());
     }
 
@@ -163,15 +160,15 @@ protected:
 class FrameTitleDescRadioQR : public FrameTitleRadio {
 
 public:
-    FrameTitleDescRadioQR(window_t *parent, Phase phase, const char *title, const char *desc, const char *qr_link)
+    FrameTitleDescRadioQR(window_frame_t *parent, Phase phase, const char *title, const char *desc, const char *qr_link)
         : FrameTitleRadio(parent, phase, title)
         , phase(phase)
         , desc_ptr(desc)
-        , qr(this, rect_qr, Align_t::Center(), qr_link)
-        , scan_me(this, rect_scan_me, is_multiline::no, is_closed_on_click_t::no, _("Scan me"))
-        , details(this, rect_details, is_multiline::no, is_closed_on_click_t::no, _("More details at"))
-        , link(this, rect_link, is_multiline::no, is_closed_on_click_t::no, string_view_utf8::MakeRAM(qr_link))
-        , desc(this, rect_desc_qr, is_multiline::yes) {
+        , qr(parent, rect_qr, Align_t::Center(), qr_link)
+        , scan_me(parent, rect_scan_me, is_multiline::no, is_closed_on_click_t::no, _("Scan me"))
+        , details(parent, rect_details, is_multiline::no, is_closed_on_click_t::no, _("More details at"))
+        , link(parent, rect_link, is_multiline::no, is_closed_on_click_t::no, string_view_utf8::MakeRAM(qr_link))
+        , desc(parent, rect_desc_qr, is_multiline::yes) {
         qr.SetAlignment(Align_t::RightTop());
         details.set_font(Font::small);
         link.set_font(Font::small);
@@ -227,22 +224,47 @@ protected:
 
 class FrameAdjustKnob : public FrameTitle {
 
+    class DoneResponder : public window_t {
+
+    public:
+        DoneResponder(window_t *parent, Phase phase)
+            : window_t(parent, Rect16 {})
+            , phase_(phase) {
+        }
+
+    protected:
+        const Phase phase_;
+
+        virtual void windowEvent([[maybe_unused]] window_t *sender, GUI_event_t event, [[maybe_unused]] void *param) override {
+            switch (event) {
+            case GUI_event_t::CLICK:
+                marlin_client::FSM_response(phase_, Response::Done);
+                break;
+            default:
+                break;
+            }
+        }
+    };
+
 public:
-    FrameAdjustKnob(window_t *parent, Phase phase, const char *title, const char *desc)
+    FrameAdjustKnob(window_frame_t *parent, Phase phase, const char *title, const char *desc)
         : FrameTitle(parent, title)
         , phase(phase)
-        , desc(this, rect_desc_knob, is_multiline::yes, is_closed_on_click_t::no, _(desc))
-        , numb(this, rect_numb, 0, "%0.1f Hz")
-        , knob(this, rect_knob, &img::turn_knob_81x55)
-        , plus(this, rect_plus, is_multiline::no, is_closed_on_click_t::no, string_view_utf8::MakeRAM("+"))
-        , minus(this, rect_minus, is_multiline::no, is_closed_on_click_t::no, string_view_utf8::MakeRAM("-")) {
+        , desc(parent, rect_desc_knob, is_multiline::yes, is_closed_on_click_t::no, _(desc))
+        , numb(parent, rect_numb, 0, "%0.1f Hz")
+        , knob(parent, rect_knob, &img::turn_knob_81x55)
+        , plus(parent, rect_plus, is_multiline::no, is_closed_on_click_t::no, string_view_utf8::MakeRAM("+"))
+        , minus(parent, rect_minus, is_multiline::no, is_closed_on_click_t::no, string_view_utf8::MakeRAM("-"))
+        , done(parent, phase) {
         plus.SetAlignment(Align_t::Center());
         plus.set_font(Font::big);
-        plus.SetTextColor(COLOR_ORANGE);
+        plus.SetTextColor(COLOR_BRAND);
         minus.SetAlignment(Align_t::Center());
         minus.set_font(Font::big);
-        minus.SetTextColor(COLOR_ORANGE);
+        minus.SetTextColor(COLOR_BRAND);
         numb.SetAlignment(Align_t::Center());
+
+        static_cast<window_frame_t *>(parent)->CaptureNormalWindow(done);
     }
 
     void update(fsm::PhaseData data) {
@@ -254,16 +276,6 @@ public:
         }
     }
 
-    virtual void windowEvent([[maybe_unused]] window_t *sender, GUI_event_t event, [[maybe_unused]] void *param) override {
-        switch (event) {
-        case GUI_event_t::CLICK:
-            marlin_client::FSM_response(phase, Response::Done);
-            break;
-        default:
-            break;
-        }
-    }
-
 private:
     Phase phase;
     window_text_t desc;
@@ -271,34 +283,24 @@ private:
     window_icon_t knob;
     window_text_t plus;
     window_text_t minus;
+    DoneResponder done;
 };
 
 } // namespace frames
 
 namespace {
 
-using FrameIntro = WithConstructorArgs<frames::FrameTitleDescRadioQR, Phase::intro, txt_title_begin, txt_desc_begin, link_begin_calib>;
-using FrameCheckXGantry = WithConstructorArgs<frames::FrameTitleDescRadioQR, Phase::check_x_gantry, txt_title_gantry, txt_desc_gantry, link_belt_calib_gantry>;
-using FrameWait = WithConstructorArgs<frames::FrameWait>;
-using FrameIntroMeasure = WithConstructorArgs<frames::FrameTitleDescRadioQR, Phase::intro_measure, txt_title_measure, txt_desc_measure, link_begin_calib>;
-using FrameMeasureUpBelt = WithConstructorArgs<frames::FrameAdjustKnob, Phase::measure_upper_belt, txt_title_up_belt_freq, txt_desc_up_belt_freq>;
-using FrameMeasureLoBelt = WithConstructorArgs<frames::FrameAdjustKnob, Phase::measure_lower_belt, txt_title_lo_belt_freq, txt_desc_lo_belt_freq>;
-using FrameShowTensions = WithConstructorArgs<frames::FrameTitleDescRadio, Phase::show_tension, txt_title_freq_report, txt_desc_freq_report>;
-using FrameAlignmentIssue = WithConstructorArgs<frames::FrameTitleDescRadioQR, Phase::alignment_issue, txt_title_alignment_issue, txt_desc_alignment_issue, link_belt_calib_gantry>;
-using FrameAdjustTensioners = WithConstructorArgs<frames::FrameTitleDescRadioQR, Phase::adjust_tensioners, txt_title_turn_screw, txt_desc_turn_screw, link_tensioning>;
-using FrameFinished = WithConstructorArgs<frames::FrameFinishJoe, Phase::finished, txt_title_finished, txt_desc_finished>;
-
 using Frames = FrameDefinitionList<ScreenManualBeltTuning::FrameStorage,
-    FrameDefinition<Phase::intro, FrameIntro>,
-    FrameDefinition<Phase::check_x_gantry, FrameCheckXGantry>,
-    FrameDefinition<Phase::homing_wait, FrameWait>,
-    FrameDefinition<Phase::intro_measure, FrameIntroMeasure>,
-    FrameDefinition<Phase::measure_upper_belt, FrameMeasureUpBelt>,
-    FrameDefinition<Phase::measure_lower_belt, FrameMeasureLoBelt>,
-    FrameDefinition<Phase::show_tension, FrameShowTensions>,
-    FrameDefinition<Phase::alignment_issue, FrameAlignmentIssue>,
-    FrameDefinition<Phase::adjust_tensioners, FrameAdjustTensioners>,
-    FrameDefinition<Phase::finished, FrameFinished>>;
+    FrameDefinition<Phase::intro, frames::FrameTitleDescRadioQR, Phase::intro, txt_title_begin, txt_desc_begin, link_begin_calib>,
+    FrameDefinition<Phase::check_x_gantry, frames::FrameTitleDescRadioQR, Phase::check_x_gantry, txt_title_gantry, txt_desc_gantry, link_belt_calib_gantry>,
+    FrameDefinition<Phase::homing_wait, frames::FrameWait>,
+    FrameDefinition<Phase::intro_measure, frames::FrameTitleDescRadioQR, Phase::intro_measure, txt_title_measure, txt_desc_measure, link_begin_calib>,
+    FrameDefinition<Phase::measure_upper_belt, frames::FrameAdjustKnob, Phase::measure_upper_belt, txt_title_up_belt_freq, txt_desc_up_belt_freq>,
+    FrameDefinition<Phase::measure_lower_belt, frames::FrameAdjustKnob, Phase::measure_lower_belt, txt_title_lo_belt_freq, txt_desc_lo_belt_freq>,
+    FrameDefinition<Phase::show_tension, frames::FrameTitleDescRadio, Phase::show_tension, txt_title_freq_report, txt_desc_freq_report>,
+    FrameDefinition<Phase::alignment_issue, frames::FrameTitleDescRadioQR, Phase::alignment_issue, txt_title_alignment_issue, txt_desc_alignment_issue, link_belt_calib_gantry>,
+    FrameDefinition<Phase::adjust_tensioners, frames::FrameTitleDescRadioQR, Phase::adjust_tensioners, txt_title_turn_screw, txt_desc_turn_screw, link_tensioning>,
+    FrameDefinition<Phase::finished, frames::FrameFinishJoe, Phase::finished, txt_title_finished, txt_desc_finished>>;
 
 } // namespace
 

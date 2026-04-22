@@ -1,4 +1,5 @@
 #include <device/cmsis.h>
+#include <bsod/bsod.h>
 
 void system_core_init() {
     RCC_OscInitTypeDef RCC_OscInitStruct {};
@@ -17,7 +18,7 @@ void system_core_init() {
     RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
     RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV5;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-        system_core_error_handler();
+        bsod_system();
     }
 
     // Initializes the CPU, AHB and APB buses clocks
@@ -28,6 +29,6 @@ void system_core_init() {
     RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
-        system_core_error_handler();
+        bsod_system();
     }
 }

@@ -4,6 +4,8 @@
 #include <gui/screen_menu.hpp>
 #include <gui/MItem_network.hpp>
 
+#include <option/has_esp.h>
+
 #include <option/buddy_enable_connect.h>
 #if BUDDY_ENABLE_CONNECT()
     #include <gui/screen_menu_connect.hpp>
@@ -52,8 +54,10 @@ public:
 
 using MenuBase = ScreenMenu<EFooter::Off,
     MI_RETURN,
+#if HAS_ESP()
     MI_WIFI_STATUS_t,
     MI_WIFI_SIGNAL_t,
+#endif
     MI_IP4_ADDR, MI_IP4_GWAY, MI_MAC_ADDR, MI_HOSTNAME, MI_IP4_DNS1,
 #if BUDDY_ENABLE_CONNECT()
     MI_CONNECT_HOST, MI_CONNECT_IP,

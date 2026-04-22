@@ -64,7 +64,6 @@ if(BOARD_IS_MASTER_BOARD)
             Marlin/Marlin/src/gcode/bedlevel/ubl/G29.cpp
             Marlin/Marlin/src/gcode/bedlevel/ubl/M421.cpp
             Marlin/Marlin/src/gcode/calibrate/G28.cpp
-            Marlin/Marlin/src/gcode/calibrate/G65.cpp
             Marlin/Marlin/src/gcode/calibrate/G80.cpp
             Marlin/Marlin/src/gcode/calibrate/M666.cpp
             Marlin/Marlin/src/gcode/config/M200-M205.cpp
@@ -81,9 +80,7 @@ if(BOARD_IS_MASTER_BOARD)
             Marlin/Marlin/src/gcode/control/M120_M121.cpp
             Marlin/Marlin/src/gcode/control/M17_M18_M84.cpp
             Marlin/Marlin/src/gcode/control/M211.cpp
-            Marlin/Marlin/src/gcode/control/M226.cpp
             Marlin/Marlin/src/gcode/control/M350_M351.cpp
-            Marlin/Marlin/src/gcode/control/M42.cpp
             Marlin/Marlin/src/gcode/control/M7-M9.cpp
             Marlin/Marlin/src/gcode/control/M80_M81.cpp
             Marlin/Marlin/src/gcode/control/M86.cpp
@@ -103,7 +100,6 @@ if(BOARD_IS_MASTER_BOARD)
             Marlin/Marlin/src/gcode/feature/trinamic/M906.cpp
             Marlin/Marlin/src/gcode/feature/trinamic/M911-M914.cpp
             Marlin/Marlin/src/gcode/gcode.cpp
-            Marlin/Marlin/src/gcode/geometry/G53-G59.cpp
             Marlin/Marlin/src/gcode/geometry/G92.cpp
             Marlin/Marlin/src/gcode/geometry/M206_M428.cpp
             Marlin/Marlin/src/gcode/host/M110.cpp
@@ -114,7 +110,6 @@ if(BOARD_IS_MASTER_BOARD)
             Marlin/Marlin/src/gcode/host/M16.cpp
             Marlin/Marlin/src/gcode/lcd/M0_M1.cpp
             Marlin/Marlin/src/gcode/lcd/M117.cpp
-            Marlin/Marlin/src/gcode/lcd/M300.cpp
             Marlin/Marlin/src/gcode/lcd/M73_PE.cpp
             Marlin/Marlin/src/gcode/motion/G0_G1.cpp
             Marlin/Marlin/src/gcode/motion/G2_G3.cpp
@@ -138,18 +133,15 @@ if(BOARD_IS_MASTER_BOARD)
             Marlin/Marlin/src/gcode/units/M82_M83.cpp
             Marlin/Marlin/src/HAL/HAL_STM32_F4_F7/Servo.cpp
             Marlin/Marlin/src/HAL/HAL_STM32_F4_F7/STM32F7/TMC2660.cpp
-            Marlin/Marlin/src/libs/buzzer.cpp
             Marlin/Marlin/src/libs/crc16.cpp
             Marlin/Marlin/src/libs/hex_print_routines.cpp
             Marlin/Marlin/src/libs/least_squares_fit.cpp
             Marlin/Marlin/src/libs/numtostr.cpp
             Marlin/Marlin/src/libs/vector_3.cpp
-            Marlin/Marlin/src/module/delta.cpp
             Marlin/Marlin/src/module/planner_bezier.cpp
             Marlin/Marlin/src/module/printcounter.cpp
             Marlin/Marlin/src/module/probe.cpp
             Marlin/Marlin/src/module/prusa/homing_utils.cpp
-            Marlin/Marlin/src/module/scara.cpp
             Marlin/Marlin/src/module/servo.cpp
             Marlin/Marlin/src/module/stepper/TMC26X.cpp
     )
@@ -202,6 +194,7 @@ if(BOARD_IS_MASTER_BOARD)
               Marlin/Marlin/src/module/prusa/tool_mapper.cpp
               Marlin/Marlin/src/module/prusa/toolchanger.cpp
               Marlin/Marlin/src/module/prusa/toolchanger_utils.cpp
+              Marlin/Marlin/src/module/tool_change.cpp
       )
   endif()
 
@@ -245,11 +238,17 @@ target_link_libraries(
          Marlin_Config
          error_codes
          marlin_server_types
+         bsod
          SG14
          buddy_utils
+         raii
   )
 target_link_libraries(Marlin PRIVATE CppStdExtensions logging freertos)
 
+if(HAS_AC_CONTROLLER)
+  target_link_libraries(Marlin PRIVATE ac_controller)
+endif()
+
 if(HAS_XBUDDY_EXTENSION)
-  target_link_libraries(Marlin PUBLIC XBuddyExtensionShared)
+  target_link_libraries(Marlin PUBLIC xbuddy_extension)
 endif()

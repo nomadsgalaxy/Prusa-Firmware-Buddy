@@ -40,8 +40,9 @@ using FooterItemMappings = TypeList< //
     FooterItemMappingRec<FooterItemNone, Item::none>,
     FooterItemMappingRec<FooterItemBed, Item::bed>,
     FooterItemMappingRec<FooterItemFilament, Item::filament>,
-#if _DEBUG
     FooterItemMappingRec<FooterItemFSValue, Item::f_s_value>,
+#if HAS_SIDE_FSENSOR()
+    FooterItemMappingRec<FooterItemFSValueSide, Item::f_s_value_side>,
 #endif
     FooterItemMappingRec<FooterItemFSensor, Item::f_sensor>,
     FooterItemMappingRec<FooterItemSpeed, Item::speed>,

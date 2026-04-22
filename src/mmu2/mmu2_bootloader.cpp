@@ -3,7 +3,7 @@
 #include <memory>
 #include <cstring>
 
-#include <scope_guard.hpp>
+#include <raii/scope_guard.hpp>
 #include <timing.h>
 #include <logging/log.hpp>
 #include <wiring_time.h>

@@ -8,6 +8,8 @@
 #include <option/has_puppies.h>
 #include "utility_extensions.hpp"
 
+#include <option/has_esp.h>
+
 namespace TaskDeps {
 
 /**
@@ -24,7 +26,9 @@ enum class Dependency : size_t {
     resources_ready,
     usb_device_ready,
     default_task_ready,
+#if HAS_ESP()
     esp_flashed,
+#endif
     networking_ready,
     usb_temp_gui_ready, ///< Check autoprint and powerpanic state
     gui_display_ready, ///< Display is initialized and ready
@@ -37,10 +41,6 @@ static_assert(std::to_underlying(Dependency::_count) <= sizeof(dependency_t) * 8
 
 // Create dependency mask from the dependencies enum
 constexpr dependency_t make(std::same_as<Dependency> auto... dependencies) {
-    // Feel free to lift the assert in case some build configuration results in empty list
-#if HAS_PUPPIES()
-    static_assert(sizeof...(dependencies) > 0, "No dependencies, is this intended?");
-#endif
     return ((1 << std::to_underlying(dependencies)) | ... | 0);
 }
 
@@ -56,18 +56,26 @@ namespace Tasks {
     inline constexpr dependency_t marlin_client = make(Dependency::default_task_ready);
     inline constexpr dependency_t puppy_run = make(Dependency::default_task_ready);
     inline constexpr dependency_t bootstrap_done = make(
-        Dependency::resources_ready,
-        Dependency::esp_flashed
-#if HAS_PUPPIES()
-        ,
-        Dependency::puppies_ready
+#if HAS_ESP()
+        Dependency::esp_flashed,
 #endif
-    );
+#if HAS_PUPPIES()
+        Dependency::puppies_ready,
+#endif
+        Dependency::resources_ready);
     inline constexpr dependency_t connect = make(Dependency::networking_ready);
     inline constexpr dependency_t syslog = make(Dependency::networking_ready);
-    inline constexpr dependency_t network = make(Dependency::esp_flashed);
+    inline constexpr dependency_t network = make(
+#if HAS_ESP()
+        Dependency::esp_flashed
+#endif
+    );
     inline constexpr dependency_t bootstrap_start = make(Dependency::gui_display_ready);
-    inline constexpr dependency_t puppy_task_start = make(Dependency::esp_flashed);
+    inline constexpr dependency_t puppy_task_start = make(
+#if HAS_ESP()
+        Dependency::esp_flashed
+#endif
+    );
 
 } // namespace Tasks
 

@@ -10,6 +10,7 @@
 #include "selftest_log.hpp"
 #include "loadcell.hpp"
 #include <sound.hpp>
+#include <mapi/parking.hpp>
 #include <module/temperature.h>
 #include <module/endstops.h>
 #include <feature/motordriver_util.h>
@@ -17,6 +18,7 @@
 #include "i_selftest.hpp"
 #include "algorithm_scale.hpp"
 #include <climits>
+#include <sensor_data.hpp>
 
 #include <option/has_toolchanger.h>
 #if HAS_TOOLCHANGER()
@@ -38,8 +40,6 @@ CSelftestPart_Loadcell::CSelftestPart_Loadcell(IPartHandler &state_machine, cons
     : rStateMachine(state_machine)
     , rConfig(config)
     , rResult(result)
-    , currentZ(0.F)
-    , targetZ(0.F)
     , begin_target_temp(thermalManager.degTargetHotend(rConfig.tool_nr))
     , time_start(SelftestInstance().GetTime())
     , log(1000)
@@ -55,12 +55,12 @@ CSelftestPart_Loadcell::~CSelftestPart_Loadcell() {
     endstops.enable(false);
 }
 
-LoopResult CSelftestPart_Loadcell::stateMoveUpInit() {
+LoopResult CSelftestPart_Loadcell::stateParkingInit() {
     IPartHandler::SetFsmPhase(PhasesSelftest::Loadcell_move_away);
     return LoopResult::RunNext;
 }
 
-LoopResult CSelftestPart_Loadcell::stateMoveUp() {
+LoopResult CSelftestPart_Loadcell::statePrepareParking() {
     planner.synchronize(); // finish current move (there should be none)
     endstops.validate_homing_move();
 
@@ -71,25 +71,25 @@ LoopResult CSelftestPart_Loadcell::stateMoveUp() {
 #if ENABLED(SENSORLESS_HOMING)
     start_sensorless_homing_per_axis(AxisEnum::Z_AXIS);
 #endif
-
-    currentZ = current_position.z;
-    targetZ = rConfig.z_extra_pos;
-    if (targetZ > currentZ) {
-        log_info(Selftest, "%s move up, target: %f current: %f", rConfig.partname, double(targetZ), double(currentZ));
-        current_position.z = rConfig.z_extra_pos;
-        line_to_current_position(rConfig.z_extra_pos_fr);
-    } else {
-        log_info(Selftest, "%s move up not needed, target: %f > current: %f", rConfig.partname, double(targetZ), double(currentZ));
-    }
     return LoopResult::RunNext;
 }
 
-LoopResult CSelftestPart_Loadcell::stateMoveUpWaitFinish() {
-    if (planner.processing()) {
-        currentZ = current_position.z;
-        return LoopResult::RunCurrent;
+LoopResult CSelftestPart_Loadcell::stateParking() {
+    log_info(Selftest, "%s, parking", rConfig.partname);
+
+    if (rConfig.z_extra_pos > current_position.z) {
+        // Z move might hit the end of the axis
+        current_position.z = rConfig.z_extra_pos;
+        line_to_current_position(rConfig.z_extra_pos_fr);
+        planner.synchronize();
     }
-    log_info(Selftest, "%s move up finished", rConfig.partname);
+
+#if PRINTER_IS_PRUSA_iX()
+    mapi::home_if_needed_and_park(mapi::ZAction::no_move, mapi::park_positions[mapi::ParkPosition::load]);
+#else
+    mapi::home_if_needed_and_park(mapi::ZAction::no_move, mapi::park_positions[mapi::ParkPosition::park]);
+#endif
+
     return LoopResult::RunNext;
 }
 
@@ -236,7 +236,7 @@ LoopResult CSelftestPart_Loadcell::stateTapCheckCountDownInit() {
 }
 
 LoopResult CSelftestPart_Loadcell::stateTapCheckCountDown() {
-    const int32_t load = -1 * loadcell.get_tared_z_load(); // Positive when pushing the nozzle up
+    const int32_t load = -1 * sensor_data().loadCell.load(); // Positive when pushing the nozzle up
     loadcell_value_range.min = std::min(loadcell_value_range.min, load);
     loadcell_value_range.max = std::max(loadcell_value_range.max, load);
 
@@ -284,7 +284,7 @@ LoopResult CSelftestPart_Loadcell::stateTapCheck() {
         return LoopResult::GoToMark0; // timeout, retry entire touch sequence
     }
 
-    int32_t load = -1 * loadcell.get_tared_z_load(); // Positive when pushing the nozzle up
+    int32_t load = -1 * sensor_data().loadCell.load(); // Positive when pushing the nozzle up
     bool pass = (load >= rConfig.tap_min_load_ok) && (load <= rConfig.tap_max_load_ok);
     if (pass) {
         log_info(Selftest, "%s tap check, load %dg successful in range <%d, %d>",

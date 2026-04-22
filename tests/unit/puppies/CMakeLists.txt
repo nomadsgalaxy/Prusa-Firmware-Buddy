@@ -8,6 +8,7 @@ add_executable(
 target_include_directories(
   fifo_coder_tests PUBLIC ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/tests/stubs
   )
+target_link_libraries(fifo_coder_tests logging-mock)
 
 add_catch_test(fifo_coder_tests)
 

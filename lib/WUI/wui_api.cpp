@@ -140,8 +140,12 @@ uint32_t load_ini_file_wifi(netif_config_t *config, ap_entry_t *ap) {
     return ini_load_file(ini_handler_func, &def);
 }
 
-void save_net_params(netif_config_t *ethconfig, ap_entry_t *ap, uint32_t netdev_id) {
+void save_net_params(netif_config_t *ethconfig, [[maybe_unused]] ap_entry_t *ap, uint32_t netdev_id) {
+#if HAS_ESP()
     assert(netdev_id == NETDEV_ETH_ID || netdev_id == NETDEV_ESP_ID);
+#else
+    assert(netdev_id == NETDEV_ETH_ID);
+#endif
 
     auto &store = config_store();
     auto transaction = store.get_backend().transaction_guard();
@@ -174,6 +178,7 @@ void save_net_params(netif_config_t *ethconfig, ap_entry_t *ap, uint32_t netdev_
         store.hostname.set(ethconfig->hostname);
     }
 
+#if HAS_ESP()
     if (ap != NULL) {
         assert(netdev_id == NETDEV_ESP_ID);
         static_assert(SSID_MAX_LEN == config_store_ns::wifi_max_ssid_len);
@@ -186,10 +191,15 @@ void save_net_params(netif_config_t *ethconfig, ap_entry_t *ap, uint32_t netdev_
             store.wifi_ap_password.set(ap->pass);
         }
     }
+#endif
 }
 
-void load_net_params(netif_config_t *ethconfig, ap_entry_t *ap, uint32_t netdev_id) {
+void load_net_params(netif_config_t *ethconfig, [[maybe_unused]] ap_entry_t *ap, uint32_t netdev_id) {
+#if HAS_ESP()
     assert(netdev_id == NETDEV_ETH_ID || netdev_id == NETDEV_ESP_ID);
+#else
+    assert(netdev_id == NETDEV_ETH_ID);
+#endif
 
     auto &store = config_store();
 
@@ -212,12 +222,14 @@ void load_net_params(netif_config_t *ethconfig, ap_entry_t *ap, uint32_t netdev_
 
     strlcpy(ethconfig->hostname, store.hostname.get_c_str(), HOSTNAME_LEN + 1);
 
+#if HAS_ESP()
     if (ap != NULL) {
         assert(netdev_id == NETDEV_ESP_ID);
 
         strlcpy(ap->ssid, store.wifi_ap_ssid.get_c_str(), SSID_MAX_LEN + 1);
         strlcpy(ap->pass, store.wifi_ap_password.get_c_str(), WIFI_PSK_MAX + 1);
     }
+#endif
 }
 
 void get_MAC_address(mac_address_t *dest, uint32_t netdev_id) {

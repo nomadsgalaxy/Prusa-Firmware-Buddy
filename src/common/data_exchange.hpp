@@ -16,16 +16,14 @@ bool running_in_tester_mode();
 namespace data_exchange {
 
 #if HAS_XLCD()
-OtpStatus get_xlcd_status();
-
-XlcdEeprom get_xlcd_eeprom();
+const XlcdEeprom &get_xlcd_eeprom();
 #endif
 
 // MK3.5 doesn't have a loveboard, but it needs the detection to complain if it's running on an MK4
 #if HAS_LOVE_BOARD() || PRINTER_IS_PRUSA_MK3_5()
-OtpStatus get_loveboard_status();
+const OtpStatus &get_loveboard_status();
 
-LoveBoardEeprom get_loveboard_eeprom();
+const LoveBoardEeprom &get_loveboard_eeprom();
 #endif
 
 void fw_update_on_restart_enable();

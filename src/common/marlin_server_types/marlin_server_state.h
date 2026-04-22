@@ -7,7 +7,6 @@ namespace marlin_server {
 
 enum class State {
     Idle,
-    WaitGui,
     PrintPreviewInit, ///< Print is being initialized
     PrintPreviewImage, ///< Showing print preview and waiting for user to click print
     PrintPreviewConfirmed, ///< Print is confirmed to be printed (either user clicked print, or WUI/Connect started print without confirmation on printer)

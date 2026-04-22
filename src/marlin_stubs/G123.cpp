@@ -5,7 +5,7 @@
 #include <module/motion.h>
 #include <module/planner.h>
 #include <gcode/queue.h>
-#include <scope_guard.hpp>
+#include <raii/scope_guard.hpp>
 #include <marlin_vars.hpp>
 
 #include <option/has_auto_retract.h>

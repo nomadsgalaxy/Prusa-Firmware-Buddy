@@ -20,6 +20,7 @@ enum class FwAutoUpdate : uint8_t {
     tester_mode_1 = 0xCA,
     tester_mode_2 = 0xCB,
     tester_mode_3 = 0xCC,
+    tester_mode_4 = 0xCD,
 };
 
 struct __attribute__((packed)) DataExchange {
@@ -35,7 +36,9 @@ struct __attribute__((packed)) DataExchange {
     LoveBoardEeprom loveboard_eeprom; // 32B
 }; // 100B in total
 
-DataExchange ram_data_exchange __attribute__((section(".boot_fw_data_exchange")));
+// Do not forget to modify linker script if you change any of those.
+DataExchange &ram_data_exchange = *(DataExchange *)SRAM1_BASE;
+static_assert(sizeof(DataExchange) == 100);
 
 #if !BOOTLOADER()
 
@@ -131,6 +134,7 @@ static FwAutoUpdate get_auto_update_flag(void) {
     case FwAutoUpdate::tester_mode_1:
     case FwAutoUpdate::tester_mode_2:
     case FwAutoUpdate::tester_mode_3:
+    case FwAutoUpdate::tester_mode_4:
         return ram_data_exchange.fw_update_flag;
     }
     return FwAutoUpdate::off; // somehow corrupted data in shared RAM, no update
@@ -139,21 +143,17 @@ static FwAutoUpdate get_auto_update_flag(void) {
 namespace data_exchange {
 
 #if HAS_XLCD()
-OtpStatus get_xlcd_status() {
-    return ram_data_exchange.xlcd_status;
-}
-
-XlcdEeprom get_xlcd_eeprom() {
+const XlcdEeprom &get_xlcd_eeprom() {
     return ram_data_exchange.xlcd_eeprom;
 }
 #endif
 
 #if HAS_LOVE_BOARD() || PRINTER_IS_PRUSA_MK3_5()
-OtpStatus get_loveboard_status() {
+const OtpStatus &get_loveboard_status() {
     return ram_data_exchange.loveboard_status;
 }
 
-LoveBoardEeprom get_loveboard_eeprom() {
+const LoveBoardEeprom &get_loveboard_eeprom() {
     return ram_data_exchange.loveboard_eeprom;
 }
 #endif
@@ -194,6 +194,7 @@ bool running_in_tester_mode() {
     case FwAutoUpdate::tester_mode_1:
     case FwAutoUpdate::tester_mode_2:
     case FwAutoUpdate::tester_mode_3:
+    case FwAutoUpdate::tester_mode_4:
         return true;
     }
     return false;

@@ -340,11 +340,11 @@ public:
     void store_single_item(Id id, const std::span<const uint8_t> &data);
 
 public:
-    void load_all(const UpdateFunction &update_function, std::span<const MigrationFunction> migration_functions);
+    void load_all(const UpdateFunction &update_function, const std::span<const MigrationFunction> &migration_functions);
 
     void init(const DumpCallback &callback);
 
-    void save(uint16_t id, std::span<const uint8_t> data);
+    void save(uint16_t id, const std::span<const uint8_t> &data);
     std::unique_lock<freertos::Mutex> lock();
     JournalState get_journal_state() const;
 

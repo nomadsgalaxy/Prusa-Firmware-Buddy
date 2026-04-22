@@ -5,15 +5,16 @@
 #include "PuppyBus.hpp"
 #include <atomic>
 #include <freertos/mutex.hpp>
-#include <xbuddy_extension_shared/mmu_bridge.hpp>
-#include <xbuddy_extension_shared/xbuddy_extension_shared_enums.hpp>
+#include <xbuddy_extension/mmu_bridge.hpp>
+#include <xbuddy_extension/modbus.hpp>
+#include <xbuddy_extension/shared_enums.hpp>
 
 namespace buddy::puppies {
 
 class XBuddyExtension final : public ModbusDevice {
 public:
-    static constexpr size_t FAN_CNT = xbuddy_extension_shared::fan_count;
-    using FilamentSensorState = xbuddy_extension_shared::FilamentSensorState;
+    static constexpr size_t FAN_CNT = xbuddy_extension::fan_count;
+    using FilamentSensorState = xbuddy_extension::FilamentSensorState;
 
     XBuddyExtension(PuppyModbus &bus, const uint8_t modbus_address);
 
@@ -48,6 +49,9 @@ public:
     std::optional<FilamentSensorState> get_filament_sensor_state() const;
 
     uint8_t get_requested_fan_pwm(size_t fan_idx);
+
+    /// Get current flash progress (0-100 percent, 0 if not flashing)
+    uint8_t get_flash_progress_percent() const;
 
     bool get_usb_power() const;
 
@@ -123,7 +127,7 @@ public:
         uint16_t commandStatus; // accepted, rejected, progress, error - simply ResponseMsgParamCodes
         uint16_t pec; // either progressCode (x)or errorCode
     };
-    using MMUQueryRegisters = ModbusInputRegisterBlock<xbuddy_extension_shared::mmu_bridge::commandInProgressRegisterAddress, MMUQueryMultiRegister>;
+    using MMUQueryRegisters = ModbusInputRegisterBlock<xbuddy_extension::mmu_bridge::commandInProgressRegisterAddress, MMUQueryMultiRegister>;
 
     const MMUQueryRegisters &mmu_query_registers() const { return mmuQuery; }
 
@@ -138,45 +142,28 @@ private:
     // nullopt for queries.
     bool valid = false;
 
-    // TODO: More registers?
+    using Config = xbuddy_extension::modbus::Config;
+    ModbusHoldingRegisterBlock<Config::address, Config> config;
 
-    MODBUS_REGISTER Requiremnt {
-        // 0-255
-        std::array<uint16_t, FAN_CNT> fan_pwm = { 0, 0, 0 };
+    using Status = xbuddy_extension::modbus::Status;
+    ModbusInputRegisterBlock<Status::address, Status> status;
 
-        // 0-255
-        uint16_t white_led = 0;
-        // Split into components, each 0-255, for convenience.
-        std::array<uint16_t, 4> rgbw_led = { 0, 0, 0, 0 };
+    // Track last log sequence to detect new log messages
+    uint16_t last_log_message_sequence = 0;
 
-        // technicaly a boolean - enables power for usb port
-        uint16_t usb_power_enable = true;
+    // To not send activity updates too often.
+    uint32_t last_activity_update = 0;
 
-        // technicaly a boolean - enables power for the MMU port
-        uint16_t mmu_power_enable = false;
-        // technicaly a boolean - sets the MMU port non-reset pin
-        uint16_t mmu_nreset = true;
-        // Frequency of the white led PWM.
-        //
-        // 0 = default left to discretion of the extension board.
-        // Is the frequency of the full cycle, in Hz.
-        //
-        // Can be used to implement a "strobe"
-        //
-        // Warning: PWM timer shared with some fans.
-        uint16_t white_led_freq = 0;
-    };
-    ModbusHoldingRegisterBlock<0x9000, Requiremnt> requirement;
+    // Just don't resend another request unless a new request comes.
+    xbuddy_extension::modbus::ChunkRequest last_chunk_request = {};
 
-    MODBUS_REGISTER Status {
-        std::array<uint16_t, FAN_CNT> fan_rpm = { 0, 0, 0 };
-        // In degrees * 10 (eg. 23.5°C = 235 in the register)
-        uint16_t chamber_temp = 0;
-        uint16_t mmu_power_enable = false;
-        uint16_t mmu_nreset = true;
-        uint16_t filament_sensor_state = 0;
-    };
-    ModbusInputRegisterBlock<0x8000, Status> status;
+    // The file we are reading from during flashing (-1 when not flashing).
+    int flash_fd = -1;
+
+    // The size of the flash file (cached when opening, 0 when not flashing).
+    size_t flash_file_size = 0;
+
+    void close_flash_file();
 
     CommunicationStatus refresh_holding();
     CommunicationStatus refresh_input(uint32_t max_age);
@@ -186,6 +173,9 @@ private:
     MMUModbusRequest mmuModbusRq;
 
     CommunicationStatus refresh_mmu();
+    CommunicationStatus write_chunk();
+    CommunicationStatus write_digest();
+    CommunicationStatus refresh_log_message();
 };
 
 extern XBuddyExtension xbuddy_extension;

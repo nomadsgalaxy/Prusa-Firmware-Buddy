@@ -1,9 +1,10 @@
 // screen_home.cpp
 #include "screen_home.hpp"
 #include "stdio.h"
-#include "file_raii.hpp"
+#include "file_sort.hpp"
 
 #include "config.h"
+#include <option/signature_oak.h>
 
 #include "marlin_client.hpp"
 #include "screen_filebrowser.hpp"
@@ -28,9 +29,9 @@
 #include "tasks.hpp"
 
 #include "screen_printing.hpp"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 
-#include "RAII.hpp"
+#include <raii/auto_restore.hpp>
 #include "lazyfilelist.hpp"
 #include "i18n.h"
 #include "i2c.hpp"
@@ -147,16 +148,16 @@ bool screen_home_data_t::need_check_wifi_credentials = true;
     auto sb = StringBuilder::from_ptr(fpath, fpath_len);
     sb.append_string("/usb/");
 
-    F_DIR_RAII_Iterator dir(fpath);
-    if (dir.result == ResType::NOK) {
+    Directory dir { fpath };
+    if (!dir) {
         return false;
     }
 
     // prepare the item at the zeroth position according to sort policy
     FileSort::Entry entry;
 
-    while (dir.FindNext()) {
-        const FileSort::EntryRef curr(*dir.fno, fpath);
+    while (dirent *fno = FileSort::find_next(dir)) {
+        const FileSort::EntryRef curr(*fno, fpath);
 
         if (curr.type != FileSort::EntryType::FILE) {
             continue;
@@ -224,9 +225,13 @@ screen_home_data_t::screen_home_data_t()
 
     {
         StringBuilder sb(header_text);
+#if SIGNATURE_OAK()
+        sb.append_string("SIGNATURE OAK ");
+#else
         sb.append_string("PRUSA ");
         sb.append_string(PrinterModelInfo::current().id_str);
         sb.append_string(" ");
+#endif
         sb.append_string(version::project_version);
         sb.append_string(version::project_version_suffix_short);
 #if DEVELOPER_MODE()
@@ -325,17 +330,13 @@ void screen_home_data_t::handle_crash_dump() {
                         " Send it to: reports@prusa3d.com"),
             Responses_YesNo)
         == Response::Yes) {
-        auto do_stage = [&](const string_view_utf8 &msg, std::invocable<const ::crash_dump::DumpHandler *> auto fp) {
-            MsgBoxIconned box(GuiDefaults::DialogFrameRect, Responses_NONE, 0, nullptr, std::move(msg), is_multiline::yes, &img::info_58x58);
-            box.Show();
-            draw();
-            for (const auto &dump_handler : present_dumps) {
-                fp(dump_handler);
-            }
-            box.Hide();
-        };
-
-        do_stage(_("Saving to USB"), [](const ::crash_dump::DumpHandler *handler) { handler->usb_save(); });
+        MsgBoxIconned box { GuiDefaults::DialogFrameRect, Responses_NONE, 0, nullptr, _("Saving to USB"), is_multiline::yes, &img::info_58x58 };
+        box.Show();
+        draw();
+        for (const auto &dump_handler : present_dumps) {
+            dump_handler->usb_save();
+        }
+        box.Hide();
     }
 
     for (const auto &dump_handler : present_dumps) {

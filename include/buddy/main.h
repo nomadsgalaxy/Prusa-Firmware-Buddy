@@ -22,7 +22,6 @@ extern int HAL_PWM_Initialized;
 extern void init_error_screen();
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-void Error_Handler(void);
 
 #ifdef __cplusplus
 }

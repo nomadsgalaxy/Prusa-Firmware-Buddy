@@ -65,20 +65,21 @@ uint64_t get_test_mask(Action action) {
         return stmZAxis;
     case Action::Heaters:
         return stmHeaters;
-    case Action::FilamentSensorCalibration:
-        return stmFSensor;
+
     case Action::Loadcell:
         return stmLoadcell;
     case Action::ZAlign:
         return stmZcalib;
+
     case Action::Fans:
     case Action::PhaseSteppingCalibration:
 #if HAS_PRECISE_HOMING_COREXY()
     case Action::PreciseHoming:
 #endif
-        bsod("get_test_mask");
+    case Action::FilamentSensorCalibration:
     case Action::_count:
-        break;
+        // Implemented as a gcode/invalid
+        bsod_unreachable();
     }
     assert(false);
     return stmNone;

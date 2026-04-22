@@ -145,13 +145,13 @@ void MX_USB_HOST_Init(void) {
 
     usbh_power_cycle::init();
     if (USBH_Init(&hUsbHostHS, USBH_UserProcess, HOST_HS) != USBH_OK) {
-        Error_Handler();
+        bsod_system();
     }
     if (USBH_RegisterClass(&hUsbHostHS, USBH_MSC_CLASS) != USBH_OK) {
-        Error_Handler();
+        bsod_system();
     }
     if (USBH_Start(&hUsbHostHS) != USBH_OK) {
-        Error_Handler();
+        bsod_system();
     }
 }
 

@@ -1,17 +1,19 @@
 #pragma once
 
-#include "cooling.hpp"
+#include <option/xbuddy_extension_variant.h>
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
+    #include "cooling.hpp"
+#endif
 
 #include <optional>
 
 #include <utils/enum_array.hpp>
 #include <freertos/mutex.hpp>
-#include <leds/color.hpp>
+#include <utils/led_color.hpp>
 #include <temperature.hpp>
 #include <pwm_utils.hpp>
 
-#include <xbuddy_extension_shared/xbuddy_extension_shared_enums.hpp>
-#include <option/xbuddy_extension_variant_standard.h>
+#include <xbuddy_extension/shared_enums.hpp>
 
 namespace buddy {
 
@@ -26,18 +28,18 @@ public: // General things, status
         ready,
     };
 
-    using FilamentSensorState = xbuddy_extension_shared::FilamentSensorState;
+    using FilamentSensorState = xbuddy_extension::FilamentSensorState;
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     using FanRPM = uint16_t;
     using FanPWM = PWM255;
-    using Fan = xbuddy_extension_shared::Fan;
+    using Fan = xbuddy_extension::Fan;
     using FanPWMOrAuto = PWM255OrAuto;
 #endif
 
     Status status() const;
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     void step();
 
 public: // Fans
@@ -56,6 +58,21 @@ public: // Fans
     /// Sets target PWM for the given fan. The PWM can be overriden by some emergency events
     /// * Please note than PWM control for the cooling fans is shared (so calling this with Fan::cooling_fan_1 does the same as with Fan::cooling_fan_2)
     void set_fan_target_pwm(Fan fan, FanPWMOrAuto target);
+
+    // called on print start to use legacy chamber regulator for compatibility with old gcodes
+    void set_chamber_regulator_legacy(bool legacy) {
+        chamber_cooling.regulator_legacy = legacy;
+    };
+
+    void set_chamber_regulator_ramp_breakpoint_pwm(uint8_t pwm) {
+        chamber_cooling.ramp_breakpoint_pwm = pwm;
+        chamber_cooling.regulator_legacy = false;
+    };
+
+    void set_chamber_regulator_ramp_slope(float slope) {
+        chamber_cooling.ramp_slope = slope;
+        chamber_cooling.regulator_legacy = false;
+    };
 
     /// A convenience function returning a structure of data to be used in the Connect interface
     /// The key idea here is to avoid locking the internal mutex for every member while providing a consistent state of values.
@@ -126,6 +143,16 @@ public: // USB
 public: // Other
     /// \returns chamber temperature measured through the thermistor connected to the board, in degrees Celsius
     std::optional<Temperature> chamber_temperature();
+
+#elif XBUDDY_EXTENSION_VARIANT_IS_iX()
+    void set_heatbreak_fan_pwm(uint32_t value);
+    uint32_t get_heatbreak_fan_pwm();
+    uint32_t get_heatbreak_fan_rpm();
+    bool is_heatbreak_fan_ok();
+
+    void set_white_led(uint32_t intensity);
+    void set_strobe(std::optional<uint16_t> freq);
+    void set_rgbw_led(leds::ColorRGBW rgbw);
 #endif
 
     /// \returns state of the filament sensor
@@ -134,7 +161,7 @@ public: // Other
 private:
     mutable freertos::Mutex mutex_;
 
-#if XBUDDY_EXTENSION_VARIANT_STANDARD()
+#if XBUDDY_EXTENSION_VARIANT_IS_STANDARD()
     leds::ColorRGBW bed_leds_color_;
     std::optional<uint16_t> strobe_freq_ = std::nullopt;
 
@@ -150,11 +177,16 @@ private:
     uint32_t last_fan_update_ms;
 
     // keeps fan power up timestamp to measure headstart delay
-    EnumArray<Fan, uint32_t, xbuddy_extension_shared::fan_count> fan_start_timestamp = {};
+    EnumArray<Fan, uint32_t, xbuddy_extension::fan_count> fan_start_timestamp = {};
 
     bool can_auto_cool_ = false;
     bool overheating_warning_shown = false;
     bool critical_warning_shown = false;
+
+#elif XBUDDY_EXTENSION_VARIANT_IS_iX()
+    uint32_t hbr_fan_start_timestamp;
+
+    std::optional<uint32_t> white_intensity_override;
 #endif
 };
 

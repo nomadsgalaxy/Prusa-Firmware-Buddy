@@ -10,6 +10,8 @@ struct TypeList {
 /// Useful in GUI
 template <typename Parent, auto... args>
 class WithConstructorArgs final : public Parent {
+    static_assert(sizeof...(args) > 0, "It is pointless to use WithConstructorArgs without any args");
+
 public:
     template <typename... Args2>
     WithConstructorArgs(Args2 &&...args2)

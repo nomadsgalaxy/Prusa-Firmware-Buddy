@@ -268,7 +268,11 @@ void MI_CALIBRATE_FILAMENT_SENSORS::click(IWindowMenu &) {
         return;
     }
 
-    marlin_client::test_start_with_data(stmFSensor, (toolhead() == all_toolheads) ? ToolMask::AllTools : static_cast<ToolMask>(1 << std::get<ToolheadIndex>(toolhead())));
+    if (toolhead() == all_toolheads) {
+        marlin_client::gcode_printf("M1981 F%i", (1 << HOTENDS) - 1);
+    } else {
+        marlin_client::gcode_printf("M1981 T%i", std::get<ToolheadIndex>(toolhead()));
+    }
 }
 #endif
 

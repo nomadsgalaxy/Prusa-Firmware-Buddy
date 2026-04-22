@@ -7,7 +7,7 @@
 #include <segmented_json.h>
 #include <gcode_reader_any.hpp>
 #include <unique_file_ptr.hpp>
-#include <unique_dir_ptr.hpp>
+#include <directory.hpp>
 #include <transfers/monitor.hpp>
 
 #include <sys/stat.h>
@@ -49,7 +49,7 @@ public:
 };
 
 struct DirState {
-    unique_dir_ptr dir;
+    Directory dir;
     const char *base_path;
     size_t child_cnt = 0;
     bool first = true;
@@ -60,7 +60,7 @@ struct DirState {
 
 class DirRenderer final : public json::JsonRenderer<DirState> {
 public:
-    DirRenderer(const char *base_path, unique_dir_ptr dir);
+    DirRenderer(const char *base_path, Directory dir);
     DirRenderer(DirRenderer &&other) = default;
     DirRenderer &operator=(DirRenderer &&other) = default;
     virtual json::JsonResult renderState(size_t resume_point, json::JsonOutput &output, DirState &state) const override;
@@ -78,7 +78,7 @@ public:
     json::VariantRenderer<json::EmptyRenderer, GcodeExtra, DirRenderer> renderer;
     FileExtra() = default;
     FileExtra(std::unique_ptr<AnyGcodeFormatReader> gcode_reader_);
-    FileExtra(const char *base_path, unique_dir_ptr dir);
+    FileExtra(const char *base_path, Directory dir);
 };
 
 struct RenderState {
@@ -95,7 +95,9 @@ struct RenderState {
     FileExtra file_extra;
     // XXX: Variantize
     std::optional<Printer::NetInfo> lan;
+#if HAS_ESP()
     std::optional<Printer::NetInfo> wifi;
+#endif
 
     std::optional<transfers::TransferId> transfer_id = std::nullopt;
     std::optional<CommandId> background_command_id = std::nullopt;

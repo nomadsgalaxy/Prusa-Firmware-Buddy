@@ -20,7 +20,7 @@ const char *get_hardfault_reason();
  * @param buffer_size size of buffer, will be modified with size left after task name
  * @return pointer to next free space in buffer
  */
-size_t get_task_name(char *&buffer, size_t buffer_size);
+size_t get_task_name(char *buffer, size_t buffer_size);
 
 /**
  * @brief Get core registers as a string.

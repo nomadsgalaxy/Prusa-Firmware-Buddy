@@ -124,12 +124,7 @@ void GcodeSuite::M48() {
         const int dir = (random(0, 10) > 5.0) ? -1 : 1;  // clockwise or counter clockwise
         float angle = random(0, 360);
         const float radius = random(
-          #if ENABLED(DELTA)
-            int(0.1250000000 * (DELTA_PRINTABLE_RADIUS)),
-            int(0.3333333333 * (DELTA_PRINTABLE_RADIUS))
-          #else
-            int(5), int(0.125 * _MIN(X_BED_SIZE, Y_BED_SIZE))
-          #endif
+          int(5), int(0.125 * _MIN(X_BED_SIZE, Y_BED_SIZE))
         );
 
         if (verbose_level > 3) {
@@ -161,18 +156,8 @@ void GcodeSuite::M48() {
           next_pos.set(probe_pos.x - probe_offset.x + cos(RADIANS(angle)) * radius,
                        probe_pos.y - probe_offset.y + sin(RADIANS(angle)) * radius);
 
-          #if DISABLED(DELTA)
-            LIMIT(next_pos.x, X_MIN_POS, X_MAX_POS);
-            LIMIT(next_pos.y, Y_MIN_POS, Y_MAX_POS);
-          #else
-            // If we have gone out too far, we can do a simple fix and scale the numbers
-            // back in closer to the origin.
-            while (!position_is_reachable_by_probe(next_pos)) {
-              next_pos *= 0.8f;
-              if (verbose_level > 3)
-                SERIAL_ECHOLNPAIR("Moving inward: X", next_pos.x, " Y", next_pos.y);
-            }
-          #endif
+          LIMIT(next_pos.x, X_MIN_POS, X_MAX_POS);
+          LIMIT(next_pos.y, Y_MIN_POS, Y_MAX_POS);
 
           if (verbose_level > 3)
             SERIAL_ECHOLNPAIR("Going to: X", next_pos.x, " Y", next_pos.y);

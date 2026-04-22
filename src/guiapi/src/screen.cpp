@@ -7,7 +7,19 @@
 #include "screen.hpp"
 
 screen_t::screen_t(window_t *parent, win_type_t type, is_closed_on_timeout_t timeout, is_closed_on_printing_t close_on_print)
-    : window_frame_t(parent, GuiDefaults::RectScreen, type, timeout, close_on_print) {}
+    : window_frame_t(parent, GuiDefaults::RectScreen, type, timeout, close_on_print) {
+}
+
+screen_t::~screen_t() {
+    // There might still be some dialogs registered to the screen (looking at you, IDialogMarlin kept in DialogHandler) - clean them up
+    window_t *ptr = first_dialog;
+    while (ptr) {
+        const auto next = ptr->GetNext();
+        ptr->SetParent(nullptr);
+        ptr->SetNext(nullptr);
+        ptr = next;
+    }
+}
 
 bool screen_t::registerSubWin(window_t &win) {
     switch (win.GetType()) {
@@ -16,12 +28,12 @@ bool screen_t::registerSubWin(window_t &win) {
         break;
     case win_type_t::dialog:
         registerAnySubWin(win, first_dialog, last_dialog);
-        if (&win == first_dialog && last_normal) { // connect to list
-            last_normal->SetNext(&win);
-        }
         break;
-    default:
-        return false;
+    }
+
+    // We might have added last_normal or fist_dialog, make sure the chain is linked
+    if (last_normal) {
+        last_normal->SetNext(first_dialog);
     }
 
     clearAllHiddenBehindDialogFlags();

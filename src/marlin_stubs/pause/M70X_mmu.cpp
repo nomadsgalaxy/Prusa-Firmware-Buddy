@@ -3,7 +3,7 @@
 #include "../../../lib/Marlin/Marlin/src/feature/prusa/MMU2/mmu2_mk4.h"
 #include "M70X.hpp"
 
-#include <filament_sensors_handler.hpp>
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 
 /**
  * @brief load filament to MMU

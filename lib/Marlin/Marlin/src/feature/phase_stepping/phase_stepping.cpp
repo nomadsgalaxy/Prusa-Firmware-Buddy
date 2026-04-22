@@ -75,7 +75,18 @@ float MoveTarget::target_position() const {
 }
 
 void phase_stepping::init() {
+    // Enforce the proper init sequence
+    if (!PreciseStepping::inverted_dirs_set) {
+        bsod("stepper directions not initialized");
+    }
+
     phase_stepping::initialize_axis_motor_params();
+
+    // Setup fixed axis parameters so that they can be used before the axis is initialized
+    for (auto &axis_state : axis_states) {
+        axis_state.inverted = Stepper::is_axis_inverted(AxisEnum(axis_state.axis_index));
+    }
+
     initialized = true;
 }
 
@@ -362,7 +373,26 @@ bool phase_stepping::processing() {
     return false;
 }
 
-void phase_stepping::set_phase_origin(AxisEnum axis, float pos) {
+// Fetch the current MSCNT position at standstill
+static int get_current_phase(AxisEnum axis) {
+    auto &stepper = stepper_axis(axis);
+
+    // switch off interpolation first to ensure position is settled
+    bool had_interpolation = stepper.intpol();
+    stepper.intpol(false);
+
+    // fetch MSCNT at full resolution
+    int original_microsteps = stepper.microsteps();
+    int current_phase = stepper.MSCNT();
+
+    // restore original settings
+    stepper.microsteps(original_microsteps);
+    stepper.intpol(had_interpolation);
+
+    return current_phase;
+}
+
+void phase_stepping::jump_to_position(AxisEnum axis, float pos, bool set_origin) {
     assert(axis < SUPPORTED_AXIS_COUNT);
     assert_initialized();
 
@@ -372,10 +402,14 @@ void phase_stepping::set_phase_origin(AxisEnum axis, float pos) {
     bool was_active = axis_state.active;
     axis_state.active = false;
 
-    float inverted_position = resolve_axis_inversion(axis_state.inverted, pos);
-    axis_state.zero_rotor_phase = normalize_motor_phase(-pos_to_phase(axis, inverted_position) + axis_state.last_phase);
-    axis_state.last_position = pos;
+    if (set_origin) {
+        // If phase stepping isn't already active, we must fetch the current rotor position
+        int current_phase = (was_active ? axis_state.last_phase : get_current_phase(axis));
+        float physical_position = resolve_axis_inversion(axis_state.inverted, pos);
+        axis_state.offset = phase_to_pos(axis, phase_difference(current_phase, pos_to_phase(axis, physical_position)));
+    }
 
+    axis_state.last_position = pos;
     axis_state.active = was_active;
 }
 
@@ -403,8 +437,8 @@ static void enable_phase_stepping(AxisEnum axis_num) {
     assert(!axis_state.enabled && !axis_state.active);
     assert(!axis_state.current_target.has_value() && axis_state.pending_targets.isEmpty());
 
-    axis_state.last_position = 0;
-    axis_state.direction = Stepper::motor_direction(axis_num);
+    // Read axis configuration and cache it so we can access it fast
+    axis_state.direction = (Stepper::motor_direction(axis_num) ^ axis_state.inverted);
 
     // switch off interpolation first to ensure position is settled
     axis_state.had_interpolation = stepper.intpol();
@@ -415,11 +449,7 @@ static void enable_phase_stepping(AxisEnum axis_num) {
     stepper.microsteps(256);
     int current_phase = stepper.MSCNT();
 
-    // We initialize the zero rotor phase to current phase. The real initialization is done by
-    // set_phase_origin() when the local coordinate system is effectively initialized.
-    axis_state.zero_rotor_phase = current_phase;
     axis_state.last_phase = current_phase;
-
 #if HAS_BURST_STEPPING()
     axis_state.driver_phase = current_phase;
     burst_stepping::init();
@@ -438,9 +468,6 @@ static void enable_phase_stepping(AxisEnum axis_num) {
     stepper.coil_B(axis_state.last_currents.a);
     stepper.direct_mode(true);
 #endif
-
-    // Read axis configuration and cache it so we can access it fast
-    axis_state.inverted = Stepper::is_axis_inverted(axis_num);
 
     // Sync the counters just before enabling the axis
     int32_t initial_steps_made = pos_to_steps(axis_num, axis_state.last_position);
@@ -566,9 +593,7 @@ void phase_stepping::enable(AxisEnum axis_num, bool enable) {
         return;
     }
     if (enable) {
-        // Enable phase stepping and reset PS to update the phase origin
         phase_stepping::enable_phase_stepping(axis_num);
-        PreciseStepping::reset_from_halt();
     } else {
         phase_stepping::disable_phase_stepping(axis_num);
     }
@@ -588,35 +613,41 @@ void phase_stepping::clear_targets() {
     }
 }
 
-// Given axis and speed, return current adjustment expressed as range <0, 255>
-[[maybe_unused]] static int current_adjustment(int /*axis*/, float speed) {
+constexpr int current_regulation_range_max = 255;
+
+// template is needed in order to be able to use optimization
+// inv_endpoint_minus_breakpoint must be constexpr and we can not have constexpr function parameters
+template <float breakpoint, float endpoint, int reduction_to>
+[[maybe_unused]] FORCE_INLINE static int regulate_current(float speed) {
+    constexpr float slope = (current_regulation_range_max - reduction_to) / (endpoint - breakpoint);
+    constexpr float precalculated_const = reduction_to - (int)(breakpoint * slope);
+
     speed = std::abs(speed);
+    if (speed < breakpoint) {
+        return current_regulation_range_max;
+    }
+    if (speed > endpoint) {
+        return reduction_to;
+    }
+
+    // speed optimized calculation of original formula:
+    // current = reduction_to + (speed  - breakpoint) * slope
+    return (speed * slope) + precalculated_const;
+}
+
+// Given axis and speed, return current adjustment expressed as range <0, 255>
+[[maybe_unused]] inline static int current_adjustment(int /*axis*/, float speed) {
 #if PRINTER_IS_PRUSA_XL()
-    float BREAKPOINT = 6.f;
-    float ENDPOINT = 10.f;
-    int REDUCTION_TO = 150;
+    return regulate_current<6.f, 10.f, 150>(speed);
 #elif PRINTER_IS_PRUSA_iX() // TODO simple copy-paste of XL values. To be removed as soon as iX values are measured
-    float BREAKPOINT = 6.f;
-    float ENDPOINT = 10.f;
-    int REDUCTION_TO = 150;
-#elif PRINTER_IS_PRUSA_COREONE()
-    float BREAKPOINT = 20.f;
-    float ENDPOINT = 20.f;
-    int REDUCTION_TO = 255;
+    return regulate_current<6.f, 10.f, 150>(speed);
+#elif PRINTER_IS_PRUSA_COREONE() || PRINTER_IS_PRUSA_COREONEL()
+    return current_regulation_range_max;
 #elif PRINTER_IS_PRUSA_MK4()
-    float BREAKPOINT = 20.f;
-    float ENDPOINT = 20.f;
-    int REDUCTION_TO = 255;
+    return current_regulation_range_max;
 #else
     #error "Unsupported printer"
 #endif
-    if (speed < BREAKPOINT) {
-        return 255;
-    }
-    if (speed > ENDPOINT) {
-        return REDUCTION_TO;
-    }
-    return 255 - (speed - BREAKPOINT) * (255 - REDUCTION_TO) / (ENDPOINT - BREAKPOINT);
 }
 
 int phase_stepping::phase_difference(int a, int b) {
@@ -728,7 +759,7 @@ static FORCE_INLINE FORCE_OFAST void refresh_axis(
         ? axis_position(axis_state, move_epoch)
         : std::make_tuple(0.f, move_position);
 
-    float physical_position = resolve_axis_inversion(axis_state.inverted, position);
+    float physical_position = resolve_axis_inversion(axis_state.inverted, position) + axis_state.offset;
     float physical_speed = resolve_axis_inversion(axis_state.inverted, speed);
 
     if (physical_speed != 0.f) {
@@ -737,7 +768,7 @@ static FORCE_INLINE FORCE_OFAST void refresh_axis(
     }
     const auto &current_lut = resolve_current_lut(axis_state);
 
-    int new_phase = normalize_motor_phase(pos_to_phase(axis_enum, physical_position) + axis_state.zero_rotor_phase);
+    int new_phase = pos_to_phase(axis_enum, physical_position);
     assert(phase_difference(axis_state.last_phase, new_phase) < 256);
 
 #if HAS_BURST_STEPPING()
@@ -774,9 +805,9 @@ static FORCE_INLINE FORCE_OFAST void refresh_axis(
         }
 
         axis_state.last_position = position;
-        axis_state.last_phase = new_phase;
     }
 
+    axis_state.last_phase = new_phase;
     axis_state.missed_tx_cnt = 0;
     axis_state.last_timer_tick = last_timer_tick;
 }
@@ -829,6 +860,11 @@ FORCE_OFAST void phase_stepping::handle_periodic_refresh() {
 }
 
 bool phase_stepping::any_axis_enabled() {
+    if (!initialized) {
+        // Nothing can be enabled if we are not even initialized.
+        return false;
+    }
+
     return std::ranges::any_of(axis_states, [](const auto &state) -> bool {
         return (state.enabled);
     });

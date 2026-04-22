@@ -24,14 +24,12 @@ public:
     static float GetDefaultUnloadLength();
     static float GetDefaultPurgeLength(uint8_t extruder);
     static float GetDefaultRetractLength();
-    static float GetDefaultParkZFeedrate(); ///< Get feedrate for park z move [mm/s].
 
     void SetUnloadLength(const std::optional<float> &len);
     void SetSlowLoadLength(const std::optional<float> &len);
     void SetFastLoadLength(const std::optional<float> &len);
     void SetPurgeLength(const std::optional<float> &len);
     void SetRetractLength(const std::optional<float> &len);
-    void SetParkZFeedrate(const std::optional<float> &feedrate); ///< Set feedrate for park z move [mm/s].
     void SetParkPoint(const mapi::ParkingPosition &park_point);
     void SetResumePoint(const xyze_pos_t &resume_point);
     void SetMmuFilamentToLoad(uint8_t index);
@@ -50,7 +48,6 @@ private:
     float fast_load_length;
     std::optional<float> purge_length_;
     float retract;
-    float park_z_feedrate; ///< feedrate for park z move [mm/s]
 
     xyz_pos_t park_pos; // if axis is NAN, don't move it
     xyze_pos_t resume_pos;

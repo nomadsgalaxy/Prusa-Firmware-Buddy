@@ -76,7 +76,10 @@ add_library(
   ${MBEDTLS_ROOT}/library/x509_csr.c
   )
 
-target_include_directories(mbedTLS PUBLIC ${MBEDTLS_ROOT}/include ${MBEDTLS_ROOT}/include/mbedtls)
+target_include_directories(
+  mbedTLS PUBLIC ${MBEDTLS_ROOT}/include ${MBEDTLS_ROOT}/include/mbedtls
+                 ${CMAKE_BINARY_DIR}/include
+  )
 
 target_compile_definitions(
   mbedTLS PUBLIC MBEDTLS_CONFIG_FILE=\"${CMAKE_SOURCE_DIR}/include/mbedtls/cipher_config_ece.h\"

@@ -1,0 +1,9 @@
+prusa3d.unit.Pwm.1.0 current_pwm
+prusa3d.unit.Rpm.1.0 current_rpm
+int8 status # >= OK, <0 error code
+
+int8 STATUS_OK = 0
+int8 STATUS_ERROR_STARTING = -1
+int8 STATUS_ERROR_RUNNING = -2
+
+@sealed

@@ -3,8 +3,7 @@
  */
 
 #include "selftest_firstlayer.hpp"
-#include "i_selftest.hpp"
-#include "filament_sensors_handler.hpp"
+#include <feature/filament_sensor/filament_sensors_handler.hpp>
 #include "filament.hpp"
 #include "Marlin/src/gcode/queue.h"
 #include "Marlin/src/module/probe.h"
@@ -230,8 +229,8 @@ LoopResult CSelftestPart_FirstLayer::stateShowCalibrateMsg() {
     return LoopResult::RunNext;
 }
 
-static constexpr int axis_steps_per_unit[] = DEFAULT_AXIS_STEPS_PER_UNIT;
-static constexpr float z_offset_step = 1.0F / float(axis_steps_per_unit[AxisEnum::Z_AXIS]);
+static constexpr float axis_steps_per_unit[] = DEFAULT_AXIS_STEPS_PER_UNIT;
+static constexpr float z_offset_step = 1.0F / axis_steps_per_unit[AxisEnum::Z_AXIS];
 static constexpr float nozzle_to_probe[] = NOZZLE_TO_PROBE_OFFSET;
 static constexpr float z_offset_def = nozzle_to_probe[AxisEnum::Z_AXIS];
 
@@ -325,7 +324,7 @@ LoopResult CSelftestPart_FirstLayer::statePrint() {
     FirstLayer fli;
 
     IPartHandler::SetFsmPhase(PhasesSelftest::FirstLayer_print);
-    CallbackHookGuard idle_subsrciber { marlin_server::idle_hook_point,
+    Subscriber idle_subsrciber { marlin_server::idle_publisher,
         [&] {
             rResult.progress = fli.progress_percent();
             // We have to change state every cycle to track the progress

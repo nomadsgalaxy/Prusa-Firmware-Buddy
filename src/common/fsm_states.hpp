@@ -21,6 +21,15 @@ protected:
     StateId state_id = 0; // unique ID of the state instance
 
 public:
+    States() = default;
+
+    // Disallow copy construction, states are big!
+    States(const States &) = delete;
+    States(States &&) = delete;
+
+    States &operator=(const States &) = default;
+
+public:
     inline void init_state_id() {
         state_id = StateId::generate_random_uint31();
     }

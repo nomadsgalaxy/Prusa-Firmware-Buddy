@@ -27,7 +27,6 @@
 #include "../gcode.h"
 #include "../../module/motion.h"
 #include "../../lcd/ultralcd.h"
-#include "../../libs/buzzer.h"
 
 /** \addtogroup G-Codes
  * @{
@@ -50,11 +49,6 @@ void GcodeSuite::M206() {
   LOOP_XYZ(i)
     if (parser.seen(axis_codes[i]))
       set_home_offset((AxisEnum)i, parser.value_linear_units());
-
-  #if ENABLED(MORGAN_SCARA)
-    if (parser.seen('T')) set_home_offset(A_AXIS, parser.value_float()); // Theta
-    if (parser.seen('P')) set_home_offset(B_AXIS, parser.value_float()); // Psi
-  #endif
 
   report_current_position();
 }
@@ -91,7 +85,6 @@ void GcodeSuite::M428() {
     if (!WITHIN(diff[i], -20, 20)) {
       SERIAL_ERROR_MSG(MSG_ERR_M428_TOO_FAR);
       LCD_ALERTMESSAGEPGM_P(PSTR("Err: Too far!"));
-      BUZZ(200, 40);
       return;
     }
   }
@@ -99,8 +92,6 @@ void GcodeSuite::M428() {
   LOOP_XYZ(i) set_home_offset((AxisEnum)i, diff[i]);
   report_current_position();
   LCD_MESSAGEPGM(MSG_HOME_OFFSETS_APPLIED);
-  BUZZ(100, 659);
-  BUZZ(100, 698);
 }
 
 /** @}*/

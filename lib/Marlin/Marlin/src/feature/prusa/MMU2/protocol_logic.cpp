@@ -139,7 +139,7 @@ void ProtocolLogic::SendButton(uint8_t btn) {
 #if HAS_MMU2_OVER_UART()
     SendMsg(RequestMsg(RequestMsgCodes::Button, btn));
 #else
-    ext->post_write_mmu_register(xbuddy_extension_shared::mmu_bridge::buttonRegisterAddress, btn);
+    ext->post_write_mmu_register(xbuddy_extension::mmu_bridge::buttonRegisterAddress, btn);
     LogRequestMsgModbus(RequestMsg(RequestMsgCodes::Button, btn));
     RecordUARTActivity();
 #endif
@@ -242,7 +242,7 @@ StepStatus ProtocolLogic::ExpectingMessage() {
     if (bytesConsumed != 0) {
         RecordUARTActivity(); // something has happened on the UART, update the timeout record
         return Processing; // consumed some bytes, but message still not ready
-    } else if (Elapsed(linkLayerTimeout) && currentScope != Scope::Stopped) {
+    } else if (Elapsed(linkLayerTimeout_ms) && currentScope != Scope::Stopped) {
         return CommunicationTimeout;
     }
     return Processing;
@@ -275,7 +275,7 @@ StepStatus ProtocolLogic::ExpectingMessage2(const buddy::puppies::XBuddyExtensio
     }
 
     case XBuddyExtension::MMUModbusRequest::RW::query_inactive: {
-        const auto [command, param] = xbuddy_extension_shared::mmu_bridge::unpack_command(mqr.value.cip);
+        const auto [command, param] = xbuddy_extension::mmu_bridge::unpack_command(mqr.value.cip);
         rsp = ResponseMsg(
             RequestMsg((RequestMsgCodes)command, param),
             (ResponseMsgParamCodes)mqr.value.commandStatus, mqr.value.pec);
@@ -285,7 +285,7 @@ StepStatus ProtocolLogic::ExpectingMessage2(const buddy::puppies::XBuddyExtensio
     }
 
     case XBuddyExtension::MMUModbusRequest::RW::command_inactive: {
-        const auto [command, param] = xbuddy_extension_shared::mmu_bridge::unpack_command(mqr.value.cip);
+        const auto [command, param] = xbuddy_extension::mmu_bridge::unpack_command(mqr.value.cip);
         rsp = ResponseMsg(
             RequestMsg((RequestMsgCodes)command, param),
             (ResponseMsgParamCodes)mqr.value.commandStatus, mqr.value.pec // @@TODO pec is probably not ok unless we abuse it for 'L0 F1' - but that's not supported yet in the MMU code
@@ -323,7 +323,7 @@ StepStatus ProtocolLogic::ExpectingMessage() {
 
         return rv;
     }
-    if (Elapsed(linkLayerTimeout) && currentScope != Scope::Stopped) {
+    if (Elapsed(linkLayerTimeout_ms) && currentScope != Scope::Stopped) {
         return CommunicationTimeout;
     } else {
         return Processing;
@@ -478,7 +478,7 @@ StepStatus ProtocolLogic::StartSeqStep() {
 }
 
 StepStatus ProtocolLogic::DelayedRestartWait() {
-    if (Elapsed(heartBeatPeriod)) { // this basically means, that we are waiting until there is some traffic on
+    if (Elapsed(heartBeatPeriod_ms)) { // this basically means, that we are waiting until there is some traffic on
 #if HAS_MMU2_OVER_UART()
         while (uart->read() != -1)
             ; // clear the input buffer
@@ -492,7 +492,7 @@ StepStatus ProtocolLogic::DelayedRestartWait() {
 }
 
 StepStatus ProtocolLogic::CommandWait() {
-    if (Elapsed(heartBeatPeriod)) {
+    if (Elapsed(heartBeatPeriod_ms)) {
         SendQuery();
     } else {
         // even when waiting for a query period, we need to report a change in filament sensor's state
@@ -585,7 +585,7 @@ StepStatus ProtocolLogic::CommandStep() {
 
 StepStatus ProtocolLogic::IdleWait() {
     if (scopeState == ScopeState::Ready) { // check timeout
-        if (Elapsed(heartBeatPeriod)) {
+        if (Elapsed(heartBeatPeriod_ms)) {
             SendQuery();
             return Processing;
         }
@@ -945,6 +945,8 @@ void ProtocolLogic::LogError(const char *reason_P) {
 #if HAS_MMU2_OVER_UART()
     SERIAL_ECHOPGM(", last bytes: ");
     SERIAL_ECHOLN(lrb);
+#else
+    SERIAL_ECHOLN();
 #endif
 }
 

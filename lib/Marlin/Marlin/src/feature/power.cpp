@@ -43,7 +43,7 @@ bool Power::is_power_needed() {
   #endif
 
   #if ENABLED(AUTO_POWER_E_FANS)
-    HOTEND_LOOP() if (thermalManager.autofan_speed[e]) return true;
+    for (int8_t e = 0; e < HOTENDS; e++) if (thermalManager.autofan_speed[e]) return true;
   #endif
 
   #if ENABLED(AUTO_POWER_CHAMBER_FAN)
@@ -88,18 +88,14 @@ bool Power::is_power_needed() {
       #endif // E_STEPPERS
   ) return true;
 
-  HOTEND_LOOP() if (thermalManager.degTargetHotend(e) > 0 || thermalManager.temp_hotend[e].soft_pwm_amount > 0) return true;
+  for (int8_t e = 0; e < HOTENDS; e++) if (thermalManager.degTargetHotend(e) > 0 || thermalManager.temp_hotend[e].soft_pwm_amount > 0) return true;
 
   #if HAS_HEATED_BED
     if (thermalManager.degTargetBed() > 0 || thermalManager.temp_bed.soft_pwm_amount > 0) return true;
   #endif
 
   #if HOTENDS && AUTO_POWER_E_TEMP
-    HOTEND_LOOP() if (thermalManager.degHotend(e) >= AUTO_POWER_E_TEMP) return true;
-  #endif
-
-  #if HAS_HEATED_CHAMBER && AUTO_POWER_CHAMBER_TEMP
-    if (thermalManager.degChamber() >= AUTO_POWER_CHAMBER_TEMP) return true;
+    for (int8_t e = 0; e < HOTENDS; e++) if (thermalManager.degHotend(e) >= AUTO_POWER_E_TEMP) return true;
   #endif
 
   return false;

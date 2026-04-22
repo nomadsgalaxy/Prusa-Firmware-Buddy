@@ -44,8 +44,8 @@ void hwio_safe_state(void) {
     dwarf5Reset.reset();
     dwarf6Reset.reset();
     #else
-    static_cast<CFanCtl3Wire &>(Fans::print(0)).safeState();
-    static_cast<CFanCtl3Wire &>(Fans::heat_break(0)).safeState();
+    Fans::print(0).safe_state();
+    Fans::heat_break(0).safe_state();
 
     // disable hotend
     gpio_init(MARLIN_PIN(HEAT0), GPIO_MODE_OUTPUT_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW);
@@ -88,8 +88,8 @@ void hwio_safe_state(void) {
     // motor off
     e0Enable.write(Pin::State::high);
 
-    static_cast<CFanCtl3Wire &>(Fans::print(0)).safeState();
-    static_cast<CFanCtl3Wire &>(Fans::heat_break(0)).safeState();
+    Fans::print(0).safe_state();
+    Fans::heat_break(0).safe_state();
 #endif
 }
 

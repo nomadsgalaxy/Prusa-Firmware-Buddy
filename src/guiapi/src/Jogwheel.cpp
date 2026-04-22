@@ -82,9 +82,9 @@ int32_t Jogwheel::ConsumeEncoderDiff() {
     return CalculateEncoderDiff(temp_enc);
 }
 
-int32_t Jogwheel::CalculateEncoderDiff(Jogwheel::encoder_t current_enc) {
-    static encoder_t last_enc = { 0, 1, 0 };
+static Jogwheel::encoder_t last_enc = { 0, 1, 0 };
 
+int32_t Jogwheel::CalculateEncoderDiff(Jogwheel::encoder_t current_enc) {
     if (last_enc.tick == current_enc.tick) {
         return 0; // this data were already used
     }
@@ -164,8 +164,6 @@ void Jogwheel::Update1msFromISR() {
 
     uint8_t signals = ReadHwInputsFromISR();
 
-    // initialization of static variable to inverted signals, so first value si filtered out
-    static uint8_t signals_filter = ~signals;
     if (signals_filter != signals) {
         signals_filter = signals; // noise detection
         return;

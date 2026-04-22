@@ -3,7 +3,6 @@ add_library(WUI INTERFACE)
 target_sources(
   WUI
   INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/http_req_automaton.cpp
-            espif.cpp
             ethernetif.c
             ethernetif.cpp
             http_lifetime.cpp
@@ -50,6 +49,10 @@ if(NETWORKING_BENCHMARK_ENABLED)
     WUI INTERFACE nhttp/networking_benchmark.cpp nhttp/networking_benchmark_selector.cpp
     )
   target_compile_definitions(WUI INTERFACE NETWORKING_BENCHMARK_ENABLED)
+endif()
+
+if(HAS_ESP)
+  target_sources(WUI INTERFACE espif.cpp)
 endif()
 
 file(GLOB AUTOMATA_GENERATORS ${PROJECT_ROOT_DIR}/utils/gen-automata/*.py)

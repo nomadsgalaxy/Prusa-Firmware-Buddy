@@ -1,0 +1,1 @@
+add_library(magic_optimizations magic_optimizations.cpp)

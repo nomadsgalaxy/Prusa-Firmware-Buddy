@@ -10,8 +10,6 @@ LOG_COMPONENT_DEF(USBHost, logging::Severity::info);
 
 HCD_HandleTypeDef hhcd_USB_OTG_HS;
 
-void Error_Handler(void);
-
 USBH_StatusTypeDef USBH_Get_USB_Status(HAL_StatusTypeDef hal_status);
 
 void HAL_HCD_MspInit(HCD_HandleTypeDef *hcdHandle) {
@@ -137,7 +135,7 @@ USBH_StatusTypeDef USBH_LL_Init(USBH_HandleTypeDef *phost) {
         hhcd_USB_OTG_HS.Init.vbus_sensing_enable = DISABLE;
         hhcd_USB_OTG_HS.Init.use_external_vbus = DISABLE;
         if (HAL_HCD_Init(&hhcd_USB_OTG_HS) != HAL_OK) {
-            Error_Handler();
+            bsod_system();
         }
 
         USBH_LL_SetTimer(phost, HAL_HCD_GetCurrentFrame(&hhcd_USB_OTG_HS));

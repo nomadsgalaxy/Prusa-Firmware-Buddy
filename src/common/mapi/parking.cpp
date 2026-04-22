@@ -44,13 +44,13 @@ ParkingPosition ParkingPosition::from_xyz_pos(const xyz_pos_t &pos) {
  * ┌────────────────NO─WASTE─LAND────────────────┬─────────WASTE─AREA─────────┐
  * │                                         .  .│                            │
  * │                                         .  .│                        * ◄─┼────X,Y_WASTEBIN_POINT
- * │                                         .  .│                            │
- * │                                         .  .│    ╲‾‾╲        ╱‾‾╱=>      │
- * │                                         ....│      ╲  ╲      |  |        │
- * │                                             │        ╲__╲    ╲ˍˍ╲=>      │
- * │                                             │                            │
- * ├─────────────────────────────────────────────┴────────────────────────────┤ ◄── Y_WASTEBIN_SAFE_POINT
- * │                                                                          │
+ * │                                         .  .├ ─ ─ ─ ─ ─ ─ ┐              │
+ * │                                         .  .│    ╲‾‾╲     |   ╱‾‾╱=>     │
+ * │                                         ....│      ╲  ╲   |  |  |        │
+ * │                                             │        ╲__╲ │   ╲ˍˍ╲=>     │
+ * │                                             │    BRUSH    │              │
+ * ├─────────────────────────────────────────────┴─────────────┴──────────────┤ ◄── Y_WASTEBIN_SAFE_POINT
+ * │                                             X_BRUSH_POINT ▲              |
  * │   _____  _____  _____ _   _ _______            _____  ______             │
  * │  |  __ \|  __ \|_   _| \ | |__   __|     /\   |  __ \|  ____|   /\       │
  * │  | |__) | |__) | | | |  \| |  | |       /  \  | |__) | |__     /  \      │
@@ -63,6 +63,7 @@ ParkingPosition ParkingPosition::from_xyz_pos(const xyz_pos_t &pos) {
  */
 static void pre_park_move_pattern(const feedRate_t &feedrate, const xy_pos_t &destination) {
     static constexpr float x_border_point = X_NOZZLE_PARK_POINT + 1;
+    static constexpr float X_BRUSH_POINT = 242.f; // X point before which we can go directly from (no need to avoid v-blade)
 
     const bool start_in_rear_area = current_position.y > Y_WASTEBIN_SAFE_POINT;
     const bool destination_in_rear_area = destination.y > Y_WASTEBIN_SAFE_POINT;
@@ -70,9 +71,14 @@ static void pre_park_move_pattern(const feedRate_t &feedrate, const xy_pos_t &de
     const bool start_in_wastebin_area = start_in_rear_area && current_position.x > x_border_point;
     const bool destination_in_wastebin_area = destination_in_rear_area && destination.x > x_border_point;
 
+    const bool start_in_brush_area = start_in_wastebin_area && current_position.x < X_BRUSH_POINT;
+    const bool destination_in_brush_area = destination_in_wastebin_area && destination.x < X_BRUSH_POINT;
+
     if (start_in_rear_area != destination_in_rear_area) { // One in the rear, other in print area
         if (start_in_wastebin_area || destination_in_wastebin_area) { // One in waste area, other in print area
-            do_blocking_move_to_x(X_WASTEBIN_POINT, feedrate);
+            if (!start_in_brush_area && !destination_in_brush_area) { // If neither is in brush area, go around vblade
+                do_blocking_move_to_x(X_WASTEBIN_POINT, feedrate);
+            } // If we are in brush area, we can go directly
             do_blocking_move_to_y(destination.y, feedrate);
         } else { // One in no-waste land, other in print area
             if (start_in_rear_area) { // Start in no-waste land, end in print area
@@ -84,15 +90,19 @@ static void pre_park_move_pattern(const feedRate_t &feedrate, const xy_pos_t &de
     } else if (start_in_rear_area) { // Both in the rear area
         if (start_in_wastebin_area != destination_in_wastebin_area) { // One in waste area, other in no-waste land
             if (start_in_wastebin_area) { // Start in waste area, end in no-waste land
-                do_blocking_move_to_x(X_WASTEBIN_POINT, feedrate);
+                if (!start_in_brush_area) { // If we don't start in brush, avoid v-blade
+                    do_blocking_move_to_x(X_WASTEBIN_POINT, feedrate);
+                }
                 do_blocking_move_to_y(Y_WASTEBIN_SAFE_POINT, feedrate);
                 do_blocking_move_to_x(destination.x, feedrate);
             } else { // Start in no-waste land, end in waste area
-                do_blocking_move_to_y(Y_WASTEBIN_SAFE_POINT, feedrate);
+                if (!destination_in_brush_area) { // If we don't end in brush, avoid v-blade
+                    do_blocking_move_to_x(X_WASTEBIN_POINT, feedrate);
+                }
                 do_blocking_move_to_x(X_WASTEBIN_POINT, feedrate);
                 do_blocking_move_to_y(destination.y, feedrate);
             }
-        } else if (start_in_wastebin_area) { // Both in waste area
+        } else if (start_in_wastebin_area) { // Both in waste area (here no need to worry about brush)
             do_blocking_move_to_x(destination.x, feedrate);
         } else { // Both in no-waste land
             do_blocking_move_to_y(Y_WASTEBIN_SAFE_POINT, feedrate);
