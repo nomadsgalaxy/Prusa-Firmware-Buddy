@@ -39,12 +39,14 @@ struct PhaseMark {
 
 class Capture {
 public:
-    /// ~12.8 s of samples at 320 Hz — sized for the 3-pulse pattern
+    /// ~4.8 s of samples at 320 Hz — sized to fit the 3-pulse pattern
     /// (1× high-flow purge + 2× low-flow measurement, plus inter-pulse
-    /// transitions) with comfortable headroom if timing slips.
-    static constexpr std::size_t MAX_SAMPLES = 4096;
-    /// 24 marks = start + end + 3 pulses × (slow_in, fast, slow_out) +
-    /// 2 transitions × 2 markers + margin.
+    /// transitions) in ~4.2 s with headroom. We cannot enlarge this buffer
+    /// without cutting into heap — static RAM is already at ~75 % on MK4.
+    static constexpr std::size_t MAX_SAMPLES = 1536;
+    /// 24 marks = start + end + 3 pulses × (pulse-enter + slow_in + fast
+    /// + slow_out) + 2 transitions × 2 markers + margin. +128 B of BSS
+    /// vs. the original 8-mark cap, which is negligible next to samples_.
     static constexpr std::size_t MAX_PHASES = 24;
 
     /// Single global instance used by the ISR hook and by M573.

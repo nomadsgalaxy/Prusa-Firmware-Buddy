@@ -60,19 +60,21 @@ constexpr PurgeGeometry geom() {
 // eventual analysis engine.
 //
 // Pulse 1 (purge_high): high-flow purge that also primes the melt pressure
-//   so the two measurement pulses don't have a cold-start bias. Matches the
-//   original single-pulse M573 (5 → 13.3 → 5 mm/s E-feed, 15 mm filament).
+//   so the two measurement pulses don't have a cold-start bias. 5 → 13.3 → 5
+//   mm/s E-feed, ~9.75 mm filament, ~1.2 s.
 //
 // Pulses 2 & 3 (measure_1, measure_2): low-flow step at the PA-test operating
-//   point (0.915 → 4.574 → 0.915 mm/s E-feed, 3 mm filament). 0.915 mm/s E
-//   matches 20 mm/s X-feed on a 0.55×0.2 line; 4.574 mm/s E matches 100 mm/s
-//   X-feed on the same line geometry (the fast/slow speeds of generate_pa_test.py).
-//   Running two identical measurement pulses gives us a repeatability number
-//   (std-dev across the 3 rise-edges and 3 fall-edges) in addition to the K
-//   estimate itself.
+//   point (0.915 → 4.574 → 0.915 mm/s E-feed, ~2.56 mm filament, ~1.2 s each).
+//   0.915 mm/s E matches 20 mm/s X-feed on a 0.55×0.2 line; 4.574 mm/s E matches
+//   100 mm/s X-feed on the same line geometry (the slow/fast speeds of
+//   generate_pa_test.py). Running two identical measurement pulses gives us a
+//   repeatability number (std-dev across the 2 low-flow rise-edges and fall-
+//   edges) in addition to the K estimate itself.
 //
-// Each sub-phase runs 10 mm X with dy=0; we zig-zag in Y *between* pulses by
-// shifting 1 mm per pulse, so the three stripes don't overlap on the bed.
+// Pulse geometry is kept compact so the full capture (3 pulses + 2 transitions
+// ≈ 4.2 s) fits inside the 1536-sample / 4.8 s loadcell ring. Every sub-phase
+// travels in +X at dy=0; we zig-zag in Y *between* pulses by shifting 1 mm per
+// pulse, so the three stripes don't overlap on the bed.
 
 struct SubPhase {
     const char *name; ///< Phase label written to the CSV output
@@ -89,33 +91,44 @@ struct Pulse {
     SubPhase slow_out; ///< Falling-edge transient phase
 };
 
-// Numbers chosen so each measurement pulse gives ~1 s of signal per sub-phase
-// at the PA-test operating point (0.915 / 4.574 mm/s E). At 320 Hz that is
-// ~320 samples per sub-phase — enough to fit a first-order step response.
+// Numbers chosen so the full 3-pulse pattern (plus 2 inter-pulse transitions)
+// fits inside the 1536-sample / 4.8 s capture window. Each sub-phase is
+// long enough to resolve the relevant first-order dynamic:
+//   - slow phases: ~300–500 ms to let pressure settle to steady state before
+//     the next step (PA time constants run ~50–300 ms).
+//   - fast phases: ~400 ms — covers the rise transient and a short plateau.
+// Totals:
+//   purge_high  ~1.20 s, measure_1 ~1.20 s, measure_2 ~1.20 s,
+//   transitions ~0.30 s each → 4.2 s wall-clock, ~1344 samples.
 constexpr std::array<Pulse, 3> kPulses { {
     { "purge_high", 0.0f,
-        //  name            dx    de   e_feed (mm/s)
-        { "slow_in_hi", 10.0f, 5.0f, 5.0f }, // 300 mm/min
-        { "fast_hi", 10.0f, 5.0f, 13.333f }, // 800 mm/min
-        { "slow_out_hi", 10.0f, 5.0f, 5.0f }, // 300 mm/min
+        //  name           dx    de    e_feed (mm/s)      (phase duration)
+        { "slow_in_hi", 6.0f, 1.5f, 5.0f }, // 300 mm/min  → 0.30 s
+        { "fast_hi", 10.0f, 6.0f, 13.333f }, // 800 mm/min → 0.45 s
+        { "slow_out_hi", 10.0f, 2.25f, 5.0f }, // 300 mm/min → 0.45 s
     },
     { "measure_1", 1.0f,
-        { "slow_in_lo", 10.0f, 1.0f, 0.915f }, // 20 mm/s X-feed @ 0.55×0.2 lines
-        { "fast_lo", 10.0f, 1.0f, 4.574f }, // 100 mm/s X-feed @ 0.55×0.2 lines
-        { "slow_out_lo", 10.0f, 1.0f, 0.915f },
+        //  20 mm/s X-feed (0.915 mm/s E) ↔ PA-test slow segments @ 0.55×0.2
+        { "slow_in_lo", 5.0f, 0.458f, 0.915f }, //              → 0.50 s
+        //  100 mm/s X-feed (4.574 mm/s E) ↔ PA-test fast segments @ 0.55×0.2
+        { "fast_lo", 10.0f, 1.830f, 4.574f }, //                → 0.40 s
+        { "slow_out_lo", 6.0f, 0.275f, 0.915f }, //              → 0.30 s
     },
     { "measure_2", 2.0f,
-        { "slow_in_lo", 10.0f, 1.0f, 0.915f },
-        { "fast_lo", 10.0f, 1.0f, 4.574f },
-        { "slow_out_lo", 10.0f, 1.0f, 0.915f },
+        { "slow_in_lo", 5.0f, 0.458f, 0.915f },
+        { "fast_lo", 10.0f, 1.830f, 4.574f },
+        { "slow_out_lo", 6.0f, 0.275f, 0.915f },
     },
 } };
 
 // Inter-pulse transition geometry: lift Z while travelling back to start_x at
 // the next pulse's Y. No retract — we want the melt zone to settle naturally
 // to the no-flow baseline so pulse N's slow_in phase re-establishes it.
+// 120 mm/s is well under the MK4 travel-feedrate limit; the Z-axis planner
+// will clamp the Z moves to the machine's much slower Z-max automatically.
+// At 120 mm/s each transition takes ~0.25 s, keeping total capture ≈ 4.1 s.
 constexpr float kTransitionLiftZ_mm = 0.8f; ///< Lift above purge_z during travel
-constexpr float kTransitionFeed_mm_s = 60.0f; ///< Travel speed (XY & Z)
+constexpr float kTransitionFeed_mm_s = 120.0f; ///< Travel speed (XY & Z)
 
 // Move feed rate (mm/s) — machine-tangential speed for the combined XE move.
 // We size it so the extruder reaches its target e_feed_mm_s given the
