@@ -1,17 +1,30 @@
 /**
  * @file M573.cpp
- * @brief Loadcell-based Pressure Advance calibration — signal-capture prototype.
+ * @brief Loadcell-based Pressure Advance calibration — single-pulse diagnostic.
  *
- * Runs a 3-pulse extrusion pattern in the purge zone while recording loadcell
- * samples. Pulse 1 is a high-flow purge (also primes melt pressure); pulses 2
- * and 3 are identical low-flow slow→fast→slow steps at the PA-test operating
- * point. Two measurement pulses give a repeatability number across the fit.
- * Samples + phase markers are dumped to serial as CSV for off-line analysis.
+ * This is a stripped-down single-pulse version used to validate that:
+ *   1. plan_move_by's feedrate is interpreted as mm/s of tangential motion
+ *      (prior 3-pulse run had slow_in running ~10x slower than expected),
+ *   2. Phase marks are being recorded at actual execution time (prior version
+ *      called MarkPhase at plan time; subsequent sub-phase marks all bunched
+ *      into a ~200us window after the first blocking move completed).
  *
- * This is Step 1 (signal validation) of a larger PA auto-calibration feature.
- * Once we have confirmed the pressure transients are visible, the analysis
- * engine (time-constant fit, confidence scoring) will consume these samples in
- * firmware and publish a PA value via M572_internal.
+ * Design:
+ *   - One pulse: slow_in → fast → slow_out at the PA-test operating point.
+ *   - planner.synchronize() between sub-phases so each MarkPhase() is called
+ *     after the previous move has actually completed. This introduces brief
+ *     flow pauses at sub-phase boundaries — acceptable for this diagnostic
+ *     since we want clean step transitions to verify signal shape and timing.
+ *   - A pure-XY preamble move (10 mm at 20 mm/s → 500 ms expected) runs
+ *     before the pulse to isolate XY feedrate correctness from any E-axis
+ *     coupling in the planner.
+ *   - Each move echoes `expected_ms` vs `observed_ms` over serial so feedrate
+ *     behavior is visible in the stream log without needing to parse
+ *     PA_CAPTURE phase marks.
+ *
+ * Once the diagnostic confirms feedrate semantics and phase-mark accuracy,
+ * the multi-pulse pattern from the earlier version will be reinstated with
+ * corrected timing.
  */
 
 #include "../../../inc/MarlinConfig.h"
@@ -34,9 +47,9 @@
 
 namespace {
 
-// Purge-zone geometry resolved at compile time.
-// Values mirror the tables in docs/loadcell_pa_calibration_strategy.md and
-// fit within the existing slicer purge zone on each printer family.
+// Purge-zone geometry resolved at compile time. Mirrors the tables in
+// docs/loadcell_pa_calibration_strategy.md and fits within the slicer
+// purge zone on each printer family.
 struct PurgeGeometry {
     float purge_y; ///< Y coordinate of the purge line (machine coords, mm)
     float start_x; ///< X coordinate at the start of the measurement (mm)
@@ -56,88 +69,60 @@ constexpr PurgeGeometry geom() {
     #endif
 }
 
-// Extrusion pattern — 3 pulses × 3 sub-phases each, shared with the
-// eventual analysis engine.
-//
-// Pulse 1 (purge_high): high-flow purge that also primes the melt pressure
-//   so the two measurement pulses don't have a cold-start bias. 5 → 13.3 → 5
-//   mm/s E-feed, ~9.75 mm filament, ~1.2 s.
-//
-// Pulses 2 & 3 (measure_1, measure_2): low-flow step at the PA-test operating
-//   point (0.915 → 4.574 → 0.915 mm/s E-feed, ~2.56 mm filament, ~1.2 s each).
-//   0.915 mm/s E matches 20 mm/s X-feed on a 0.55×0.2 line; 4.574 mm/s E matches
-//   100 mm/s X-feed on the same line geometry (the slow/fast speeds of
-//   generate_pa_test.py). Running two identical measurement pulses gives us a
-//   repeatability number (std-dev across the 2 low-flow rise-edges and fall-
-//   edges) in addition to the K estimate itself.
-//
-// Pulse geometry is kept compact so the full capture (3 pulses + 2 transitions
-// ≈ 4.2 s) fits inside the 1536-sample / 4.8 s loadcell ring. Every sub-phase
-// travels in +X at dy=0; we zig-zag in Y *between* pulses by shifting 1 mm per
-// pulse, so the three stripes don't overlap on the bed.
-
+// Single-pulse sub-phase description. Feedrates are explicit XY mm/s so
+// there's no helper math between the config and what reaches the planner.
+// E amounts match standard flow on a 0.55 × 0.2 line at the given XY speed
+// (same operating point as generate_pa_test.py: 20 mm/s slow, 100 mm/s fast).
 struct SubPhase {
-    const char *name; ///< Phase label written to the CSV output
-    float dx_mm; ///< Unsigned X travel; sign is applied via geom().dir
-    float de_mm; ///< Filament extruded during the phase
-    float e_feed_mm_s; ///< Target extruder speed (mm/s)
+    const char *name;
+    float dx_mm;
+    float de_mm;
+    float feedrate_mm_s; ///< Nominal XY feedrate (mm/s)
+    uint32_t expected_ms; ///< dx_mm / feedrate_mm_s in ms, precomputed for echo
 };
 
-struct Pulse {
-    const char *name; ///< Pulse label (purge_high, measure_1, measure_2)
-    float dy_offset_mm; ///< Y shift from the base purge_y for this pulse's stripe
-    SubPhase slow_in; ///< Baseline-establish phase
-    SubPhase fast_step; ///< Rising-edge transient phase
-    SubPhase slow_out; ///< Falling-edge transient phase
-};
+// Total pulse duration: 0.25 + 0.20 + 0.30 = 0.75 s (~240 samples at 320 Hz).
+// Plus ~0.5 s preamble + ~0.5 s cooldown overhead → well inside the 1536/
+// 4.8 s buffer, no drops expected even if the feedrate bug doubles actuals.
+constexpr SubPhase kSlowIn   { "slow_in",   5.0f, 0.229f,  20.0f, 250 };
+constexpr SubPhase kFastStep { "fast",     20.0f, 0.915f, 100.0f, 200 };
+constexpr SubPhase kSlowOut  { "slow_out",  6.0f, 0.275f,  20.0f, 300 };
 
-// Numbers chosen so the full 3-pulse pattern (plus 2 inter-pulse transitions)
-// fits inside the 1536-sample / 4.8 s capture window. Each sub-phase is
-// long enough to resolve the relevant first-order dynamic:
-//   - slow phases: ~300–500 ms to let pressure settle to steady state before
-//     the next step (PA time constants run ~50–300 ms).
-//   - fast phases: ~400 ms — covers the rise transient and a short plateau.
-// Totals:
-//   purge_high  ~1.20 s, measure_1 ~1.20 s, measure_2 ~1.20 s,
-//   transitions ~0.30 s each → 4.2 s wall-clock, ~1344 samples.
-constexpr std::array<Pulse, 3> kPulses { {
-    { "purge_high", 0.0f,
-        //  name           dx    de    e_feed (mm/s)      (phase duration)
-        { "slow_in_hi", 6.0f, 1.5f, 5.0f }, // 300 mm/min  → 0.30 s
-        { "fast_hi", 10.0f, 6.0f, 13.333f }, // 800 mm/min → 0.45 s
-        { "slow_out_hi", 10.0f, 2.25f, 5.0f }, // 300 mm/min → 0.45 s
-    },
-    { "measure_1", 1.0f,
-        //  20 mm/s X-feed (0.915 mm/s E) ↔ PA-test slow segments @ 0.55×0.2
-        { "slow_in_lo", 5.0f, 0.458f, 0.915f }, //              → 0.50 s
-        //  100 mm/s X-feed (4.574 mm/s E) ↔ PA-test fast segments @ 0.55×0.2
-        { "fast_lo", 10.0f, 1.830f, 4.574f }, //                → 0.40 s
-        { "slow_out_lo", 6.0f, 0.275f, 0.915f }, //              → 0.30 s
-    },
-    { "measure_2", 2.0f,
-        { "slow_in_lo", 5.0f, 0.458f, 0.915f },
-        { "fast_lo", 10.0f, 1.830f, 4.574f },
-        { "slow_out_lo", 6.0f, 0.275f, 0.915f },
-    },
-} };
+// Pure-XY diagnostic preamble — no E involved. If this runs in ≈500 ms we
+// know pure-XY feedrate is correct and the bug is in the E-carrying path.
+// If it also runs slow we know the bug is upstream of the E-axis logic.
+constexpr float kDiagDx_mm = 10.0f;
+constexpr float kDiagFeed_mm_s = 20.0f;
+constexpr uint32_t kDiagExpected_ms = 500;
 
-// Inter-pulse transition geometry: lift Z while travelling back to start_x at
-// the next pulse's Y. No retract — we want the melt zone to settle naturally
-// to the no-flow baseline so pulse N's slow_in phase re-establishes it.
-// 120 mm/s is well under the MK4 travel-feedrate limit; the Z-axis planner
-// will clamp the Z moves to the machine's much slower Z-max automatically.
-// At 120 mm/s each transition takes ~0.25 s, keeping total capture ≈ 4.1 s.
-constexpr float kTransitionLiftZ_mm = 0.8f; ///< Lift above purge_z during travel
-constexpr float kTransitionFeed_mm_s = 120.0f; ///< Travel speed (XY & Z)
+// Small helper to emit an "expected vs observed" echo line for a completed
+// move. Kept here so the runner stays readable.
+void echo_move_timing(const char *tag, float dx_mm, float de_mm,
+                      float fr_mm_s, uint32_t expected_ms,
+                      uint32_t observed_us) {
+    std::array<char, 128> buf;
+    std::snprintf(buf.data(), buf.size(),
+        "M573 %s dx=%.2f de=%.3f fr=%.2fmm/s exp=%lums obs=%lums",
+        tag, double(dx_mm), double(de_mm), double(fr_mm_s),
+        static_cast<unsigned long>(expected_ms),
+        static_cast<unsigned long>(observed_us / 1000));
+    SERIAL_ECHO_START();
+    SERIAL_ECHOLN(buf.data());
+}
 
-// Move feed rate (mm/s) — machine-tangential speed for the combined XE move.
-// We size it so the extruder reaches its target e_feed_mm_s given the
-// extrusion/travel ratio. With dy=0 during measurement, tangential distance
-// equals dx. Not constexpr because std::sqrt would be (but we no longer need
-// it since dy=0; kept as a plain helper for clarity and future flexibility).
-float tangential_feed(const SubPhase &p) {
-    const float time_s = p.de_mm / p.e_feed_mm_s;
-    return p.dx_mm / time_s;
+// Run one sub-phase: mark start, plan, synchronize, echo timing.
+// MarkPhase is called after the synchronize so the next phase's start
+// timestamp is also the current phase's end timestamp — giving
+// unambiguous boundaries for off-line analysis.
+void run_subphase(pa_calibration::Capture &cap, const SubPhase &sp) {
+    const uint32_t t0 = ticks_us();
+    cap.MarkPhase(sp.name, t0);
+    const float dx = geom().dir * sp.dx_mm;
+    plan_move_by(sp.feedrate_mm_s, dx, 0.0f, 0.0f, sp.de_mm);
+    planner.synchronize();
+    const uint32_t observed_us = ticks_us() - t0;
+    echo_move_timing(sp.name, sp.dx_mm, sp.de_mm, sp.feedrate_mm_s,
+                     sp.expected_ms, observed_us);
 }
 
 } // namespace
@@ -147,62 +132,48 @@ float tangential_feed(const SubPhase &p) {
  */
 
 /**
- *### M573: Loadcell-based Pressure Advance calibration (signal capture)
+ *### M573: Loadcell-based Pressure Advance calibration (single-pulse diagnostic)
  *
- * Runs a 3-pulse extrusion pattern in the purge zone, captures loadcell
- * samples, and dumps them to serial as CSV.
- *
- * Pulse 1 is a high-flow purge (5 → 13.3 → 5 mm/s E-feed, 15 mm filament)
- * that also primes melt pressure. Pulses 2 and 3 are identical low-flow
- * slow → fast → slow steps (0.915 → 4.574 → 0.915 mm/s E-feed, 3 mm filament)
- * at the PA-test operating point (20 / 100 mm/s X-feed on 0.55 × 0.2 lines).
- * Each pulse is laid on a separate Y row (1 mm apart) with a short Z-lift
- * transition between them so the lines don't overlap on the bed.
+ * Runs a single slow→fast→slow pulse at the PA-test operating point, with a
+ * pure-XY preamble move to isolate feedrate correctness. Each move echoes
+ * `exp=<ms> obs=<ms>` to serial for direct feedrate inspection, and the
+ * loadcell capture is dumped as CSV delimited by `BEGIN PA_CAPTURE` / `END
+ * PA_CAPTURE`.
  *
  *#### Preconditions
- * - Hotend must already be at extrusion temperature (M573 does not heat).
- * - Nozzle must already be positioned at the purge zone (slicer start G-code).
+ * - Hotend at extrusion temperature (M573 does not heat).
+ * - Nozzle positioned at the purge zone (slicer start G-code).
  *
  *#### Output format
- * The CSV dump is delimited by `BEGIN PA_CAPTURE` / `END PA_CAPTURE` markers.
- * - `PA_SAMPLES=<n> PA_DROPPED=<m>` — counts
- * - `PA_PHASE,<name>,<time_us>` — phase boundary timestamps
- * - `PA,<time_us>,<load_g>` — one line per captured sample
- *
- * Capture runs at the loadcell's native 320 Hz in HighPrecision mode; Pressure
- * Advance is zeroed for the duration of the measurement so the pressure
- * signature is not pre-shaped.
+ * - `M573 diag_x dx=... fr=... exp=...ms obs=...ms` — pure-XY preamble.
+ * - `M573 <subphase> dx=... fr=... exp=...ms obs=...ms` — each pulse phase.
+ * - `M573: captured <n> samples (<m> dropped)` — capture summary.
+ * - CSV block: `PA_PHASE,<name>,<time_us>` and `PA,<time_us>,<load_g>`.
  *
  *#### Usage
  *
  *    M573
  */
 void GcodeSuite::M573() {
-    // Precondition: hot enough to extrude.
     if (thermalManager.targetTooColdToExtrude(active_extruder)) {
         SERIAL_ECHO_MSG("M573: hotend too cold to extrude");
         return;
     }
 
-    // Flush any pending motion so we start from a known steady state.
     planner.synchronize();
 
-    // RAII: zero PA during measurement (so the capture reflects the raw
-    // extruder/hotend response), and enable the loadcell's full 320 Hz /
-    // filter path. Both guards restore previous state on block exit.
+    // RAII: zero PA during measurement, run loadcell at full 320 Hz.
     pressure_advance::PressureAdvanceDisabler pa_guard;
     Loadcell::HighPrecisionEnabler hp_guard(loadcell);
 
-    // Continuous-mode tare establishes the bandpass-filter baseline so the
+    // Continuous-mode tare establishes the bandpass-filter baseline so
     // captured load is expressed relative to the current no-flow state.
     loadcell.Tare(Loadcell::TareMode::Continuous);
 
-    // Snap a copy of the current position; we'll drive relative moves via
-    // plan_move_by().
     const float start_z = current_position.z;
 
-    // Lower to purge Z at a gentle rate. We don't move X/Y here — slicer
-    // start-gcode is expected to have parked us over the purge line.
+    // Drop to purge Z if we're above it. Slicer start-gcode is expected
+    // to have parked us over the purge line in X/Y.
     if (current_position.z > geom().purge_z) {
         plan_move_by(5.0f, 0.0f, 0.0f, geom().purge_z - current_position.z, 0.0f);
         planner.synchronize();
@@ -213,52 +184,40 @@ void GcodeSuite::M573() {
 
     cap.MarkPhase("start", ticks_us());
 
-    // Snap starting X/Y so we can return between pulses. Y is tracked
-    // relative to this base via dy_offset_mm on each Pulse.
+    // --- Preamble: pure-XY move, 10mm @ 20mm/s, expected 500ms. ---
     const float start_x = current_position.x;
-    const float base_y = current_position.y;
-
-    for (std::size_t i = 0; i < kPulses.size(); ++i) {
-        const Pulse &pulse = kPulses[i];
-
-        // Move to this pulse's Y row (first iteration already there).
-        if (i > 0) {
-            cap.MarkPhase("transition_up", ticks_us());
-            // Lift Z, travel back to start_x at the new Y offset, drop Z.
-            // plan_move_by takes relative offsets, so compute deltas.
-            const float x_back = start_x - current_position.x;
-            const float y_delta = (base_y + pulse.dy_offset_mm) - current_position.y;
-            plan_move_by(kTransitionFeed_mm_s, 0.0f, 0.0f, kTransitionLiftZ_mm, 0.0f);
-            plan_move_by(kTransitionFeed_mm_s, x_back, y_delta, 0.0f, 0.0f);
-            plan_move_by(kTransitionFeed_mm_s, 0.0f, 0.0f, -kTransitionLiftZ_mm, 0.0f);
-            cap.MarkPhase("transition_dn", ticks_us());
-        }
-
-        cap.MarkPhase(pulse.name, ticks_us());
-
-        // Emit the three sub-phases of this pulse.
-        for (const SubPhase *sp : { &pulse.slow_in, &pulse.fast_step, &pulse.slow_out }) {
-            cap.MarkPhase(sp->name, ticks_us());
-            const float dx = geom().dir * sp->dx_mm;
-            plan_move_by(tangential_feed(*sp), dx, 0.0f, 0.0f, sp->de_mm);
-        }
+    {
+        const uint32_t t0 = ticks_us();
+        cap.MarkPhase("diag_x", t0);
+        plan_move_by(kDiagFeed_mm_s, geom().dir * kDiagDx_mm, 0.0f, 0.0f, 0.0f);
+        planner.synchronize();
+        const uint32_t observed_us = ticks_us() - t0;
+        echo_move_timing("diag_x", kDiagDx_mm, 0.0f, kDiagFeed_mm_s,
+                         kDiagExpected_ms, observed_us);
     }
 
-    // Wait for the motion to complete so the last samples are captured before
-    // we tear down the guards.
-    planner.synchronize();
+    // Return to the pulse's X start without extruding, at travel speed.
+    {
+        const float x_back = start_x - current_position.x;
+        plan_move_by(120.0f, x_back, 0.0f, 0.0f, 0.0f);
+        planner.synchronize();
+        cap.MarkPhase("pulse_start", ticks_us());
+    }
+
+    // --- Single pulse: slow_in → fast → slow_out. ---
+    run_subphase(cap, kSlowIn);
+    run_subphase(cap, kFastStep);
+    run_subphase(cap, kSlowOut);
+
     cap.MarkPhase("end", ticks_us());
     cap.Stop();
 
-    // Return Z to where we started so subsequent slicer moves are unaffected.
+    // Return Z so subsequent slicer moves aren't affected.
     if (start_z != current_position.z) {
         plan_move_by(5.0f, 0.0f, 0.0f, start_z - current_position.z, 0.0f);
         planner.synchronize();
     }
 
-    // Report. SERIAL_ECHO_MSG is literal-only (it expands to PSTR(S "\n"),
-    // which depends on C string-literal concatenation), so format into a
-    // buffer and use the START + LN pair for the runtime pointer.
     {
         std::array<char, 96> buf;
         std::snprintf(buf.data(), buf.size(),

@@ -1,0 +1,17 @@
+STATE port=COM5 file=m573_capture.gcode total_lines=14 log=pa_dev\runs\stream_m573_20260422_152128.log
+TX 0/0    M115  (handshake)
+TX 1/14   M155 S2
+TX 2/14   M104 S215
+TX 3/14   G90
+TX 4/14   M83
+TX 5/14   G28
+TX 6/14   M109 S215
+TX 7/14   G1 Z5 F600
+TX 8/14   G1 X10 Y5 F3000
+TX 9/14   G1 Z0.2 F300
+TX 10/14   M573
+TX 11/14   G1 Z5 F600
+TX 12/14   G1 X100 Y100 F3000
+TX 13/14   M104 S0
+TX 14/14   M155 S0
+DONE sent=14 time=0:00:21

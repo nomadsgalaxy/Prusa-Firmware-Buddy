@@ -1,0 +1,228 @@
+STATE port=COM5 file=m573_capture.gcode total_lines=14 log=pa_dev\runs\stream_m573_20260422_151808.log
+TX 0/0    M115  (handshake)
+RX        << FIRMWARE_NAME:Prusa-Firmware-Buddy 6.5.3+12780 (Github) SOURCE_CODE_URL:https://github.com/prusa3d/Prusa-Firmware-Buddy PROTOCOL_VERSION:1.0 MACHINE_TYPE:Prusa-MK4S EXTRUDER_COUNT:1 UUID:cede2a2f-41a2-4748-9b12-c55c62f367ff
+RX        << Cap:SERIAL_XON_XOFF:0
+RX        << Cap:BINARY_FILE_TRANSFER:0
+RX        << Cap:EEPROM:0
+RX        << Cap:VOLUMETRIC:1
+RX        << Cap:AUTOREPORT_TEMP:1
+RX        << Cap:PROGRESS:0
+RX        << Cap:PRINT_JOB:1
+RX        << Cap:AUTOLEVEL:1
+RX        << Cap:Z_PROBE:1
+RX        << Cap:LEVELING_DATA:1
+RX        << Cap:BUILD_PERCENT:0
+RX        << Cap:SOFTWARE_POWER:1
+RX        << Cap:TOGGLE_LIGHTS:0
+RX        << Cap:CASE_LIGHT_BRIGHTNESS:0
+RX        << Cap:EMERGENCY_PARSER:0
+RX        << Cap:PROMPT_SUPPORT:0
+RX        << Cap:AUTOREPORT_SD_STATUS:0
+RX        << Cap:THERMAL_PROTECTION:0
+RX        << Cap:MOTION_MODES:0
+RX        << Cap:CHAMBER_TEMPERATURE:0
+RX        << ok
+TX 1/14   M155 S2
+RX        << ok
+TX 2/14   M104 S215
+RX        << ok
+TX 3/14   G90
+RX        << ok
+TX 4/14   M83
+RX        << ok
+TX 5/14   G28
+RX        << echo:endstops hit:  Z:0.76
+RX        << echo:== Precise Homing axis X try 0 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        << echo:endstops hit:  X:-25.50
+RX        << echo:endstops hit:  X:-10.00
+RX        << echo:    homing probe offset: 0.00 divisor: 1.00 mscnt: 272 calibration offset: 0
+RX        << echo:Probe classified as perfect.
+RX        << echo:Backoff ipos:-1350
+RX        << echo:== Precise Homing axis Y try 0 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        << echo:endstops hit:  Y:-10.19
+RX        <<  T:45.00/215.00 B:33.43/0.00 X:26.77/36.00 A:40.56/0.00 @:255 B@:0 HBR@:0
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Y:-9.92
+RX        << echo:    homing probe offset: 0.08 divisor: 1.00 mscnt: 1008 calibration offset: -256
+RX        << echo:Probe classified as acceptable.
+RX        << echo:== Precise Homing axis Y try 1 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        << echo:endstops hit:  Y:-10.00
+RX        << echo:endstops hit:  Y:-10.08
+RX        << echo:    homing probe offset: -0.08 divisor: 1.00 mscnt: 752 calibration offset: 0
+RX        << echo:Probe classified as perfect.
+RX        << echo:Backoff ipos:181
+RX        << echo:busy: processing
+RX        <<  T:48.44/215.00 B:33.45/0.00 X:26.82/36.00 A:40.53/0.00 @:255 B@:0 HBR@:255
+RX        << echo:bu
+RX        << sy: processing
+RX        <<  T:54.42/215.00 B:33.34/0.00 X:26.79/36.00 A:40.59/0.00 @:255 B@:0 HBR@:55
+RX        << e
+RX        << cho:busy: processing
+RX        <<  T:60.96/215.00 B:33.30/0.00 X:26.71/36.00 A:40.58/0.00 @:255 B@:0 HBR@:55
+RX        << e
+RX        << cho:busy: processing
+RX        <<  T:67.41/215.00 B:33.36/0.00 X:26.66/36.00 A:40.67/0.00 @:255 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:73.95/215.00 B:33.23/0.00 X:26.65/36.00 A:40.52/0.00 @:255 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:81.58/215.00 B:33.25/0.00 X:26.64/36.00 A:40.59/0.00 @:255 B@:0 HBR@:55
+RX        << echo:endstops hit:  Z:-217.00
+RX        << echo:busy: processing
+RX        <<  T:87.39/215.00 B:33.21/0.00 X:26.63/36.00 A:40.63/0.00 @:255 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:93.30/215.00 B:33.19/0.00 X:26.71/36.00 A:40.63/0.00 @:255 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:99.30/215.00 B:33.15/0.00 X:26.80/36.00 A:40.59/0.00 @:255 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:104.90/215.00 B:33.19/0.00 X:26.86/36.00 A:40.67/0.00 @:255 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:110.16/215.00 B:33.15/0.00 X:26.96/36.00 A:40.70/0.00 @:255 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:116.18/215.00 B:33.13/0.00 X:27.07/36.00 A:40.64/0.00 @:255 B@:0 HBR@:55
+RX        << echo:endstops hit:  Z:-5.02
+RX        << echo:endstops hit:  Z:-3.09
+RX        << echo:busy: processing
+RX        <<  T:121.67/215.00 B:33.17/0.00 X:27.21/36.00 A:40.69/0.00 @:255 B@:0 HBR@:55
+RX        << echo:endstops hit:  Z:-2.38
+RX        << echo:busy: processing
+RX        <<  T:127.03/215.00 B:33.13/0.00 X:27.35/36.00 A:40.72/0.00 @:255 B@:0 HBR@:55
+RX        << echo:endstops hit:  Z:-1.76
+RX        << echo:busy: processing
+RX        <<  T:132.55/215.00 B:33.13/0.00 X:27.48/36.00 A:40.70/0.00 @:255 B@:0 HBR@:55
+RX        << echo:endstops hit:  Z:-4.49
+RX        << echo:endstops hit:  Z:-0.58
+RX        << echo:busy: processing
+RX        <<  T:138.06/215.00 B:33.06/0.00 X:27.64/36.00 A:40.66/0.00 @:255 B@:0 HBR@:55
+RX        << echo:endstops hit:  Z:-0.05
+RX        << echo:endstops hit:  Z:-7.93
+RX        << echo:busy: processing
+RX        <<  T:143.02/215.00 B:33.00/0.00 X:27.77/36.00 A:40.73/0.00 @:255 B@:0 HBR@:55
+RX        << echo:endstops hit:  Z:-2.65
+RX        << echo:busy: processing
+RX        <<  T:148.23/215.00 B:33.06/0.00 X:27.94/36.00 A:40.75/0.00 @:255 B@:0 HBR@:55
+RX        << e
+RX        << cho:busy: processing
+RX        <<  T:152.98/215.00 B:33.00/0.00 X:28.07/36.00 A:40.75/0.00 @:255 B@:0 HBR@:55
+RX        << echo:endstops hit:  Z:-2.99
+RX        << echo:busy: processing
+RX        <<  T:157.99/215.00 B:32.97/0.00 X:28.24/36.00 A:40.75/0.00 @:255 B@:0 HBR@:55
+RX        << echo:Re-tared with offset 1.96
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:3.81
+RX        << echo:busy: processing
+RX        <<  T:162.70/215.00 B:32.93/0.00 X:28.41/36.00 A:40.75/0.00 @:255 B@:0 HBR@:55
+RX        << echo:Probe classified as NOK (load_mean_after_decompression, -773.63)
+RX        << X:-1.00 Y:-4.00 Z:2.00 E:0.00 Count X:-100 Y:-400 Z:800
+RX        << ok
+TX 6/14   M109 S215
+RX        <<  T:163.49/215.00 B:32.91/0.00 X:28.43/36.00 A:40.78/0.00 @:255 B@:0 HBR@:55 W:?
+RX        <<  T:166.24/215.00 B:32.82/0.00 X:28.51/36.00 A:40.81/0.00 @:255 B@:0 HBR@:55 W:?
+RX        <<  T:167.81/215.00 B:32.91/0.00 X:28.55/36.00 A:40.77/0.00 @:255 B@:0 HBR@:55
+RX        <<  T:168.55/215.00 B:32.93/0.00 X:28.57/36.00 A:40.77/0.00 @:255 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:170.80/215.00 B:32.84/0.00 X:28.66/36.00 A:40.81/0.00 @:255 B@:0 HBR@:55 W:?
+RX        <<  T:172.24/215.00 B:32.84/0.00 X:28.72/36.00 A:40.83/0.00 @:255 B@:0 HBR@:55
+RX        <<  T:173.01/215.00 B:32.93/0.00 X:28.75/36.00 A:40.78/0.00 @:255 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:175.47/215.00 B:32.78/0.00 X:28.85/36.00 A:40.80/0.00 @:255 B@:0 HBR@:55 W:?
+RX        <<  T:176.91/215.00 B:32.82/0.00 X:28.87/36.00 A:40.77/0.00 @:255 B@:0 HBR@:55
+RX        <<  T:177.58/215.00 B:32.82/0.00 X:28.91/36.00 A:40.89/0.00 @:255 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:179.66/215.00 B:32.80/0.00 X:28.99/36.00 A:40.83/0.00 @:255 B@:0 HBR@:55 W:?
+RX        <<  T:181.15/215.00 B:32.80/0.00 X:29.05/36.00 A:40.84/0.00 @:246 B@:0 HBR@:55
+RX        <<  T:181.96/215.00 B:32.78/0.00 X:29.07/36.00 A:40.88/0.00 @:232 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:184.60/215.00 B:32.76/0.00 X:29.19/36.00 A:40.86/0.00 @:193 B@:0 HBR@:55 W:?
+RX        <<  T:186.06/215.00 B:32.82/0.00 X:29.27/36.00 A:40.88/0.00 @:173 B@:0 HBR@:55
+RX        <<  T:186.67/215.00 B:32.80/0.00 X:29.27/36.00 A:40.88/0.00 @:169 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:188.57/215.00 B:32.76/0.00 X:29.38/36.00 A:40.95/0.00 @:151 B@:0 HBR@:55 W:?
+RX        <<  T:189.76/215.00 B:32.78/0.00 X:29.36/36.00 A:40.91/0.00 @:140 B@:0 HBR@:55
+RX        <<  T:190.25/215.00 B:32.76/0.00 X:29.45/36.00 A:40.94/0.00 @:139 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:191.78/215.00 B:32.76/0.00 X:29.57/36.00 A:40.98/0.00 @:139 B@:0 HBR@:55 W:?
+RX        <<  T:192.60/215.00 B:32.74/0.00 X:29.61/36.00 A:41.00/0.00 @:139 B@:0 HBR@:55
+RX        <<  T:192.92/215.00 B:32.74/0.00 X:29.64/36.00 A:40.97/0.00 @:142 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:193.85/215.00 B:32.74/0.00 X:29.75/36.00 A:41.00/0.00 @:147 B@:0 HBR@:55 W:?
+RX        <<  T:194.38/215.00 B:32.72/0.00 X:29.77/36.00 A:40.98/0.00 @:152 B@:0 HBR@:55
+RX        <<  T:194.63/215.00 B:32.78/0.00 X:29.83/36.00 A:40.98/0.00 @:154 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:195.61/215.00 B:32.72/0.00 X:29.90/36.00 A:41.00/0.00 @:154 B@:0 HBR@:55 W:?
+RX        <<  T:196.11/215.00 B:32.74/0.00 X:29.95/36.00 A:41.00/0.00 @:154 B@:0 HBR@:55
+RX        <<  T:196.35/215.00 B:32.74/0.00 X:29.99/36.00 A:41.00/0.00 @:154 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:197.15/215.00 B:32.67/0.00 X:30.07/36.00 A:41.00/0.00 @:155 B@:0 HBR@:55 W:?
+RX        <<  T:197.64/215.00 B:32.74/0.00 X:30.14/36.00 A:41.02/0.00 @:161 B@:0 HBR@:55
+RX        <<  T:197.89/215.00 B:32.69/0.00 X:30.14/36.00 A:41.00/0.00 @:161 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:198.80/215.00 B:32.67/0.00 X:30.26/36.00 A:41.00/0.00 @:166 B@:0 HBR@:55 W:?
+RX        <<  T:199.32/215.00 B:32.69/0.00 X:30.25/36.00 A:41.02/0.00 @:168 B@:0 HBR@:55
+RX        <<  T:199.62/215.00 B:32.72/0.00 X:30.30/36.00 A:41.03/0.00 @:166 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:200.58/215.00 B:32.65/0.00 X:30.34/36.00 A:41.05/0.00 @:161 B@:0 HBR@:55 W:?
+RX        <<  T:201.27/215.00 B:32.65/0.00 X:30.42/36.00 A:41.02/0.00 @:158 B@:0 HBR@:55
+RX        <<  T:201.60/215.00 B:32.69/0.00 X:30.43/36.00 A:41.09/0.00 @:156 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:202.88/215.00 B:32.67/0.00 X:30.56/36.00 A:41.05/0.00 @:147 B@:0 HBR@:55 W:?
+RX        <<  T:203.65/215.00 B:32.63/0.00 X:30.54/36.00 A:41.08/0.00 @:140 B@:0 HBR@:55
+RX        <<  T:203.93/215.00 B:32.65/0.00 X:30.62/36.00 A:41.06/0.00 @:142 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:204.90/215.00 B:32.61/0.00 X:30.69/36.00 A:41.05/0.00 @:139 B@:0 HBR@:55 W:?
+RX        <<  T:205.61/215.00 B:32.63/0.00 X:30.66/36.00 A:41.11/0.00 @:134 B@:0 HBR@:55
+RX        <<  T:205.85/215.00 B:32.59/0.00 X:30.70/36.00 A:41.13/0.00 @:136 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:206.87/215.00 B:32.63/0.00 X:30.82/36.00 A:41.11/0.00 @:134 B@:0 HBR@:55 W:?
+RX        <<  T:207.44/215.00 B:32.56/0.00 X:30.86/36.00 A:41.13/0.00 @:133 B@:0 HBR@:55
+RX        <<  T:207.68/215.00 B:32.54/0.00 X:30.92/36.00 A:41.16/0.00 @:134 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:208.40/215.00 B:32.50/0.00 X:30.97/36.00 A:41.14/0.00 @:136 B@:0 HBR@:55 W:?
+RX        <<  T:208.94/215.00 B:32.54/0.00 X:30.94/36.00 A:41.11/0.00 @:133 B@:0 HBR@:55
+RX        <<  T:209.17/215.00 B:32.48/0.00 X:31.04/36.00 A:41.16/0.00 @:134 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:209.95/215.00 B:32.48/0.00 X:31.08/36.00 A:41.22/0.00 @:134 B@:0 HBR@:55 W:?
+RX        <<  T:210.37/215.00 B:32.41/0.00 X:31.11/36.00 A:41.14/0.00 @:134 B@:0 HBR@:55
+RX        <<  T:210.61/215.00 B:32.46/0.00 X:31.14/36.00 A:41.17/0.00 @:132 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:211.28/215.00 B:32.56/0.00 X:31.23/36.00 A:41.14/0.00 @:129 B@:0 HBR@:55 W:?
+RX        <<  T:211.75/215.00 B:32.48/0.00 X:31.26/36.00 A:41.17/0.00 @:125 B@:0 HBR@:55
+RX        <<  T:211.94/215.00 B:32.52/0.00 X:31.30/36.00 A:41.19/0.00 @:125 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:212.68/215.00 B:32.52/0.00 X:31.32/36.00 A:41.20/0.00 @:120 B@:0 HBR@:55 W:?
+RX        <<  T:213.04/215.00 B:32.46/0.00 X:31.40/36.00 A:41.20/0.00 @:119 B@:0 HBR@:55
+RX        <<  T:213.22/215.00 B:32.52/0.00 X:31.38/36.00 A:41.23/0.00 @:118 B@:0 HBR@:55 W:?
+RX        << echo:busy: processing
+RX        <<  T:213.77/215.00 B:32.56/0.00 X:31.47/36.00 A:41.22/0.00 @:115 B@:0 HBR@:55 W:?
+RX        <<  T:214.15/215.00 B:32.44/0.00 X:31.53/36.00 A:41.19/0.00 @:111 B@:0 HBR@:55
+RX        <<  T:214.31/215.00 B:32.44/0.00 X:31.56/36.00 A:41.23/0.00 @:111 B@:0 HBR@:55 W:4
+RX        << echo:busy: processing
+RX        <<  T:214.89/215.00 B:32.39/0.00 X:31.62/36.00 A:41.27/0.00 @:106 B@:0 HBR@:55 W:3
+RX        <<  T:215.18/215.00 B:32.41/0.00 X:31.64/36.00 A:41.25/0.00 @:104 B@:0 HBR@:55
+RX        <<  T:215.22/215.00 B:32.41/0.00 X:31.65/36.00 A:41.25/0.00 @:108 B@:0 HBR@:55 W:2
+RX        << echo:busy: processing
+RX        <<  T:215.71/215.00 B:32.39/0.00 X:31.70/36.00 A:41.28/0.00 @:101 B@:0 HBR@:55 W:1
+RX        <<  T:215.96/215.00 B:32.39/0.00 X:31.79/36.00 A:41.25/0.00 @:100 B@:0 HBR@:55
+RX        <<  T:216.09/215.00 B:32.41/0.00 X:31.77/36.00 A:41.27/0.00 @:98 B@:0 HBR@:55 W:0
+RX        << echo:busy: processing
+RX        << ok
+TX 7/14   G1 Z5 F600
+RX        << ok
+TX 8/14   G1 X10 Y5 F3000
+RX        << ok
+TX 9/14   G1 Z0.2 F300
+RX        << ok
+TX 10/14   M573
+RX        << echo:Unknown command: "M573"
+RX        << ok
+TX 11/14   G1 Z5 F600
+RX        << ok
+TX 12/14   G1 X100 Y100 F3000
+RX        << ok
+TX 13/14   M104 S0
+RX        << ok
+TX 14/14   M155 S0
+RX        << ok
+DONE sent=14 time=0:01:28

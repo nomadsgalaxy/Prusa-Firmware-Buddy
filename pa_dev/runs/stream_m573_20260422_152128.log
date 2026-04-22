@@ -1,0 +1,97 @@
+STATE port=COM5 file=m573_capture.gcode total_lines=14 log=pa_dev\runs\stream_m573_20260422_152128.log
+TX 0/0    M115  (handshake)
+RX        << FIRMWARE_NAME:Prusa-Firmware-Buddy 6.5.3+12780 (Github) SOURCE_CODE_URL:https://github.com/prusa3d/Prusa-Firmware-Buddy PROTOCOL_VERSION:1.0 MACHINE_TYPE:Prusa-MK4S EXTRUDER_COUNT:1 UUID:cede2a2f-41a2-4748-9b12-c55c62f367ff
+RX        << Cap:SERIAL_XON_XOFF:0
+RX        << Cap:BINARY_FILE_TRANSFER:0
+RX        << Cap:EEPROM:0
+RX        << Cap:VOLUMETRIC:1
+RX        << Cap:AUTOREPORT_TEMP:1
+RX        << Cap:PROGRESS:0
+RX        << Cap:PRINT_JOB:1
+RX        << Cap:AUTOLEVEL:1
+RX        << Cap:Z_PROBE:1
+RX        << Cap:LEVELING_DATA:1
+RX        << Cap:BUILD_PERCENT:0
+RX        << Cap:SOFTWARE_POWER:1
+RX        << Cap:TOGGLE_LIGHTS:0
+RX        << Cap:CASE_LIGHT_BRIGHTNESS:0
+RX        << Cap:EMERGENCY_PARSER:0
+RX        << Cap:PROMPT_SUPPORT:0
+RX        << Cap:AUTOREPORT_SD_STATUS:0
+RX        << Cap:THERMAL_PROTECTION:0
+RX        << Cap:MOTION_MODES:0
+RX        << Cap:CHAMBER_TEMPERATURE:0
+RX        << ok
+TX 1/14   M155 S2
+RX        << ok
+TX 2/14   M104 S215
+RX        << ok
+TX 3/14   G90
+RX        << ok
+TX 4/14   M83
+RX        << ok
+TX 5/14   G28
+RX        << echo:== Precise Homing axis X try 0 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        <<  T:215.90/215.00 B:32.44/0.00 X:34.51/36.00 A:42.00/0.00 @:66 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  X:-111.50
+RX        << echo:endstops hit:  X:-10.00
+RX        << echo:    homing probe offset: 0.00 divisor: 1.00 mscnt: 272 calibration offset: 0
+RX        << echo:Probe classified as perfect.
+RX        << echo:Backoff ipos:-1350
+RX        << echo:== Precise Homing axis Y try 0 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        <<  T:215.74/215.00 B:32.44/0.00 X:34.41/36.00 A:42.05/0.00 @:67 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Y:-114.50
+RX        << echo:endstops hit:  Y:-10.00
+RX        << echo:    homing probe offset: 0.00 divisor: 1.00 mscnt: 752 calibration offset: 0
+RX        << echo:Probe classified as perfect.
+RX        << echo:Backoff ipos:181
+RX        <<  T:215.61/215.00 B:32.41/0.00 X:34.49/36.00 A:42.05/0.00 @:66 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:215.45/215.00 B:32.37/0.00 X:34.51/36.00 A:42.08/0.00 @:68 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-39.83
+RX        <<  T:215.35/215.00 B:32.37/0.00 X:34.51/36.00 A:42.11/0.00 @:67 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-3.14
+RX        <<  T:215.22/215.00 B:32.39/0.00 X:34.54/36.00 A:42.11/0.00 @:69 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        <<  T:215.14/215.00 B:32.33/0.00 X:34.55/36.00 A:42.14/0.00 @:69 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-2.99
+RX        <<  T:215.13/215.00 B:32.35/0.00 X:34.56/36.00 A:42.14/0.00 @:66 B@:0 HBR@:58
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -3.78
+RX        << echo:Starting probe at 1
+RX        <<  T:215.00/215.00 B:32.26/0.00 X:34.60/36.00 A:42.14/0.00 @:69 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.08
+RX        <<  T:214.92/215.00 B:32.24/0.00 X:34.60/36.00 A:42.14/0.00 @:70 B@:0 HBR@:55
+RX        << echo:busy: processing
+RX        << echo:Probe classified as NOK (angle_after, 88.47)
+RX        << X:-1.00 Y:-4.00 Z:2.00 E:-47.00 Count X:-100 Y:-400 Z:800
+RX        << ok
+TX 6/14   M109 S215
+RX        <<  T:214.87/215.00 B:32.22/0.00 X:34.67/36.00 A:42.17/0.00 @:71 B@:0 HBR@:58 W:0
+RX        << ok
+TX 7/14   G1 Z5 F600
+RX        << ok
+TX 8/14   G1 X10 Y5 F3000
+RX        << ok
+TX 9/14   G1 Z0.2 F300
+RX        << ok
+TX 10/14   M573
+RX        << echo:Unknown command: "M573"
+RX        << ok
+TX 11/14   G1 Z5 F600
+RX        << ok
+TX 12/14   G1 X100 Y100 F3000
+RX        << ok
+TX 13/14   M104 S0
+RX        << ok
+TX 14/14   M155 S0
+RX        << ok
+DONE sent=14 time=0:00:21
