@@ -69,7 +69,7 @@ public:
     virtual void receive_file_read_request(NodeId remote_node_id, TimePoint now, uint8_t transfer_id, uint32_t offset) = 0;
     virtual void receive_ac_controller_status(const ac_controller::Config &, const ac_controller::Status &) = 0;
     virtual void receive_diagnostic_record(NodeId remote_node_id, const Bytes &text) = 0;
-    virtual void log_from_app(std::string_view s);
+    virtual void log_from_app(std::string_view s) {}
 
     // Called by modbus handlers.
 
