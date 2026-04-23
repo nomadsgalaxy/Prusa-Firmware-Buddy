@@ -124,6 +124,12 @@ WindowBlinkingText::WindowBlinkingText(window_t *parent, Rect16 rect, const stri
     : window_text_t(parent, rect, is_multiline::no, is_closed_on_click_t::no, txt)
     , blink_enable(false) {
     SetPadding({ 0, 0, 0, 0 });
+    // Dynamic blinking text (footer readouts, status values, etc.) legitimately
+    // varies in width as its contents update. The default check_overflow=true
+    // fires an assert() on last-pixel layout edge cases which becomes a BSOD in
+    // debug builds (see dump_buddy.bin analysis — PETG load crash via
+    // display_helper.cpp:189). Prefer graceful truncation over a crash here.
+    set_check_overflow(false);
 }
 
 void WindowBlinkingText::unconditionalDraw() {

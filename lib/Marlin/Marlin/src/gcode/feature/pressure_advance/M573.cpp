@@ -37,6 +37,7 @@
     #include "loadcell.hpp"
     #include "pa_calibration.hpp"
     #include "../../../feature/pressure_advance/pressure_advance_config.hpp"
+    #include "../../../core/utility.h"
     #include "../../../module/motion.h"
     #include "../../../module/planner.h"
     #include "../../../module/temperature.h"
@@ -46,6 +47,8 @@
     #include <array>
     #include <cmath>
     #include <cstdio>
+    #include <config_store/store_instance.hpp>
+    #include <filament.hpp>
     #include <printers.h>
 
 namespace {
@@ -89,9 +92,19 @@ struct SubPhase {
 // boundaries between the free-air and on-bed transitions. Per-pulse
 // duration: 0.25 + 0.20 + 0.30 = 0.75 s (~240 samples at 320 Hz nominal).
 //
-// Total capture window: pulse1 (~0.9 s) + gap (HOP DOWN + Seg C/D + wipe,
-// ~2.7 s) + pulse2 (~0.9 s) ≈ 4.5 s. Fits in the 1536-sample / 4.8 s
-// buffer with ~300 ms headroom.
+// Total capture window: zero_flow_1 (0.5 s) + pulse1 (~0.75 s) + gap
+// (HOP DOWN + Seg C/D + wipe, ~2.65 s) + pulse2 (~0.75 s) ≈ 4.65 s. Fits
+// in the 1536-sample / 4.8 s buffer with ~150 ms headroom. Adding a
+// symmetric zero_flow_2 before slow_in_2 would overrun the buffer; the
+// off-line fit for pulse 2 uses the purge2_start/purge2_end mask window
+// as its baseline surrogate instead.
+//
+// zero_flow_1 is a pure dwell with no motion (safe_delay), placed after
+// the capture is armed but before the first E move of pulse 1. It gives
+// ~160 samples of true extruder-idle signal for baseline subtraction —
+// needed because the free-air pulse 1 absolute signal is small (tens of
+// grams) and slow-flow steady state from slow_in_1 is not a clean zero.
+constexpr uint32_t kZeroFlow1_ms = 500;
 constexpr SubPhase kSlowIn1   { "slow_in_1",   5.0f, 0.229f,  20.0f, 250 };
 constexpr SubPhase kFastStep1 { "fast_1",     20.0f, 0.915f, 100.0f, 200 };
 constexpr SubPhase kSlowOut1  { "slow_out_1",  6.0f, 0.275f,  20.0f, 300 };
@@ -136,6 +149,20 @@ void run_subphase(pa_calibration::Capture &cap, const SubPhase &sp) {
                      sp.expected_ms, observed_us);
 }
 
+// Run a pure-dwell sub-phase: mark start, wait with no motion, echo
+// timing. Planner is assumed already synchronized (caller's
+// responsibility) so the dwell window is extruder-idle with zero motor
+// reaction force on the loadcell. safe_delay services idle()/watchdog
+// so the loadcell ISR keeps running and samples accumulate normally.
+void run_zero_flow(pa_calibration::Capture &cap, const char *name,
+                   uint32_t dwell_ms) {
+    const uint32_t t0 = ticks_us();
+    cap.MarkPhase(name, t0);
+    safe_delay(dwell_ms);
+    const uint32_t observed_us = ticks_us() - t0;
+    echo_move_timing(name, 0.0f, 0.0f, 0.0f, dwell_ms, observed_us);
+}
+
 } // namespace
 
 /** \addtogroup G-Codes
@@ -152,28 +179,78 @@ void run_subphase(pa_calibration::Capture &cap, const SubPhase &sp) {
  * is dumped as CSV delimited by `BEGIN PA_CAPTURE` / `END PA_CAPTURE`.
  *
  *#### Preconditions
- * - Hotend at extrusion temperature (M573 does not heat).
+ * - A material preset must be loaded on the active extruder (not
+ *   FilamentType::none). M573 reads the preset's nozzle_temperature and
+ *   drives the hotend to it, so the slicer does not need to preheat —
+ *   but if it already did, wait_for_hotend returns immediately.
  * - Nozzle positioned at the purge zone (slicer start G-code).
+ * - M573 is intended to run *inside* the slicer purge sequence. It does
+ *   not park on entry and does not restore Z on exit — the print
+ *   continues from wherever pulse 2 leaves the nozzle (Z=0.2 at the end
+ *   of the purge line).
  *
  *#### Output format
+ * - `M573: material=<name> target=<t>°C` — preset resolved + heated.
  * - `M573 diag_x ...`              — pure-XY preamble (feedrate check).
  * - `M573 purge_1 ...`             — anchor + hop up (before capture).
+ * - `M573 zero_flow_1 ...`         — 500 ms extruder-idle baseline (pulse 1).
  * - `M573 slow_in_1|fast_1|slow_out_1 ...` — pulse 1 phases (free air).
  * - `M573 purge_2 ...`             — hop down + Seg C/D + wipe (captured).
  * - `M573 slow_in_2|fast_2|slow_out_2 ...` — pulse 2 phases (on bed).
  * - `M573: captured <n> samples (<m> dropped)` — capture summary.
- * - CSV block with phase marks: pulse1_start, slow_in_1, fast_1, slow_out_1,
- *   pulse1_end, purge2_start, purge2_end, pulse2_start, slow_in_2, fast_2,
- *   slow_out_2, pulse2_end.
+ * - CSV block with phase marks: pulse1_start, zero_flow_1, slow_in_1,
+ *   fast_1, slow_out_1, pulse1_end, purge2_start, purge2_end,
+ *   pulse2_start, slow_in_2, fast_2, slow_out_2, pulse2_end.
  *
  *#### Usage
  *
  *    M573
  */
 void GcodeSuite::M573() {
+    // Resolve extrusion temperature from the loaded material preset, not
+    // a hardcoded default. The τ fit is material-dependent; running the
+    // dual-pulse at the wrong temperature biases K toward that material.
+    //
+    // FilamentType::none means no filament has been loaded (or the user
+    // manually cleared the preset). There's nothing sensible we can do:
+    // we don't know what material is in the melt zone, so we refuse.
+    const FilamentType loaded = config_store().get_filament_type(active_extruder);
+    if (loaded == FilamentType::none) {
+        SERIAL_ECHO_MSG("M573: no filament loaded — load a material preset first");
+        return;
+    }
+
+    const uint16_t target_temp = loaded.parameters().nozzle_temperature;
+
+    // Drive the hotend to the preset temperature. In the normal flow
+    // (M573 inside a slicer purge) the slicer has already commanded this
+    // temperature, so setTargetHotend is a no-op and wait_for_hotend
+    // returns immediately once we're inside the tolerance band.
+    //
+    // wait_for_hotend(no_wait_for_cooling=true, click_to_cancel=false)
+    // mirrors the convention used by selftest_firstlayer.cpp:296.
+    thermalManager.setTargetHotend(target_temp, active_extruder);
+    if (!thermalManager.wait_for_hotend(active_extruder, true, false)) {
+        SERIAL_ECHO_MSG("M573: hotend heat wait aborted");
+        return;
+    }
+
+    // Belt-and-suspenders — if the preset temperature is somehow below
+    // the extrude-safe threshold (misconfigured custom preset), bail
+    // before we start planning E moves.
     if (thermalManager.targetTooColdToExtrude(active_extruder)) {
         SERIAL_ECHO_MSG("M573: hotend too cold to extrude");
         return;
+    }
+
+    {
+        std::array<char, 96> buf;
+        std::snprintf(buf.data(), buf.size(),
+            "M573: material=%s target=%u°C",
+            loaded.parameters().name.data(),
+            static_cast<unsigned>(target_temp));
+        SERIAL_ECHO_START();
+        SERIAL_ECHOLN(buf.data());
     }
 
     planner.synchronize();
@@ -186,14 +263,12 @@ void GcodeSuite::M573() {
     // captured load is expressed relative to the current no-flow state.
     loadcell.Tare(Loadcell::TareMode::Continuous);
 
-    const float start_z = current_position.z;
-
-    // Drop to purge Z if we're above it. Slicer start-gcode is expected
-    // to have parked us over the purge line in X/Y.
-    if (current_position.z > geom().purge_z) {
-        plan_move_by(5.0f, 0.0f, 0.0f, geom().purge_z - current_position.z, 0.0f);
-        planner.synchronize();
-    }
+    // M573 runs as part of the slicer's purge sequence: caller is
+    // responsible for positioning (X/Y over the purge zone, Z at the
+    // start of purge_1). We don't drop to geom().purge_z here and we
+    // don't restore the caller's Z at exit — the print continues from
+    // wherever pulse 2 leaves the nozzle, which is exactly where the
+    // slicer's post-purge state expects it.
 
     auto &cap = pa_calibration::Capture::instance();
 
@@ -247,7 +322,8 @@ void GcodeSuite::M573() {
     }
 
     // --- Capture window opens here. ---
-    // Spans pulse1 + gap + pulse2 (~4.5 s total, inside 4.8 s buffer).
+    // Spans zero_flow_1 + pulse1 + gap + pulse2 (~4.65 s total, inside
+    // the 4.8 s buffer — see budget comment above).
     cap.Arm();
 
     // --- Pulse 1: free air at Z=6.2 (raw filament backpressure). ---
@@ -263,6 +339,11 @@ void GcodeSuite::M573() {
     //
     // X progression: 40 → 71 at Z=6.2.
     cap.MarkPhase("pulse1_start", ticks_us());
+    // Zero-flow dwell — extruder idle, no motion, ~500 ms (~160 samples
+    // at 320 Hz). Gives off-line analysis a true baseline window for the
+    // pulse-1 τ fit, since pulse 1's free-air signal is small (tens of
+    // grams) and slow_in_1's slow-flow steady state is not a clean zero.
+    run_zero_flow(cap, "zero_flow_1", kZeroFlow1_ms);
     run_subphase(cap, kSlowIn1);
     run_subphase(cap, kFastStep1);
     run_subphase(cap, kSlowOut1);
@@ -312,12 +393,6 @@ void GcodeSuite::M573() {
     run_subphase(cap, kSlowOut2);
     cap.MarkPhase("pulse2_end", ticks_us());
     cap.Stop();
-
-    // Return Z so subsequent slicer moves aren't affected.
-    if (start_z != current_position.z) {
-        plan_move_by(5.0f, 0.0f, 0.0f, start_z - current_position.z, 0.0f);
-        planner.synchronize();
-    }
 
     {
         std::array<char, 96> buf;
