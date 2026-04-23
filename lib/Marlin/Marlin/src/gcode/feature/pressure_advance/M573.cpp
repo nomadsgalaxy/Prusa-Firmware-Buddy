@@ -89,22 +89,33 @@ struct SubPhase {
 
 // Two identical copies of the sub-phase set — one per pulse — so each
 // MarkPhase() records a unique name and the off-line CSV has unambiguous
-// boundaries between the free-air and on-bed transitions. Per-pulse
-// duration: 0.25 + 0.20 + 0.30 = 0.75 s (~240 samples at 320 Hz nominal).
+// boundaries between the free-air and on-bed transitions. Nominal
+// per-pulse duration: 0.25 + 0.20 + 0.30 = 0.75 s (~240 samples at
+// 320 Hz). Observed is ~0.91 s per pulse — each planned move carries
+// ~30 ms of synchronize overhead and `fast_1/fast_2` stretch further
+// because the 20 mm at 100 mm/s doesn't reach cruise (accel-dominated).
 //
-// Total capture window: zero_flow_1 (0.5 s) + pulse1 (~0.75 s) + gap
-// (HOP DOWN + Seg C/D + wipe, ~2.65 s) + pulse2 (~0.75 s) ≈ 4.65 s. Fits
-// in the 1536-sample / 4.8 s buffer with ~150 ms headroom. Adding a
-// symmetric zero_flow_2 before slow_in_2 would overrun the buffer; the
-// off-line fit for pulse 2 uses the purge2_start/purge2_end mask window
-// as its baseline surrogate instead.
+// Total capture window (observed on MK4S 2026-04-23 @ 6.5.3+11984):
+//   zero_flow_1 (0.2 s) + pulse1 (~0.91 s) + gap (purge_2, ~2.79 s)
+//   + pulse2 (~0.91 s) ≈ 4.81 s
+// Fits in the 1536-sample / 4.8 s buffer with near-zero headroom.
+// zero_flow_1 was 500 ms in the first implementation but produced
+// 61–65 dropped samples at the tail of pulse 2 (buffer-full → discard).
+// Trimmed to 200 ms: still 64 baseline samples — enough to estimate a
+// stable mean for subtraction (σ_mean ∝ 1/√N, imperceptible next to
+// pulse amplitude). If per-move planner overhead grows further this
+// budget will need a revisit; the buffer cannot grow (BSS at ~75 % on
+// MK4, and enlarging it risks heap-OOM → eeprom wipe on upgrade).
+//
+// Adding a symmetric zero_flow_2 before slow_in_2 would overrun the
+// buffer; the off-line fit for pulse 2 uses the purge2_start / purge2_end
+// mask window as its baseline surrogate instead.
 //
 // zero_flow_1 is a pure dwell with no motion (safe_delay), placed after
-// the capture is armed but before the first E move of pulse 1. It gives
-// ~160 samples of true extruder-idle signal for baseline subtraction —
-// needed because the free-air pulse 1 absolute signal is small (tens of
-// grams) and slow-flow steady state from slow_in_1 is not a clean zero.
-constexpr uint32_t kZeroFlow1_ms = 500;
+// the capture is armed but before the first E move of pulse 1 — needed
+// because the free-air pulse 1 absolute signal is small (tens of grams)
+// and slow_in_1's slow-flow steady state is not a clean zero.
+constexpr uint32_t kZeroFlow1_ms = 200;
 constexpr SubPhase kSlowIn1   { "slow_in_1",   5.0f, 0.229f,  20.0f, 250 };
 constexpr SubPhase kFastStep1 { "fast_1",     20.0f, 0.915f, 100.0f, 200 };
 constexpr SubPhase kSlowOut1  { "slow_out_1",  6.0f, 0.275f,  20.0f, 300 };
@@ -322,8 +333,8 @@ void GcodeSuite::M573() {
     }
 
     // --- Capture window opens here. ---
-    // Spans zero_flow_1 + pulse1 + gap + pulse2 (~4.65 s total, inside
-    // the 4.8 s buffer — see budget comment above).
+    // Spans zero_flow_1 + pulse1 + gap + pulse2 (~4.81 s observed, at the
+    // edge of the 4.8 s buffer — see budget comment above).
     cap.Arm();
 
     // --- Pulse 1: free air at Z=6.2 (raw filament backpressure). ---
