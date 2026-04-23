@@ -182,8 +182,8 @@ void GcodeSuite::M573() {
     auto &cap = pa_calibration::Capture::instance();
 
     // --- Preamble: pure-XY move, 10mm @ 20mm/s, expected 500ms. ---
-    // Not captured. Validates XY feedrate interpretation; echo-only.
-    const float start_x = current_position.x;
+    // Not captured. Validates XY feedrate interpretation as a regression
+    // check (already confirmed correct on 2026-04-23); echo-only.
     {
         const uint32_t t0 = ticks_us();
         plan_move_by(kDiagFeed_mm_s, geom().dir * kDiagDx_mm, 0.0f, 0.0f, 0.0f);
@@ -193,40 +193,70 @@ void GcodeSuite::M573() {
                          kDiagExpected_ms, observed_us);
     }
 
-    // --- Prime the melt zone. ---
-    // Not captured — purge/warmup only. First extruding move after
-    // hotend-idle has a ~3 s startup cost before E motion hits commanded
-    // feedrate (observed 2026-04-23: slow_in obs=3457 ms vs exp=250 ms,
-    // fully absorbed by a preceding prime move on the next run). We keep
-    // this outside the capture window because (a) it's irrelevant to the
-    // τ fit, and (b) including it would push the capture past the 4.8 s
-    // buffer (294 samples dropped on the prior run).
+    // --- Purge & prime (MK4S base + iX-style mid-purge Z hop). ---
+    // Not captured — ISR hook is idle until cap.Arm() below. Triple duty:
+    //   (1) absorb the ~3 s first-extrusion startup cost, so the
+    //       measurement pulse runs at commanded feedrate,
+    //   (2) lay a proper adherent purge line (MK4S slicer-standard
+    //       pattern — anchored blob + progressive deposition + wipe), and
+    //   (3) produce a tall stringy pull-tab in the middle of the purge
+    //       so the whole line peels off the plate as one piece (iX trick).
     //
-    // Sizing: 40 mm XY at 10 mm/s w/ 3 mm E. 4 s planned, ~7 s actual
-    // with the first-extrusion startup absorbed. Extrudes 3 mm of
-    // filament (~7 mm³ PLA) at 1.8 mm³/s steady-state flow — enough to
-    // lay a visible primer line and guarantee the nozzle is purged.
+    // Order matters: segments A & B anchor the purge to the bed first,
+    // THEN the hop goes up at Z=6.2 while still extruding to form the
+    // loop, THEN segments C & D add mass on the far side of the hop so
+    // the loop is held at both ends. Grabbing the tall loop peels the
+    // whole run off with one pull.
+    //
+    // Feedrate conversions from Prusa gcode:
+    //   F300 = 5 mm/s         (slow hop rise — filament has time to drag)
+    //   F500 = 8.333 mm/s
+    //   F650 = 10.833 mm/s
+    //   F800 = 13.333 mm/s
+    //   F2400 = 40 mm/s       (deretract)
+    //   F8000 = 133.333 mm/s  (wipe)
+    //
+    // geom().dir is +1 on MK4/XL, -1 on CoreOne. All horizontal motion
+    // is multiplied by it so the whole sequence mirrors on CoreOne.
+    // Z motion is always vertical and not mirrored.
+    //
+    // Starting at X=20 (after diag_x from preflight X=10), the purge
+    // sequence advances to X=71. The pulse follows from there, continuing
+    // forward onto clean bed and avoiding the purge bead.
     {
         const uint32_t t0 = ticks_us();
-        plan_move_by(10.0f, geom().dir * 40.0f, 0.0f, 0.0f, 3.0f);
+        // E +2 @ F2400 — deretract (pure E, no XY/Z)
+        plan_move_by(40.0f, 0.0f, 0.0f, 0.0f, 2.0f);
+        // Seg A: +5 XY, +7 E @ F500 — thick blob (anchors purge to bed)
+        plan_move_by(8.333f, geom().dir * 5.0f, 0.0f, 0.0f, 7.0f);
+        // Seg B: +10 XY, +4 E @ F500 — extends anchor
+        plan_move_by(8.333f, geom().dir * 10.0f, 0.0f, 0.0f, 4.0f);
+        // HOP UP: +5 XY, +6 E, dz=+6.0 @ F300 — slow rise to Z=6.2
+        //   while extruding heavily, forms the stringy pull-tab.
+        plan_move_by(5.0f, geom().dir * 5.0f, 0.0f, +6.0f, 6.0f);
+        // HOP DOWN: +5 XY, +2 E, dz=-6.0 @ F500 — return to Z=0.2,
+        //   minimal extrusion on descent to avoid blob-on-landing.
+        plan_move_by(8.333f, geom().dir * 5.0f, 0.0f, -6.0f, 2.0f);
+        // Seg C: +10 XY, +4 E @ F650 — holds the far end of the loop
+        plan_move_by(10.833f, geom().dir * 10.0f, 0.0f, 0.0f, 4.0f);
+        // Seg D: +10 XY, +4 E @ F800 — final mass on far side
+        plan_move_by(13.333f, geom().dir * 10.0f, 0.0f, 0.0f, 4.0f);
+        // Wipe low: +3 XY, dz=-0.15 @ F8000 (drag nozzle near bed)
+        plan_move_by(133.333f, geom().dir * 3.0f, 0.0f, -0.15f, 0.0f);
+        // Wipe lift: +3 XY, dz=+0.15 @ F8000 (clear the purge line)
+        plan_move_by(133.333f, geom().dir * 3.0f, 0.0f, +0.15f, 0.0f);
         planner.synchronize();
         const uint32_t observed_us = ticks_us() - t0;
-        echo_move_timing("prime", 40.0f, 3.0f, 10.0f, 4000, observed_us);
-    }
-
-    // Return to the pulse's X start without extruding, at travel speed.
-    // Done BEFORE Arm() so the travel doesn't consume capture samples.
-    {
-        const float x_back = start_x - current_position.x;
-        plan_move_by(120.0f, x_back, 0.0f, 0.0f, 0.0f);
-        planner.synchronize();
+        // 29 mm total E over 51 mm XY; planned ~6.5 s, ~9.5 s actual on
+        // first run once the first-extrusion startup cost is absorbed.
+        echo_move_timing("purge", 51.0f, 29.0f, 8.333f, 6500, observed_us);
     }
 
     // --- Capture window opens here. ---
-    // Everything before this point (diag_x, prime, travel-back) is
-    // warmup/diagnostic and does not need loadcell samples. Arming here
-    // means the 1536-sample / 4.8 s buffer only has to hold the ~0.75 s
-    // pulse plus some pre/post baseline — plenty of headroom.
+    // Everything before this point (diag_x, purge) is warmup/priming and
+    // does not need loadcell samples. Arming here means the 1536-sample /
+    // 4.8 s buffer only has to hold the ~0.75 s pulse plus some pre/post
+    // baseline — plenty of headroom.
     cap.Arm();
     cap.MarkPhase("pulse_start", ticks_us());
 
