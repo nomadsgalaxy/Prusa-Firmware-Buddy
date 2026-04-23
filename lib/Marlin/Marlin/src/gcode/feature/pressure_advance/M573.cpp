@@ -180,15 +180,12 @@ void GcodeSuite::M573() {
     }
 
     auto &cap = pa_calibration::Capture::instance();
-    cap.Arm();
-
-    cap.MarkPhase("start", ticks_us());
 
     // --- Preamble: pure-XY move, 10mm @ 20mm/s, expected 500ms. ---
+    // Not captured. Validates XY feedrate interpretation; echo-only.
     const float start_x = current_position.x;
     {
         const uint32_t t0 = ticks_us();
-        cap.MarkPhase("diag_x", t0);
         plan_move_by(kDiagFeed_mm_s, geom().dir * kDiagDx_mm, 0.0f, 0.0f, 0.0f);
         planner.synchronize();
         const uint32_t observed_us = ticks_us() - t0;
@@ -197,28 +194,41 @@ void GcodeSuite::M573() {
     }
 
     // --- Prime the melt zone. ---
-    // First extruding move after hotend-idle has a ~3 s startup cost before
-    // E motion hits commanded feedrate (observed 2026-04-23: slow_in
-    // obs=3457 ms vs exp=250 ms, while subsequent extruding moves ran within
-    // 10-15 % of expected). Absorb that cost here so the measurement pulse
-    // starts from a primed state. 3 mm XY at 3 mm/s w/ 0.14 mm E is ~1 s
-    // planned; actual is expected to be 3-4 s on the first run.
+    // Not captured — purge/warmup only. First extruding move after
+    // hotend-idle has a ~3 s startup cost before E motion hits commanded
+    // feedrate (observed 2026-04-23: slow_in obs=3457 ms vs exp=250 ms,
+    // fully absorbed by a preceding prime move on the next run). We keep
+    // this outside the capture window because (a) it's irrelevant to the
+    // τ fit, and (b) including it would push the capture past the 4.8 s
+    // buffer (294 samples dropped on the prior run).
+    //
+    // Sizing: 40 mm XY at 10 mm/s w/ 3 mm E. 4 s planned, ~7 s actual
+    // with the first-extrusion startup absorbed. Extrudes 3 mm of
+    // filament (~7 mm³ PLA) at 1.8 mm³/s steady-state flow — enough to
+    // lay a visible primer line and guarantee the nozzle is purged.
     {
         const uint32_t t0 = ticks_us();
-        cap.MarkPhase("prime", t0);
-        plan_move_by(3.0f, geom().dir * 3.0f, 0.0f, 0.0f, 0.14f);
+        plan_move_by(10.0f, geom().dir * 40.0f, 0.0f, 0.0f, 3.0f);
         planner.synchronize();
         const uint32_t observed_us = ticks_us() - t0;
-        echo_move_timing("prime", 3.0f, 0.14f, 3.0f, 1000, observed_us);
+        echo_move_timing("prime", 40.0f, 3.0f, 10.0f, 4000, observed_us);
     }
 
     // Return to the pulse's X start without extruding, at travel speed.
+    // Done BEFORE Arm() so the travel doesn't consume capture samples.
     {
         const float x_back = start_x - current_position.x;
         plan_move_by(120.0f, x_back, 0.0f, 0.0f, 0.0f);
         planner.synchronize();
-        cap.MarkPhase("pulse_start", ticks_us());
     }
+
+    // --- Capture window opens here. ---
+    // Everything before this point (diag_x, prime, travel-back) is
+    // warmup/diagnostic and does not need loadcell samples. Arming here
+    // means the 1536-sample / 4.8 s buffer only has to hold the ~0.75 s
+    // pulse plus some pre/post baseline — plenty of headroom.
+    cap.Arm();
+    cap.MarkPhase("pulse_start", ticks_us());
 
     // --- Single pulse: slow_in → fast → slow_out. ---
     run_subphase(cap, kSlowIn);
