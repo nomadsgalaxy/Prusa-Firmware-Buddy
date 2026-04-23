@@ -196,6 +196,22 @@ void GcodeSuite::M573() {
                          kDiagExpected_ms, observed_us);
     }
 
+    // --- Prime the melt zone. ---
+    // First extruding move after hotend-idle has a ~3 s startup cost before
+    // E motion hits commanded feedrate (observed 2026-04-23: slow_in
+    // obs=3457 ms vs exp=250 ms, while subsequent extruding moves ran within
+    // 10-15 % of expected). Absorb that cost here so the measurement pulse
+    // starts from a primed state. 3 mm XY at 3 mm/s w/ 0.14 mm E is ~1 s
+    // planned; actual is expected to be 3-4 s on the first run.
+    {
+        const uint32_t t0 = ticks_us();
+        cap.MarkPhase("prime", t0);
+        plan_move_by(3.0f, geom().dir * 3.0f, 0.0f, 0.0f, 0.14f);
+        planner.synchronize();
+        const uint32_t observed_us = ticks_us() - t0;
+        echo_move_timing("prime", 3.0f, 0.14f, 3.0f, 1000, observed_us);
+    }
+
     // Return to the pulse's X start without extruding, at travel speed.
     {
         const float x_back = start_x - current_position.x;
