@@ -1,30 +1,33 @@
 /**
  * @file M573.cpp
- * @brief Loadcell-based Pressure Advance calibration — single-pulse diagnostic.
+ * @brief Loadcell-based Pressure Advance calibration — dual-pulse (air + bed).
  *
- * This is a stripped-down single-pulse version used to validate that:
- *   1. plan_move_by's feedrate is interpreted as mm/s of tangential motion
- *      (prior 3-pulse run had slow_in running ~10x slower than expected),
- *   2. Phase marks are being recorded at actual execution time (prior version
- *      called MarkPhase at plan time; subsequent sub-phase marks all bunched
- *      into a ~200us window after the first blocking move completed).
+ * Runs two slow→fast→slow flow pulses back-to-back during a single purge
+ * sequence, measuring two different regimes:
  *
- * Design:
- *   - One pulse: slow_in → fast → slow_out at the PA-test operating point.
- *   - planner.synchronize() between sub-phases so each MarkPhase() is called
- *     after the previous move has actually completed. This introduces brief
- *     flow pauses at sub-phase boundaries — acceptable for this diagnostic
- *     since we want clean step transitions to verify signal shape and timing.
- *   - A pure-XY preamble move (10 mm at 20 mm/s → 500 ms expected) runs
- *     before the pulse to isolate XY feedrate correctness from any E-axis
- *     coupling in the planner.
- *   - Each move echoes `expected_ms` vs `observed_ms` over serial so feedrate
- *     behavior is visible in the stream log without needing to parse
- *     PA_CAPTURE phase marks.
+ *   1. Pulse 1 at Z=6.2 (after HOP UP, before HOP DOWN) — nozzle in free
+ *      air, no bed contact. Signal reflects melt backpressure pushing
+ *      through the nozzle into atmosphere, independent of print conditions.
+ *      Small absolute values expected (tens of grams).
  *
- * Once the diagnostic confirms feedrate semantics and phase-mark accuracy,
- * the multi-pulse pattern from the earlier version will be reinstated with
- * corrected timing.
+ *   2. Pulse 2 at Z=0.2 (after wipe) — nozzle at first-layer height
+ *      depositing a visible line on clean bed. Signal reflects backpressure
+ *      plus first-layer squish reaction force. Large absolute values
+ *      expected (hundreds to thousands of grams).
+ *
+ * The Δ between the two τ fits decomposes observed K into:
+ *   - a material-intrinsic component (fluid dynamics of melt / nozzle /
+ *     retraction system — this is portable across machines and setups), and
+ *   - a printing-specific component (first-layer squish modulation — this
+ *     is where a real print's K lands).
+ *
+ * Both pulses run with Z stationary so the Z motor's reaction force does
+ * not couple into the loadcell baseline. Z motion only happens between
+ * pulses (HOP DOWN + wipe lift/low) and is bracketed by purge2_start /
+ * purge2_end marks so analysis can mask that window.
+ *
+ * A pure-XY preamble (10 mm at 20 mm/s → 500 ms expected) runs before the
+ * purge as a regression check on feedrate interpretation.
  */
 
 #include "../../../inc/MarlinConfig.h"
@@ -81,12 +84,20 @@ struct SubPhase {
     uint32_t expected_ms; ///< dx_mm / feedrate_mm_s in ms, precomputed for echo
 };
 
-// Total pulse duration: 0.25 + 0.20 + 0.30 = 0.75 s (~240 samples at 320 Hz).
-// Plus ~0.5 s preamble + ~0.5 s cooldown overhead → well inside the 1536/
-// 4.8 s buffer, no drops expected even if the feedrate bug doubles actuals.
-constexpr SubPhase kSlowIn   { "slow_in",   5.0f, 0.229f,  20.0f, 250 };
-constexpr SubPhase kFastStep { "fast",     20.0f, 0.915f, 100.0f, 200 };
-constexpr SubPhase kSlowOut  { "slow_out",  6.0f, 0.275f,  20.0f, 300 };
+// Two identical copies of the sub-phase set — one per pulse — so each
+// MarkPhase() records a unique name and the off-line CSV has unambiguous
+// boundaries between the free-air and on-bed transitions. Per-pulse
+// duration: 0.25 + 0.20 + 0.30 = 0.75 s (~240 samples at 320 Hz nominal).
+//
+// Total capture window: pulse1 (~0.9 s) + gap (HOP DOWN + Seg C/D + wipe,
+// ~2.7 s) + pulse2 (~0.9 s) ≈ 4.5 s. Fits in the 1536-sample / 4.8 s
+// buffer with ~300 ms headroom.
+constexpr SubPhase kSlowIn1   { "slow_in_1",   5.0f, 0.229f,  20.0f, 250 };
+constexpr SubPhase kFastStep1 { "fast_1",     20.0f, 0.915f, 100.0f, 200 };
+constexpr SubPhase kSlowOut1  { "slow_out_1",  6.0f, 0.275f,  20.0f, 300 };
+constexpr SubPhase kSlowIn2   { "slow_in_2",   5.0f, 0.229f,  20.0f, 250 };
+constexpr SubPhase kFastStep2 { "fast_2",     20.0f, 0.915f, 100.0f, 200 };
+constexpr SubPhase kSlowOut2  { "slow_out_2",  6.0f, 0.275f,  20.0f, 300 };
 
 // Pure-XY diagnostic preamble — no E involved. If this runs in ≈500 ms we
 // know pure-XY feedrate is correct and the bug is in the E-carrying path.
@@ -132,23 +143,28 @@ void run_subphase(pa_calibration::Capture &cap, const SubPhase &sp) {
  */
 
 /**
- *### M573: Loadcell-based Pressure Advance calibration (single-pulse diagnostic)
+ *### M573: Loadcell-based Pressure Advance calibration (dual-pulse)
  *
- * Runs a single slow→fast→slow pulse at the PA-test operating point, with a
- * pure-XY preamble move to isolate feedrate correctness. Each move echoes
- * `exp=<ms> obs=<ms>` to serial for direct feedrate inspection, and the
- * loadcell capture is dumped as CSV delimited by `BEGIN PA_CAPTURE` / `END
- * PA_CAPTURE`.
+ * Runs two slow→fast→slow pulses within a single purge sequence:
+ *   - Pulse 1 at Z=6.2 (free air) — raw melt backpressure.
+ *   - Pulse 2 at Z=0.2 (on bed)   — backpressure + squish reaction.
+ * Each move echoes `exp=<ms> obs=<ms>` to serial, and the loadcell capture
+ * is dumped as CSV delimited by `BEGIN PA_CAPTURE` / `END PA_CAPTURE`.
  *
  *#### Preconditions
  * - Hotend at extrusion temperature (M573 does not heat).
  * - Nozzle positioned at the purge zone (slicer start G-code).
  *
  *#### Output format
- * - `M573 diag_x dx=... fr=... exp=...ms obs=...ms` — pure-XY preamble.
- * - `M573 <subphase> dx=... fr=... exp=...ms obs=...ms` — each pulse phase.
+ * - `M573 diag_x ...`              — pure-XY preamble (feedrate check).
+ * - `M573 purge_1 ...`             — anchor + hop up (before capture).
+ * - `M573 slow_in_1|fast_1|slow_out_1 ...` — pulse 1 phases (free air).
+ * - `M573 purge_2 ...`             — hop down + Seg C/D + wipe (captured).
+ * - `M573 slow_in_2|fast_2|slow_out_2 ...` — pulse 2 phases (on bed).
  * - `M573: captured <n> samples (<m> dropped)` — capture summary.
- * - CSV block: `PA_PHASE,<name>,<time_us>` and `PA,<time_us>,<load_g>`.
+ * - CSV block with phase marks: pulse1_start, slow_in_1, fast_1, slow_out_1,
+ *   pulse1_end, purge2_start, purge2_end, pulse2_start, slow_in_2, fast_2,
+ *   slow_out_2, pulse2_end.
  *
  *#### Usage
  *
@@ -193,51 +209,79 @@ void GcodeSuite::M573() {
                          kDiagExpected_ms, observed_us);
     }
 
-    // --- Purge & prime (MK4S base + iX-style mid-purge Z hop). ---
-    // Not captured — ISR hook is idle until cap.Arm() below. Triple duty:
-    //   (1) absorb the ~3 s first-extrusion startup cost, so the
-    //       measurement pulse runs at commanded feedrate,
-    //   (2) lay a proper adherent purge line (MK4S slicer-standard
-    //       pattern — anchored blob + progressive deposition + wipe), and
-    //   (3) produce a tall stringy pull-tab in the middle of the purge
-    //       so the whole line peels off the plate as one piece (iX trick).
+    // --- Purge part 1: deretract + anchor + hop up. Not captured. ---
     //
-    // Order matters: segments A & B anchor the purge to the bed first,
-    // THEN the hop goes up at Z=6.2 while still extruding to form the
-    // loop, THEN segments C & D add mass on the far side of the hop so
-    // the loop is held at both ends. Grabbing the tall loop peels the
-    // whole run off with one pull.
+    // Absorbs first-extrusion startup cost, lays the purge anchor (Seg A/B),
+    // and lifts the nozzle to Z=6.2 with enough E flow to form the pull-tab
+    // loop. Ends with Z settled at 6.2 so the capture window that follows
+    // starts without Z-motion reaction force polluting the baseline.
     //
     // Feedrate conversions from Prusa gcode:
-    //   F300 = 5 mm/s         (slow hop rise — filament has time to drag)
-    //   F500 = 8.333 mm/s
-    //   F650 = 10.833 mm/s
-    //   F800 = 13.333 mm/s
-    //   F2400 = 40 mm/s       (deretract)
-    //   F8000 = 133.333 mm/s  (wipe)
+    //   F300  =   5 mm/s    (slow hop rise — filament has time to drag)
+    //   F500  =   8.333 mm/s
+    //   F650  =  10.833 mm/s
+    //   F800  =  13.333 mm/s
+    //   F2400 =  40 mm/s    (deretract)
+    //   F8000 = 133.333 mm/s (wipe)
     //
-    // geom().dir is +1 on MK4/XL, -1 on CoreOne. All horizontal motion
-    // is multiplied by it so the whole sequence mirrors on CoreOne.
-    // Z motion is always vertical and not mirrored.
+    // geom().dir is +1 on MK4/XL, -1 on CoreOne. All horizontal motion is
+    // multiplied by it so the whole sequence mirrors on CoreOne. Z motion
+    // is always vertical and not mirrored.
     //
-    // Starting at X=20 (after diag_x from preflight X=10), the purge
-    // sequence advances to X=71. The pulse follows from there, continuing
-    // forward onto clean bed and avoiding the purge bead.
+    // X progression (MK4, geom().dir = +1): diag_x ends at X=20. Purge
+    // part 1 advances X=20 → 40 (Seg A +5, Seg B +10, HOP UP +5) while
+    // lifting Z=0.2 → 6.2.
     {
         const uint32_t t0 = ticks_us();
-        // E +2 @ F2400 — deretract (pure E, no XY/Z)
+        // E +2 @ F2400 — deretract
         plan_move_by(40.0f, 0.0f, 0.0f, 0.0f, 2.0f);
-        // Seg A: +5 XY, +7 E @ F500 — thick blob (anchors purge to bed)
+        // Seg A: +5 XY, +7 E @ F500 — thick blob anchoring purge to bed
         plan_move_by(8.333f, geom().dir * 5.0f, 0.0f, 0.0f, 7.0f);
         // Seg B: +10 XY, +4 E @ F500 — extends anchor
         plan_move_by(8.333f, geom().dir * 10.0f, 0.0f, 0.0f, 4.0f);
-        // HOP UP: +5 XY, +6 E, dz=+6.0 @ F300 — slow rise to Z=6.2
-        //   while extruding heavily, forms the stringy pull-tab.
+        // HOP UP: +5 XY, +6 E, dz=+6.0 @ F300 — slow rise forms pull-tab
         plan_move_by(5.0f, geom().dir * 5.0f, 0.0f, +6.0f, 6.0f);
-        // HOP DOWN: +5 XY, +2 E, dz=-6.0 @ F500 — return to Z=0.2,
-        //   minimal extrusion on descent to avoid blob-on-landing.
+        planner.synchronize();
+        const uint32_t observed_us = ticks_us() - t0;
+        echo_move_timing("purge_1", 20.0f, 19.0f, 5.0f, 3412, observed_us);
+    }
+
+    // --- Capture window opens here. ---
+    // Spans pulse1 + gap + pulse2 (~4.5 s total, inside 4.8 s buffer).
+    cap.Arm();
+
+    // --- Pulse 1: free air at Z=6.2 (raw filament backpressure). ---
+    //
+    // Z is stationary, so no motor reaction force in the baseline. The
+    // nozzle extrudes into atmosphere — absolute signal should be small
+    // (tens of grams) and reflect pure melt-through-nozzle fluid dynamics.
+    //
+    // The extruded ~1.42 mm of filament over 31 mm XY at Z=6.2 will trail
+    // as a string and drop onto the pull-tab / bed during HOP DOWN that
+    // follows. The messy landing is acceptable — the purge already sacrifices
+    // aesthetics for adhesion + easy removal.
+    //
+    // X progression: 40 → 71 at Z=6.2.
+    cap.MarkPhase("pulse1_start", ticks_us());
+    run_subphase(cap, kSlowIn1);
+    run_subphase(cap, kFastStep1);
+    run_subphase(cap, kSlowOut1);
+    cap.MarkPhase("pulse1_end", ticks_us());
+
+    // --- Purge part 2: hop down + Seg C/D + wipes. Still captured. ---
+    //
+    // Brings nozzle back to Z=0.2 and finishes laying the purge line. Z
+    // motion during HOP DOWN and wipe couples the Z motor's reaction force
+    // into the loadcell — the purge2_start / purge2_end marks bracket this
+    // window so off-line analysis can mask it out of any fit.
+    //
+    // X progression: 71 → 102 at Z=6.2 → 0.2 → 0.05 → 0.2.
+    {
+        cap.MarkPhase("purge2_start", ticks_us());
+        const uint32_t t0 = ticks_us();
+        // HOP DOWN: +5 XY, +2 E, dz=-6.0 @ F500 — return to Z=0.2
         plan_move_by(8.333f, geom().dir * 5.0f, 0.0f, -6.0f, 2.0f);
-        // Seg C: +10 XY, +4 E @ F650 — holds the far end of the loop
+        // Seg C: +10 XY, +4 E @ F650 — holds far end of the loop
         plan_move_by(10.833f, geom().dir * 10.0f, 0.0f, 0.0f, 4.0f);
         // Seg D: +10 XY, +4 E @ F800 — final mass on far side
         plan_move_by(13.333f, geom().dir * 10.0f, 0.0f, 0.0f, 4.0f);
@@ -247,25 +291,26 @@ void GcodeSuite::M573() {
         plan_move_by(133.333f, geom().dir * 3.0f, 0.0f, +0.15f, 0.0f);
         planner.synchronize();
         const uint32_t observed_us = ticks_us() - t0;
-        // 29 mm total E over 51 mm XY; planned ~6.5 s, ~9.5 s actual on
-        // first run once the first-extrusion startup cost is absorbed.
-        echo_move_timing("purge", 51.0f, 29.0f, 8.333f, 6500, observed_us);
+        cap.MarkPhase("purge2_end", ticks_us());
+        echo_move_timing("purge_2", 31.0f, 10.0f, 10.833f, 2654, observed_us);
     }
 
-    // --- Capture window opens here. ---
-    // Everything before this point (diag_x, purge) is warmup/priming and
-    // does not need loadcell samples. Arming here means the 1536-sample /
-    // 4.8 s buffer only has to hold the ~0.75 s pulse plus some pre/post
-    // baseline — plenty of headroom.
-    cap.Arm();
-    cap.MarkPhase("pulse_start", ticks_us());
-
-    // --- Single pulse: slow_in → fast → slow_out. ---
-    run_subphase(cap, kSlowIn);
-    run_subphase(cap, kFastStep);
-    run_subphase(cap, kSlowOut);
-
-    cap.MarkPhase("end", ticks_us());
+    // --- Pulse 2: on bed at Z=0.2 (printing backpressure + bed squish). ---
+    //
+    // Nozzle at first-layer height on clean bed past the purge line. Flow
+    // pushes melt through a squished 0.55 × 0.2 gap, so the signal reflects
+    // both raw backpressure (as in pulse 1) and the bed-squish reaction
+    // force. Absolute values will be large (hundreds to thousands of grams).
+    //
+    // The Δ between pulse 2 and pulse 1 quantifies how much of the observed
+    // operational K is material-intrinsic vs. squish-modulated.
+    //
+    // X progression: 102 → 133 at Z=0.2.
+    cap.MarkPhase("pulse2_start", ticks_us());
+    run_subphase(cap, kSlowIn2);
+    run_subphase(cap, kFastStep2);
+    run_subphase(cap, kSlowOut2);
+    cap.MarkPhase("pulse2_end", ticks_us());
     cap.Stop();
 
     // Return Z so subsequent slicer moves aren't affected.
