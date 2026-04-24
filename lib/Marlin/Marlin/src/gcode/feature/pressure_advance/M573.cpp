@@ -90,15 +90,18 @@ struct SubPhase {
 // Two identical copies of the sub-phase set — one per pulse — so each
 // MarkPhase() records a unique name and the off-line CSV has unambiguous
 // boundaries between the free-air and on-bed transitions. Nominal
-// per-pulse duration: 0.25 + 0.20 + 0.30 = 0.75 s (~240 samples at
-// 320 Hz). Observed is ~0.91 s per pulse — each planned move carries
-// ~30 ms of synchronize overhead and `fast_1/fast_2` stretch further
-// because the 20 mm at 100 mm/s doesn't reach cruise (accel-dominated).
+// per-pulse duration (post-B1 rev): 0.25 + 0.357 + 0.05 = 0.657 s
+// (~210 samples at 320 Hz). Observed expected ~0.72 s per pulse — each
+// planned move carries ~30 ms of synchronize overhead. Cruise at 70 mm/s
+// over 25 mm reaches ≈ 350 ms of plateau cruise (6.1 × τ at K ≈ 0.057),
+// which is what the step-response fit needs for a stable F_inf.
 //
-// Total capture window (observed on MK4S 2026-04-23 @ 6.5.3+11984):
-//   zero_flow_1 (0.2 s) + pulse1 (~0.91 s) + gap (purge_2, ~2.79 s)
-//   + pulse2 (~0.91 s) ≈ 4.81 s
-// Fits in the 1536-sample / 4.8 s buffer with near-zero headroom.
+// Expected capture window (MK4S, post-B1 rev, 6.5.3+):
+//   zero_flow_1 (0.2 s) + pulse1 (~0.72 s) + gap (purge_2, ~2.79 s)
+//   + pulse2 (~0.72 s) ≈ 4.43 s
+// Fits in the 1536-sample / 4.8 s buffer with ~370 ms headroom.
+// (Pre-B1 geometry was 4.81 s with near-zero headroom; B1 trimmed
+// slow_out from 300 ms → 50 ms per pulse to pay for the longer fast.)
 // zero_flow_1 was 500 ms in the first implementation but produced
 // 61–65 dropped samples at the tail of pulse 2 (buffer-full → discard).
 // Trimmed to 200 ms: still 64 baseline samples — enough to estimate a
@@ -116,12 +119,21 @@ struct SubPhase {
 // because the free-air pulse 1 absolute signal is small (tens of grams)
 // and slow_in_1's slow-flow steady state is not a clean zero.
 constexpr uint32_t kZeroFlow1_ms = 200;
+// B1 geometry rev (2026-04-24): fast dropped from 20 mm @ 100 mm/s to
+// 25 mm @ 70 mm/s so cruise time (≥ 5τ for K ≈ 0.057) fits within the
+// 31 mm per-pulse bed allowance. Previous geometry peaked at ~232 ms and
+// decayed before slow_out — transient pulse, not a step response, so the
+// τ fit picked up a biased-high F_inf. 350 ms of cruise at 70 mm/s gives
+// > 99 % plateau. See .auto-memory/pa_fit_onset_detector_result.md.
+// slow_out trimmed to 1 mm / 50 ms (symmetry marker only, not fit).
+// Capture budget: new pulse ~720 ms obs vs old ~910 ms, saves ~190 ms
+// per pulse → ~390 ms headroom before the 4.8 s buffer limit.
 constexpr SubPhase kSlowIn1   { "slow_in_1",   5.0f, 0.229f,  20.0f, 250 };
-constexpr SubPhase kFastStep1 { "fast_1",     20.0f, 0.915f, 100.0f, 200 };
-constexpr SubPhase kSlowOut1  { "slow_out_1",  6.0f, 0.275f,  20.0f, 300 };
+constexpr SubPhase kFastStep1 { "fast_1",     25.0f, 1.143f,  70.0f, 357 };
+constexpr SubPhase kSlowOut1  { "slow_out_1",  1.0f, 0.046f,  20.0f,  50 };
 constexpr SubPhase kSlowIn2   { "slow_in_2",   5.0f, 0.229f,  20.0f, 250 };
-constexpr SubPhase kFastStep2 { "fast_2",     20.0f, 0.915f, 100.0f, 200 };
-constexpr SubPhase kSlowOut2  { "slow_out_2",  6.0f, 0.275f,  20.0f, 300 };
+constexpr SubPhase kFastStep2 { "fast_2",     25.0f, 1.143f,  70.0f, 357 };
+constexpr SubPhase kSlowOut2  { "slow_out_2",  1.0f, 0.046f,  20.0f,  50 };
 
 // Pure-XY diagnostic preamble — no E involved. If this runs in ≈500 ms we
 // know pure-XY feedrate is correct and the bug is in the E-carrying path.
@@ -417,15 +429,4 @@ void GcodeSuite::M573() {
 
     cap.DumpToSerial();
 
-    // Restore static tare before returning. M573 called Tare(Continuous)
-    // above which leaves tareMode=Continuous and threshold=-40 g active.
-    // Without this reset the 3× more sensitive continuous threshold stays
-    // in effect for the rest of the print: any F7200 travel at 2500 mm/s²
-    // generates enough inertial force (>40 g) to fire crash detection
-    // mid-move, halting the printer ~5 min into the PA sweep.
-    loadcell.Tare();
-}
-
-/** @}*/
-
-#endif // HAS_LOADCELL()
+    // Restore static tare before ret

@@ -104,6 +104,23 @@ def parse_capture(path: Path) -> Capture:
 
 
 @dataclass
+class OnsetDetection:
+    """Outcome of the dF/dt onset detector for one fast phase."""
+    t_us: int            # effective onset timestamp (phase_mark or detected)
+    method: str          # "disabled" | "phase_mark_aligned" | "signal_dip"
+                         #   | "no_step" | "phase_mark_fallback"
+    offset_ms: float     # (t_us - phase_mark_us) / 1000
+    dip_depth_g: float   # max |F - F_0| in the "wrong" direction
+                         # (i.e. how far the signal dropped below F_0
+                         # before the rise — 0 if no dip)
+    F_start: Optional[float] = None
+                         # effective starting value for the rise — equals
+                         # (F_0 ∓ dip_depth_g) when a real dip was detected,
+                         # None when the detector fell through to phase_mark
+                         # (fit should keep using slow-phase F_0 in that case)
+
+
+@dataclass
 class PulseFit:
     pulse: str                       # "1" or "2"
     F_0: float                       # pre-step load (g) — last N of slow_in
@@ -116,6 +133,8 @@ class PulseFit:
     n_samples_slow: int
     n_samples_fast: int
     n_samples_loglin: int            # how many points went into the regression
+    onset: OnsetDetection = field(
+        default_factory=lambda: OnsetDetection(0, "disabled", 0.0, 0.0))
 
 
 def _mean_last(seg: list[tuple[int, float]], n: int) -> float:
@@ -152,6 +171,138 @@ def _baseline_stats(samples: list[tuple[int, float]],
     return (m, math.sqrt(var))
 
 
+def _moving_avg(window: list[tuple[int, float]],
+                m: int) -> list[tuple[int, float]]:
+    """Centered M-point moving average (timestamps preserved).
+
+    Used to knock the baseline noise down before the onset detector looks
+    for the slow→fast dip. On MK4S the raw σ_baseline is ~400 g and the
+    physical dip is only ~140 g, so the detector has to operate on a
+    smoothed trace or the dip disappears in the noise.
+
+    Firmware-portable: a ring-buffer sliding sum is a two-line addition to
+    the existing pa_calibration accumulator — M·sample size = 9·4 B = 36 B.
+    """
+    n = len(window)
+    if n == 0 or m <= 1:
+        return list(window)
+    out: list[tuple[int, float]] = []
+    half = m // 2
+    for i in range(n):
+        lo = max(0, i - half)
+        hi = min(n, i + half + 1)
+        s = 0.0
+        for j in range(lo, hi):
+            s += window[j][1]
+        out.append((window[i][0], s / (hi - lo)))
+    return out
+
+
+def _detect_fast_onset(fast_seg: list[tuple[int, float]],
+                       phase_mark_us: int,
+                       F_0: float,
+                       F_inf_est: float,
+                       baseline_sigma: Optional[float],
+                       search_lookahead_us: int = 100_000,
+                       max_plausible_offset_us: int = 80_000,
+                       smooth_window: int = 5,
+                       dip_min_frac_of_dF: float = 0.03
+                       ) -> OnsetDetection:
+    """Find the real motion-onset timestamp of a fast phase.
+
+    **Why this exists:** M573's MarkPhase(name, ticks_us()) runs on the gcode
+    thread right before the move is queued — not when the stepper actually
+    starts executing it. On MK4S the planner queue is several moves deep,
+    so the fast_N PA_PHASE timestamp leads real motion by ~40 ms (see
+    .auto-memory/m573_phase_mark_queue_lag.md). Any τ fit that uses the
+    phase-mark timestamp as t=0 is biased — the first 40 ms of the "fast"
+    window are actually the tail of the previous (slow) move, and there's
+    a pressure-release dip right at the real transition. We fix it on the
+    signal side (cheap, no firmware change) by finding the dip minimum.
+
+    **Algorithm:**
+     1. Lightly smooth the trace (5-sample moving average) — enough to
+        knock down single-sample noise spikes, not enough to drag the
+        ramp minimum earlier (wider windows bleed rise values into the
+        ramp-bottom average and attenuate the dip).
+     2. Walk forward from phase_mark tracking the running minimum (for
+        ascending step) or maximum (descending). Stop when the smoothed
+        signal crosses F_0 ± 20 % of dF (clearly past the onset).
+     3. If the extremum is ≥ 3 % of |dF| in the "wrong" direction from
+        F_0, call it a real dip and return its timestamp. Otherwise the
+        dip is indistinguishable from noise → return phase_mark.
+     4. Sanity cap: if the detected offset exceeds max_plausible_offset_us
+        (80 ms by default, comfortably above the ~40 ms M573 lag),
+        something is wrong (noise is pulling the min into a late trough)
+        → fall back to phase_mark.
+
+    The 3 %-of-dF threshold is chosen over a σ-based one because real
+    MK4S captures have σ_baseline comparable to dip depth — σ-gating
+    rejects real dips on those traces.
+
+    **Firmware portability:** one forward pass, two floats of state
+    (ext_v, ext_t) plus the 5-sample sliding sum. No random access.
+    Translates to ≈15 lines of C in pa_calibration.
+
+    Returns an OnsetDetection with the chosen timestamp and a method tag
+    so the caller can log how much correction was applied.
+    """
+    dF = F_inf_est - F_0
+    if abs(dF) < 1e-6 or len(fast_seg) < smooth_window + 4:
+        return OnsetDetection(phase_mark_us, "no_step", 0.0, 0.0)
+
+    ascending = dF > 0
+    smoothed = _moving_avg(fast_seg, smooth_window)
+
+    rise_delta = 0.20 * abs(dF)
+    rise_target = F_0 + (rise_delta if ascending else -rise_delta)
+    search_end = phase_mark_us + search_lookahead_us
+
+    ext_v = F_0
+    ext_t = phase_mark_us
+    found_ext = False
+    for t, v in smoothed:
+        if t > search_end:
+            break
+        if ascending:
+            if v < ext_v:
+                ext_v = v
+                ext_t = t
+                found_ext = True
+            if v >= rise_target:
+                break
+        else:
+            if v > ext_v:
+                ext_v = v
+                ext_t = t
+                found_ext = True
+            if v <= rise_target:
+                break
+
+    dip_depth = (F_0 - ext_v) if ascending else (ext_v - F_0)
+    dip_depth = max(0.0, dip_depth)
+
+    # Significance gate: require dip ≥ 3 % of |dF|. Rationale in docstring.
+    min_dip = dip_min_frac_of_dF * abs(dF)
+    if not found_ext or dip_depth < min_dip:
+        return OnsetDetection(phase_mark_us, "phase_mark_aligned",
+                              0.0, dip_depth, F_start=None)
+
+    # Sanity cap: the M573 queue-time lag is ~40 ms. If we detected an
+    # onset more than 80 ms after the phase mark, noise is probably
+    # dragging us into a late trough; better to trust the phase mark.
+    offset_us = ext_t - phase_mark_us
+    if offset_us > max_plausible_offset_us or offset_us < 0:
+        return OnsetDetection(phase_mark_us, "phase_mark_fallback",
+                              offset_us / 1000.0, dip_depth, F_start=None)
+
+    # F_start = the smoothed dip value. Downstream fit uses this in place
+    # of the slow-phase F_0 so the 63 % threshold is measured from the
+    # actual starting point of the rise, not from 0.5 g above it.
+    return OnsetDetection(ext_t, "signal_dip",
+                          offset_us / 1000.0, dip_depth, F_start=ext_v)
+
+
 def _threshold_cross(fast_seg: list[tuple[int, float]],
                      t_fast_start: int,
                      F_0: float, F_inf: float) -> Optional[float]:
@@ -168,8 +319,14 @@ def _threshold_cross(fast_seg: list[tuple[int, float]],
     return None
 
 
-def fit_pulse(cap: Capture, pulse: str) -> PulseFit:
-    """Fit τ for one pulse. `pulse` is '1' or '2'."""
+def fit_pulse(cap: Capture, pulse: str,
+              detect_onset: bool = True) -> PulseFit:
+    """Fit τ for one pulse. `pulse` is '1' or '2'.
+
+    `detect_onset` (default True): use the dF/dt onset detector to correct
+    for M573's queue-time phase-mark lag. Pass False to compare against
+    the pre-correction behaviour (for A/B diagnostics).
+    """
     slow_name = f"slow_in_{pulse}"
     fast_name = f"fast_{pulse}"
     # slow_out_N gives us a clean end-of-fast boundary. If it's missing, fall
@@ -184,7 +341,7 @@ def fit_pulse(cap: Capture, pulse: str) -> PulseFit:
     samples = list(zip(cap.t_us, cap.load_g))
 
     t_slow_start = cap.phases[slow_name]
-    t_fast_start = cap.phases[fast_name]
+    t_fast_start_mark = cap.phases[fast_name]  # raw PA_PHASE timestamp
     if slow_out_name in cap.phases:
         t_fast_end = cap.phases[slow_out_name]
     elif pulse_end_name in cap.phases:
@@ -192,14 +349,48 @@ def fit_pulse(cap: Capture, pulse: str) -> PulseFit:
     else:
         t_fast_end = cap.t_us[-1] + 1
 
-    slow_seg = _slice(samples, t_slow_start, t_fast_start)
-    fast_seg = _slice(samples, t_fast_start, t_fast_end)
+    slow_seg = _slice(samples, t_slow_start, t_fast_start_mark)
 
     # F_0 from the last ~20 samples (or last 25%) of slow_in. slow_in is
     # ~250 ms = ~80 samples at 320 Hz, and we want the tail where the melt
     # has had a chance to approach its slow-flow steady state.
     n_tail = max(10, len(slow_seg) // 4) if slow_seg else 0
     F_0 = _mean_last(slow_seg, n_tail) if n_tail else 0.0
+
+    # Baseline stats — needed by the onset detector for σ-based rise
+    # threshold; also reported downstream.
+    base_mean, base_sigma = _baseline_stats(samples, cap)
+
+    # Raw fast segment (from PA_PHASE mark) — used only to produce an
+    # initial F_inf estimate for the onset detector. The post-onset segment
+    # replaces this below.
+    fast_seg_raw = _slice(samples, t_fast_start_mark, t_fast_end)
+    n_plateau_raw = max(10, int(len(fast_seg_raw) * 0.3)) if fast_seg_raw else 0
+    F_inf_hint = (_mean_last(fast_seg_raw, n_plateau_raw)
+                  if n_plateau_raw else F_0)
+
+    # Onset detection: replace the PA_PHASE timestamp with the signal-derived
+    # true-onset time. See _detect_fast_onset docstring + the memory file
+    # .auto-memory/m573_phase_mark_queue_lag.md for the "why."
+    if detect_onset and fast_seg_raw:
+        onset = _detect_fast_onset(
+            fast_seg_raw, t_fast_start_mark,
+            F_0, F_inf_hint, base_sigma,
+        )
+        t_fast_start = onset.t_us
+    else:
+        onset = OnsetDetection(t_fast_start_mark, "disabled", 0.0, 0.0,
+                               F_start=None)
+        t_fast_start = t_fast_start_mark
+
+    # When the onset detector finds a real pressure-release dip, the rise
+    # actually starts from the dip bottom, not from the slow-phase F_0. Use
+    # the detector's F_start so the threshold / log-lin fits measure from
+    # the correct origin. (If no dip was detected, keep slow-phase F_0.)
+    if onset.F_start is not None:
+        F_0 = onset.F_start
+
+    fast_seg = _slice(samples, t_fast_start, t_fast_end)
 
     # Naïve F_inf: mean of last 30 % of fast. This is a good estimate only if
     # the fast window is long enough for the signal to have reached plateau
@@ -219,8 +410,6 @@ def fit_pulse(cap: Capture, pulse: str) -> PulseFit:
         t_tail_mid_s = ((tail_start_t + tail_end_t) / 2 - t_fast_start) / 1e6
     else:
         t_tail_mid_s = 0.0
-
-    base_mean, base_sigma = _baseline_stats(samples, cap)
 
     # --- Method 1: 63 % threshold with self-consistency refinement -----------
     # Pass 1: threshold against the naïve F_inf.
@@ -311,6 +500,7 @@ def fit_pulse(cap: Capture, pulse: str) -> PulseFit:
         n_samples_slow=len(slow_seg),
         n_samples_fast=len(fast_seg),
         n_samples_loglin=n_fit,
+        onset=onset,
     )
 
 
@@ -324,6 +514,17 @@ def print_fit(fit: PulseFit, ground_truth: Optional[float] = None) -> None:
     if fit.baseline_g is not None:
         print(f"  baseline (zero_flow_1): "
               f"{fit.baseline_g:+.3f} g  (σ={fit.baseline_sigma_g:.3f} g)")
+    o = fit.onset
+    if o.method == "signal_dip":
+        print(f"  onset correction:  +{o.offset_ms:5.1f} ms (signal dip, "
+              f"depth {o.dip_depth_g:+.1f} g)")
+    elif o.method == "phase_mark_aligned":
+        print(f"  onset correction:  {o.offset_ms:+.1f} ms "
+              f"(phase-mark kept; dip {o.dip_depth_g:.1f} g < 3 % of ΔF)")
+    elif o.method == "disabled":
+        print(f"  onset correction:  disabled (raw PA_PHASE mark)")
+    elif o.method == "no_step":
+        print(f"  onset correction:  skipped (no step detected)")
     print(f"  F_0 (pre-step):    {fit.F_0:+.3f} g")
     print(f"  F_inf (plateau):   {fit.F_inf:+.3f} g")
     print(f"  ΔF step:           {fit.dF:+.3f} g")
@@ -354,13 +555,22 @@ def _synth_capture(k_true: float,
                    f_slow: float = 1.5,
                    f_fast: float = 11.0,
                    noise_sigma: float = 0.10,
-                   seed: int = 42) -> Capture:
+                   seed: int = 42,
+                   phase_mark_lead_us: int = 0,
+                   dip_depth: float = 0.0) -> Capture:
     """Synthesize a capture with a known τ so we can regression-test the fit.
 
     Mirrors the timing of a real MK4S M573 run: 200 ms zero_flow_1, then
     282 ms slow_in_1 ramping to f_slow, then 296 ms fast_1 stepping toward
     f_fast with time constant k_true, then 331 ms slow_out_1 decaying back.
     Sample rate 320 Hz.
+
+    `phase_mark_lead_us`: simulate M573's queue-time phase-mark bug. The
+    fast_N PA_PHASE marker is placed `lead` µs before the real motion
+    onset; during the lead window the signal stays near f_slow (as if the
+    stepper is still finishing slow_in) and may dip by `dip_depth` g
+    before the real step begins. With lead=0, dip=0 we model a perfect
+    capture (onset = phase_mark).
     """
     import random
     rng = random.Random(seed)
@@ -377,52 +587,56 @@ def _synth_capture(k_true: float,
             cap.load_g.append(v)
             t += dt_us
 
-    # zero_flow_1: F ≈ 0
-    cap.phases["pulse1_start"] = t
-    cap.phases["zero_flow_1"] = t
-    add(200_000, lambda s: 0.0)
+    def add_pulse(idx: int) -> None:
+        """Synthesize one pulse (zero_flow for pulse 1 only, slow_in, fast,
+        slow_out) with the configured lead/dip injected at fast_N onset."""
+        nonlocal t
+        suffix = str(idx)
+        cap.phases[f"pulse{idx}_start"] = t
+        if idx == 1:
+            cap.phases["zero_flow_1"] = t
+            add(200_000, lambda s: 0.0)
 
-    # slow_in_1: first-order rise from 0 → f_slow with same τ=k_true
-    t_slow_start = t
-    cap.phases["slow_in_1"] = t
-    add(282_000, lambda s: f_slow * (1.0 - math.exp(-s / k_true)))
-    # Patch F_0 to the true asymptote the melt is relaxing toward (which
-    # slow_in may not fully reach) — the fit estimates F_0 from the last few
-    # samples, so make sure those are close to f_slow.
+        cap.phases[f"slow_in_{suffix}"] = t
+        t_slow_start = t
+        add(282_000, lambda s: f_slow * (1.0 - math.exp(-s / k_true)))
 
-    # fast_1: step to f_fast with τ = k_true, starting from whatever F(t_end)
-    # the slow_in ended at.
-    f_start_fast = f_slow * (1.0 - math.exp(-(t - t_slow_start) / 1e6 / k_true))
-    cap.phases["fast_1"] = t
-    add(296_000,
-        lambda s: f_fast + (f_start_fast - f_fast) * math.exp(-s / k_true))
+        # Signal value at the end of slow_in (may still be rising if
+        # slow_in duration < 5·k_true). This is what the melt holds while
+        # the lead window elapses.
+        f_slow_end = f_slow * (1.0 - math.exp(
+            -(t - t_slow_start) / 1e6 / k_true))
 
-    # slow_out_1: decay back toward f_slow
-    f_start_out = f_fast + (f_start_fast - f_fast) * math.exp(-0.296 / k_true)
-    cap.phases["slow_out_1"] = t
-    add(331_000,
-        lambda s: f_slow + (f_start_out - f_slow) * math.exp(-s / k_true))
-    cap.phases["pulse1_end"] = t
+        cap.phases[f"fast_{suffix}"] = t
+        # Lead window: PA_PHASE marker is here, but the real motion
+        # hasn't started. Signal stays near f_slow_end and optionally
+        # dips linearly to f_slow_end − dip_depth at the real onset.
+        if phase_mark_lead_us > 0:
+            lead_s = phase_mark_lead_us / 1e6
+            add(phase_mark_lead_us,
+                lambda s: f_slow_end - dip_depth * (s / lead_s))
 
-    # Pulse 2 identical — skip the purge and synthesize same-shape data so the
-    # self-test exercises both fits.
+        # Real fast step. Starts from whatever value the signal reached
+        # at the end of the lead window (f_slow_end − dip_depth), rises
+        # toward f_fast with time constant k_true.
+        f_step_start = f_slow_end - dip_depth
+        add(296_000,
+            lambda s: f_fast
+                      + (f_step_start - f_fast) * math.exp(-s / k_true))
+
+        cap.phases[f"slow_out_{suffix}"] = t
+        f_end_fast = (f_fast
+                      + (f_step_start - f_fast) * math.exp(-0.296 / k_true))
+        add(331_000,
+            lambda s: f_slow
+                      + (f_end_fast - f_slow) * math.exp(-s / k_true))
+        cap.phases[f"pulse{idx}_end"] = t
+
+    add_pulse(1)
+    # Zero-duration purge between pulses — we only care about fast_N shapes.
     cap.phases["purge2_start"] = t
     cap.phases["purge2_end"] = t
-    cap.phases["pulse2_start"] = t
-    cap.phases["slow_in_2"] = t
-    t_slow2_start = t
-    add(282_000, lambda s: f_slow * (1.0 - math.exp(-s / k_true)))
-    f_start_fast2 = f_slow * (1.0 - math.exp(
-        -(t - t_slow2_start) / 1e6 / k_true))
-    cap.phases["fast_2"] = t
-    add(296_000,
-        lambda s: f_fast + (f_start_fast2 - f_fast) * math.exp(-s / k_true))
-    cap.phases["slow_out_2"] = t
-    f_start_out2 = f_fast + (f_start_fast2 - f_fast) * math.exp(
-        -0.296 / k_true)
-    add(331_000,
-        lambda s: f_slow + (f_start_out2 - f_slow) * math.exp(-s / k_true))
-    cap.phases["pulse2_end"] = t
+    add_pulse(2)
 
     cap.sample_count = len(cap.t_us)
     cap.dropped_count = 0
@@ -430,11 +644,23 @@ def _synth_capture(k_true: float,
 
 
 def _run_self_test() -> int:
-    """Synthesize captures at several known K values and verify recovery."""
+    """Synthesize captures at several known K values and verify recovery.
+
+    Two test families:
+      (a) Clean captures (lead=0, dip=0) — regression-test the threshold &
+          log-linear fits on pure first-order data. Onset detector should
+          NOT fire here (dip-significance gate rejects noise-only minima).
+      (b) Lead + dip captures (lead=40 ms, dip=0.5 g on a ~9.5 g step) —
+          regression-test the onset detector itself. Without correction
+          the threshold fit is biased by ~lead ms; with correction it
+          should land back within the ±10 ms tolerance.
+    """
     print("Self-test: synthetic first-order captures, "
           "320 Hz sampling, 0.10 g noise.\n")
     test_ks = [0.030, 0.055, 0.085, 0.120]
     any_fail = False
+
+    print("--- Family (a): clean captures, no queue-time lag ---")
     for k_true in test_ks:
         cap = _synth_capture(k_true=k_true)
         print(f"=== K_true = {k_true:.4f} ({k_true*1000:.0f} ms) ===")
@@ -446,9 +672,12 @@ def _run_self_test() -> int:
                 continue
             err_thr = fit.tau_threshold_s - k_true
             err_log = (fit.tau_loglin_s - k_true) if fit.tau_loglin_s else None
-            thr_ok = abs(err_thr) <= 0.010  # ±10 ms tolerance
+            thr_ok = abs(err_thr) <= 0.010
             log_ok = (err_log is None) or abs(err_log) <= 0.010
-            tag = "OK" if (thr_ok and log_ok) else "FAIL"
+            # Also require that the detector correctly said "phase_mark"
+            # (no real dip in clean data).
+            onset_ok = fit.onset.method in ("phase_mark_aligned", "disabled")
+            tag = "OK" if (thr_ok and log_ok and onset_ok) else "FAIL"
             if tag == "FAIL":
                 any_fail = True
             log_str = (f"  log-lin {fit.tau_loglin_s*1000:6.1f} ms "
@@ -456,8 +685,57 @@ def _run_self_test() -> int:
                        if fit.tau_loglin_s else "  log-lin n/a")
             print(f"  pulse {pulse}: "
                   f"thr {fit.tau_threshold_s*1000:6.1f} ms "
-                  f"(Δ={err_thr*1000:+5.1f} ms), {log_str}  [{tag}]")
+                  f"(Δ={err_thr*1000:+5.1f} ms), {log_str}, "
+                  f"onset={fit.onset.method}  [{tag}]")
         print()
+
+    print("--- Family (b): 40 ms queue-time lag + 0.5 g dip ---")
+    # The dip depth (0.5 g) is 5 % of the 9.5 g step — just above the 3 %
+    # significance gate. σ_baseline is 0.1 g, so σ of the 5-point moving
+    # average is ≈ 0.045 g and the 0.5-g dip stands out easily.
+    #
+    # Tolerance: ±15 ms here (vs ±10 ms in Family (a)). The centered
+    # moving-average min-finder has a ≈ one-sample-plus-noise bias
+    # relative to the true V-vertex: post-onset samples rise fast and
+    # pull the smoothed minimum backward in time by (5 samples × 3.125 ms)
+    # / 2 = ~ 8 ms. We accept that residual as a known limitation of a
+    # single-pass firmware-portable detector — the correction still cuts
+    # the raw phase-mark bias by ~5× (~60 ms → ~10 ms) which is what A1
+    # needs to give A2 a fighting chance.
+    for k_true in test_ks:
+        cap = _synth_capture(k_true=k_true,
+                             phase_mark_lead_us=40_000,
+                             dip_depth=0.5)
+        print(f"=== K_true = {k_true:.4f} ({k_true*1000:.0f} ms), "
+              f"lead=40 ms, dip=0.5 g ===")
+        for pulse in ("1", "2"):
+            fit_raw = fit_pulse(cap, pulse, detect_onset=False)
+            fit = fit_pulse(cap, pulse, detect_onset=True)
+
+            # The corrected fit is the one we're validating. The raw fit
+            # is printed as the before-picture to show the correction
+            # earned its keep.
+            tau_raw = fit_raw.tau_threshold_s
+            tau = fit.tau_threshold_s
+            if tau is None:
+                print(f"  pulse {pulse}: THRESHOLD FAILED (corrected)")
+                any_fail = True
+                continue
+            err = tau - k_true
+            thr_ok = abs(err) <= 0.015
+            onset_ok = fit.onset.method == "signal_dip"
+            tag = "OK" if (thr_ok and onset_ok) else "FAIL"
+            if tag == "FAIL":
+                any_fail = True
+            raw_str = (f"{tau_raw*1000:5.1f}"
+                       if tau_raw is not None else "  n/a")
+            print(f"  pulse {pulse}: "
+                  f"raw {raw_str} ms → corrected {tau*1000:6.1f} ms "
+                  f"(Δ={err*1000:+5.1f} ms), "
+                  f"onset=+{fit.onset.offset_ms:.0f}ms "
+                  f"(dip {fit.onset.dip_depth_g:.2f} g)  [{tag}]")
+        print()
+
     print("SELF-TEST:", "PASS" if not any_fail else "FAIL")
     return 0 if not any_fail else 1
 
@@ -475,6 +753,10 @@ def main() -> int:
                     help="Visual PA test K for comparison (s)")
     ap.add_argument("--self-test", action="store_true",
                     help="Run synthetic-data regression test and exit")
+    ap.add_argument("--no-onset-detect", action="store_true",
+                    help="Disable the signal-driven onset detector "
+                         "(use raw PA_PHASE timestamps). For A/B comparison "
+                         "against the queue-time-lag correction.")
     args = ap.parse_args()
 
     if args.self_test:
@@ -498,7 +780,8 @@ def main() -> int:
     any_ok = False
     for pulse in ("1", "2"):
         try:
-            fit = fit_pulse(cap, pulse)
+            fit = fit_pulse(cap, pulse,
+                            detect_onset=not args.no_onset_detect)
             print_fit(fit, args.ground_truth)
             print()
             any_ok = True

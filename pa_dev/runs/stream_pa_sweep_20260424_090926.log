@@ -1,0 +1,411 @@
+STATE port=COM5 file=pa_test_20260423_151526.gcode total_lines=1044 log=pa_dev\runs\stream_pa_sweep_20260424_090926.log
+TX 0/0    M115  (handshake)
+RX        << FIRMWARE_NAME:Prusa-Firmware-Buddy 6.5.3+11985.LOCAL (Github) SOURCE_CODE_URL:https://github.com/prusa3d/Prusa-Firmware-Buddy PROTOCOL_VERSION:1.0 MACHINE_TYPE:Prusa-MK4S EXTRUDER_COUNT:1 UUID:cede2a2f-41a2-4748-9b12-c55c62f367ff
+RX        << Cap:SERIAL_XON_XOFF:0
+RX        << Cap:BINARY_FILE_TRANSFER:0
+RX        << Cap:EEPROM:0
+RX        << Cap:VOLUMETRIC:1
+RX        << Cap:AUTOREPORT_TEMP:1
+RX        << Cap:PROGRESS:0
+RX        << Cap:PRINT_JOB:1
+RX        << Cap:AUTOLEVEL:1
+RX        << Cap:Z_PROBE:1
+RX        << Cap:LEVELING_DATA:1
+RX        << Cap:BUILD_PERCENT:0
+RX        << Cap:SOFTWARE_POWER:1
+RX        << Cap:TOGGLE_LIGHTS:0
+RX        << Cap:CASE_LIGHT_BRIGHTNESS:0
+RX        << Cap:EMERGENCY_PARSER:0
+RX        << Cap:PROMPT_SUPPORT:0
+RX        << Cap:AUTOREPORT_SD_STATUS:0
+RX        << Cap:THERMAL_PROTECTION:0
+RX        << Cap:MOTION_MODES:0
+RX        << Cap:CHAMBER_TEMPERATURE:0
+RX        << ok
+TX 1/1044   M140 S60
+RX        << ok
+TX 2/1044   M104 S215
+RX        << ok
+TX 3/1044   G90
+RX        << ok
+TX 4/1044   M83
+RX        << ok
+TX 5/1044   G21
+RX        << ok
+TX 6/1044   M107
+RX        << ok
+TX 7/1044   G28
+RX        << echo:== Precise Homing axis X try 0 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        << echo:endstops hit:  X:-72.50
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  X:-10.00
+RX        << echo:    homing probe offset: 0.00 divisor: 1.00 mscnt: 272 calibration offset: 0
+RX        << echo:Probe classified as perfect.
+RX        << echo:Backoff ipos:-6050
+RX        << echo:== Precise Homing axis Y try 0 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Y:-195.47
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Y:-10.00
+RX        << echo:    homing probe offset: 0.00 divisor: 1.00 mscnt: 752 calibration offset: 0
+RX        << echo:Probe classified as perfect.
+RX        << echo:Backoff ipos:-18347
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:endstops hit:  Z:-92.12
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:endstops hit:  Z:-2.78
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-3.00
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 1.23
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << X:-1.00 Y:-4.00 Z:2.00 E:0.00 Count X:-100 Y:-400 Z:800
+RX        << ok
+TX 8/1044   G29
+RX        << Default storage slot 0 selected.
+RX        << Mesh invalidated. Probing mesh.
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:Re-tared with offset 13.07
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:endstops hit:  Z:-1.18
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 2.69
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-1.11
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 5.18
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.87
+RX        << echo:Probe classified as NOK (sanity-check, 0.00)
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -5.80
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.93
+RX        << echo:busy: processing
+RX        << echo:Probe classified as NOK (angle_after, -49.34)
+RX        << echo:Re-tared with offset -13.32
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.90
+RX        << echo:Probe classified as NOK (angle_after, -47.71)
+RX        << echo:Re-tared with offset -25.25
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.98
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -0.92
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -0.77
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.70
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -5.61
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.56
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -2.17
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.63
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -4.82
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.54
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -4.03
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.47
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -2.21
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.63
+RX        << echo:busy: processing
+RX        << echo:Probe classified as NOK (angle_after, -43.63)
+RX        << echo:Re-tared with offset -19.53
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.63
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.88
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.78
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -3.26
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -3.40
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-1.03
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 4.46
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-1.14
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -10.31
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-1.09
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 0.38
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.97
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -7.47
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.86
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -2.05
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.73
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -3.86
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.58
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -1.11
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.41
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -1.31
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.44
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 0.00
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.34
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -3.05
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.37
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 6.43
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.53
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.19
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.66
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 5.80
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.84
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -0.06
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.94
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -3.74
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-1.03
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -10.71
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-1.06
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -0.40
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.94
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -6.37
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.80
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -4.94
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.66
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -3.27
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.43
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.23
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.28
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 4.80
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.29
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.59
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.24
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 1.34
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 1.65
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.36
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 6.82
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.62
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 7.93
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.78
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 5.89
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.93
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -7.43
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-1.07
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 5.22
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-1.10
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 0.13
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -3.42
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.78
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 1.32
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.60
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -3.97
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.38
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 4.61
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.18
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 0.90
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.17
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << X:12.50 Y:10.50 Z:2.00 E:0.00 Count X:1250 Y:1050 Z:800
+RX        << Extrapolating mesh...
+RX        << done
+RX        << Unified Bed Leveling System v1.01 active
+RX        << ok
+TX 9/1044   M190 S60
+RX        <<  T:214.98/215.00 B:59.93/60.00 X:30.18/36.00 A:44.00/0.00 @:90 B@:72 HBR@:55 W:?
+RX        <<  T:215.02/215.00 B:59.98/60.00 X:30.19/36.00 A:44.03/0.00 @:89 B@:49 HBR@:55 W:9
+RX        <<  T:215.08/215.00 B:59.98/60.00 X:30.21/36.00 A:44.06/0.00 @:86 B@:49 HBR@:55 W:8
+RX        << echo:busy: processing
+RX        <<  T:215.18/215.00 B:60.02/60.00 X:30.21/36.00 A:44.11/0.00 @:83 B@:34 HBR@:55 W:7
+RX        <<  T:215.32/215.00 B:60.02/60.00 X:30.26/36.00 A:44.08/0.00 @:78 B@:36 HBR@:55 W:6
+RX        << echo:busy: processing
+RX        <<  T:215.42/215.00 B:59.93/60.00 X:30.30/36.00 A:44.09/0.00 @:75 B@:79 HBR@:55 W:5
+RX        <<  T:215.51/215.00 B:60.04/60.00 X:30.40/36.00 A:44.09/0.00 @:73 B@:37 HBR@:55 W:4
+RX        << echo:busy: processing
+RX        <<  T:215.61/215.00 B:60.04/60.00 X:30.37/36.00 A:44.08/0.00 @:71 B@:41 HBR@:55 W:3
+RX        <<  T:215.62/215.00 B:60.05/60.00 X:30.40/36.00 A:44.08/0.00 @:72 B@:37 HBR@:55 W:2
+RX        << echo:busy: processing
+RX        <<  T:215.64/215.00 B:60.04/60.00 X:30.47/36.00 A:44.14/0.00 @:73 B@:45 HBR@:55 W:1
+RX        <<  T:215.61/215.00 B:60.04/60.00 X:30.47/36.00 A:44.16/0.00 @:75 B@:46 HBR@:55 W:0
+RX        << echo:busy: processing
+RX        << ok
+TX 10/1044   M109 S215
+RX        << ok
+TX 11/1044   M204 P2500 R1500 T3000
+RX        << ok
+TX 12/1044   G1 Z5.000 F600
+RX        << ok
+TX 13/1044   G1 X10.000 Y5.000 F3000
+RX        << ok
+TX 14/1044   G1 Z0.200 F300
+RX        << ok
+TX 15/1044   M573
+RX        << echo:M573: material=PLA target=215��C

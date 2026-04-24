@@ -26,6 +26,11 @@ import argparse
 import re
 import sys
 import time
+
+# M573 echoes °C as UTF-8 (0xC2 0xB0). Reconfigure stdout to UTF-8 so
+# those characters survive the print() call on Windows (default cp1252).
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -67,11 +72,11 @@ def read_line_blocking(ser: serial.Serial, timeout_s: float) -> Optional[str]:
             continue
         if ch in (b"\n", b"\r"):
             if buf:
-                return buf.decode("ascii", errors="replace")
+                return buf.decode("utf-8", errors="replace")
             continue
         buf += ch
     if buf:
-        return buf.decode("ascii", errors="replace")
+        return buf.decode("utf-8", errors="replace")
     return None
 
 
@@ -136,11 +141,19 @@ def main() -> int:
     ser.write(b"M115\n")
     ser.flush()
     deadline = time.monotonic() + 10.0
+    hs_partial_ok = False
     while time.monotonic() < deadline:
         ln = read_line_blocking(ser, 1.0)
         if ln is None:
             continue
         logln(f"RX        << {ln}", echo=not args.quiet_rx)
+        ln_s = ln.strip()
+        if ln_s == "o":
+            hs_partial_ok = True
+            continue
+        if ln_s == "k" and hs_partial_ok:
+            ln = "ok"
+        hs_partial_ok = False
         if RE_OK.match(ln):
             break
         if RE_ERR.match(ln):
@@ -175,6 +188,7 @@ def main() -> int:
             # applies to each line individually, so keep it generous.
             ack_deadline = time.monotonic() + args.ack_timeout
             got_ok = False
+            pending_partial_ok = False  # Prusa sometimes sends "o\r\n" then "k\r\n"
             while time.monotonic() < ack_deadline:
                 rx = read_line_blocking(ser, 2.0)
                 if rx is None:
@@ -195,6 +209,15 @@ def main() -> int:
                 m = RE_TEMP.search(rx)
                 if m:
                     last_temp = f"T:{m.group('t')}/{m.group('t_tgt')}  B:{m.group('b')}/{m.group('b_tgt')}"
+                # Handle split ok: firmware sometimes sends "o\r\n" then "k\r\n"
+                # as two separate serial lines instead of a single "ok\r\n".
+                rx_stripped = rx.strip()
+                if rx_stripped == "o":
+                    pending_partial_ok = True
+                    continue
+                if rx_stripped == "k" and pending_partial_ok:
+                    rx = "ok"
+                pending_partial_ok = False
                 if RE_OK.match(rx):
                     got_ok = True
                     break

@@ -295,10 +295,11 @@ def _emit_body(out, p: PATestParams, ks: list[float]) -> None:
         z = p.layer_height_mm * (layer_i + 1)
         out.append(f"; --- Layer {layer_i + 1} / {p.layer_count}  (Z={z:.3f}) ---")
         out.append(f"G1 Z{z:.3f} F600")
-        # Snake the sweep (left-to-right, right-to-left) so each layer alternates
-        # direction — minimises one-sided bias from accel/coast asymmetry.
-        direction = 1 if (layer_i % 2 == 0) else -1
-        iter_seq = list(enumerate(ks)) if direction == 1 else list(enumerate(reversed(ks)))
+        # All layers print left-to-right so the PA corner (decel end of fast
+        # segment) is always on the same side — makes visual comparison
+        # across layers unambiguous.
+        direction = 1
+        iter_seq = list(enumerate(ks))
         for i, k in iter_seq:
             # When direction == -1, i indexes the reversed list; map back to the
             # real K list index so Y rows stay spatially the same across layers.
