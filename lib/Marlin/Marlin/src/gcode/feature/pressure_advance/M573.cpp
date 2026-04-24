@@ -167,24 +167,36 @@ void echo_move_timing(const char *tag, float dx_mm, float de_mm,
 // any τ fit using the mark as t=0. See .auto-memory/b1_geometry_result.md
 // for the H1/H2 discussion. We poll planner.movesplanned_processed() to
 // detect the moment the stepper ISR promotes our block from "queued" to
-// "being processed," then mark right after that transition. Cost: a few
-// microseconds of tight-poll per subphase, bounded by a 10 ms timeout
-// that falls back to queue-time marking with a serial warning if the
-// poll ever overruns.
+// "being processed," then mark right after that transition.
+//
+// C1.1 rev (2026-04-24): the first attempt timed out on all six phases
+// because the planner gates every "first queued block" with
+// BLOCK_DELAY_FOR_1ST_MOVE = 200 ms (to give the look-ahead optimizer a
+// window to accumulate blocks). Since we synchronize() at the end of
+// each subphase, the buffer drains — so every subsequent plan_move_by
+// re-arms that 200 ms hold. Fix: call planner.start_moving() right
+// after plan_move_by(). It zeroes delay_before_delivering AND wakes the
+// precise-stepping ISR, dispatching the block immediately. Timeout
+// bumped from 10 ms → 50 ms as a safety margin around ISR dispatch
+// latency (expected ≪ 1 ms).
 void run_subphase(pa_calibration::Capture &cap, const SubPhase &sp) {
     const float dx = geom().dir * sp.dx_mm;
     const uint32_t t_queued = ticks_us();
     const uint8_t processed_before = planner.movesplanned_processed();
     plan_move_by(sp.feedrate_mm_s, dx, 0.0f, 0.0f, sp.de_mm);
+    // Bypass the 200 ms BLOCK_DELAY_FOR_1ST_MOVE gate that otherwise
+    // holds every post-sync block. Without this, all six subphases
+    // fall through to the queue-time timeout branch below.
+    planner.start_moving();
     // Wait for the stepper ISR to start processing this block. Wrap-safe
     // because movesplanned_processed() returns a uint8_t mod
     // BLOCK_BUFFER_SIZE and we compare for inequality.
-    constexpr uint32_t kStepperPickupTimeout_us = 10'000;
+    constexpr uint32_t kStepperPickupTimeout_us = 50'000;
     uint32_t t_mark = ticks_us();
     while (planner.movesplanned_processed() == processed_before) {
         t_mark = ticks_us();
         if (t_mark - t_queued > kStepperPickupTimeout_us) {
-            // Stepper never picked up the block within 10 ms — something
+            // Stepper never picked up the block within 50 ms — something
             // is wrong (queue stalled? zero-length move dropped?). Fall
             // back to queue-time mark so the capture isn't lost, and log
             // a warning so off-line analysis knows to treat this phase's
