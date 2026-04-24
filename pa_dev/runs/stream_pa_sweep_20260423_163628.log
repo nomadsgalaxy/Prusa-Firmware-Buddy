@@ -1,0 +1,2234 @@
+STATE port=COM5 file=pa_test_20260423_151526.gcode total_lines=1044 log=pa_dev\runs\stream_pa_sweep_20260423_163628.log
+TX 0/0    M115  (handshake)
+RX        << FIRMWARE_NAME:Prusa-Firmware-Buddy 6.5.3+11985.LOCAL (Github) SOURCE_CODE_URL:https://github.com/prusa3d/Prusa-Firmware-Buddy PROTOCOL_VERSION:1.0 MACHINE_TYPE:Prusa-MK4S EXTRUDER_COUNT:1 UUID:cede2a2f-41a2-4748-9b12-c55c62f367ff
+RX        << Cap:SERIAL_XON_XOFF:0
+RX        << Cap:BINARY_FILE_TRANSFER:0
+RX        << Cap:EEPROM:0
+RX        << Cap:VOLUMETRIC:1
+RX        << Cap:AUTOREPORT_TEMP:1
+RX        << Cap:PROGRESS:0
+RX        << Cap:PRINT_JOB:1
+RX        << Cap:AUTOLEVEL:1
+RX        << Cap:Z_PROBE:1
+RX        << Cap:LEVELING_DATA:1
+RX        << Cap:BUILD_PERCENT:0
+RX        << Cap:SOFTWARE_POWER:1
+RX        << Cap:TOGGLE_LIGHTS:0
+RX        << Cap:CASE_LIGHT_BRIGHTNESS:0
+RX        << Cap:EMERGENCY_PARSER:0
+RX        << Cap:PROMPT_SUPPORT:0
+RX        << Cap:AUTOREPORT_SD_STATUS:0
+RX        << Cap:THERMAL_PROTECTION:0
+RX        << Cap:MOTION_MODES:0
+RX        << Cap:CHAMBER_TEMPERATURE:0
+RX        << ok
+TX 1/1044   M140 S60
+RX        << ok
+TX 2/1044   M104 S215
+RX        << ok
+TX 3/1044   G90
+RX        << ok
+TX 4/1044   M83
+RX        << ok
+TX 5/1044   G21
+RX        << ok
+TX 6/1044   M107
+RX        << ok
+TX 7/1044   G28
+RX        << echo:== Precise Homing axis X try 0 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        << echo:endstops hit:  X:-72.50
+RX        << echo:endstops hit:  X:-10.00
+RX        << echo:    homing probe offset: 0.00 divisor: 1.00 mscnt: 272 calibration offset: 0
+RX        << echo:Probe classified as perfect.
+RX        << echo:busy: processing
+RX        << echo:Backoff ipos:-9950
+RX        << echo:== Precise Homing axis Y try 0 ==
+RX        << echo:Homing sensitivity: already calibrated to -2
+RX        << echo:endstops hit:  Y:-74.14
+RX        << echo:endstops hit:  Y:-10.00
+RX        << echo:    homing probe offset: 0.00 divisor: 1.00 mscnt: 752 calibration offset: 0
+RX        << echo:Probe classified as perfect.
+RX        << echo:busy: processing
+RX        << echo:Backoff ipos:-9515
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:endstops hit:  Z:-90.39
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:endstops hit:  Z:-2.89
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-3.00
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -1.02
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:endstops hit:  Z:-0.05
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << X:-1.00 Y:-4.00 Z:2.00 E:0.00 Count X:-100 Y:-400 Z:800
+RX        << ok
+TX 8/1044   G29
+RX        << Default storage slot 0 selected.
+RX        << Mesh invalidated. Probing mesh.
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:Re-tared with offset 5.45
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:endstops hit:  Z:-1.04
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -3.13
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.97
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.65
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.81
+RX        << echo:Probe classified as NOK (angle_after, -45.74)
+RX        << echo:Re-tared with offset 9.23
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.86
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -4.28
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.72
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 0.90
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.60
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -6.22
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.45
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 0.90
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.49
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -0.10
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.42
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -0.67
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.37
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -2.42
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.54
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -1.77
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.69
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 4.38
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.81
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 3.65
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.91
+RX        << echo:Probe classified as NOK (angle_after, -42.41)
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -4.22
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.92
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 12.10
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-1.00
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -1.98
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.95
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 0.06
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.86
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -1.17
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.76
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 3.15
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.62
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -3.28
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.49
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 5.72
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.32
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 6.62
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.33
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 0.63
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.23
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -2.32
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.27
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.71
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.43
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -0.17
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.56
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 3.15
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.73
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 5.40
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.84
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 8.64
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.94
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -4.88
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.95
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -0.81
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.84
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -0.33
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.69
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -8.20
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.56
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 1.21
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.32
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -3.34
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.17
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 0.15
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.18
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset -1.96
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.14
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.51
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.09
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.15
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.26
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 5.05
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.50
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -0.81
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.68
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 2.69
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.82
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 8.45
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.95
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 0.88
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.98
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -2.96
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.86
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -1.38
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.68
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset -0.86
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.49
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 5.45
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.28
+RX        << echo:Probe classified as clean and OK
+RX        << echo:busy: processing
+RX        << echo:Re-tared with offset 0.79
+RX        << echo:Starting probe at 1
+RX        << echo:endstops hit:  Z:-0.09
+RX        << echo:busy: processing
+RX        << echo:Probe classified as clean and OK
+RX        << echo:Re-tared with offset 1.52
+RX        << echo:Starting probe at 1
+RX        << echo:busy: processing
+RX        << echo:endstops hit:  Z:-0.06
+RX        << echo:Probe classified as clean and OK
+RX        << X:12.50 Y:10.50 Z:2.00 E:0.00 Count X:1250 Y:1050 Z:800
+RX        << Extrapolating mesh...
+RX        << done
+RX        << Unified Bed Leveling System v1.01 active
+RX        << ok
+TX 9/1044   M190 S60
+RX        <<  T:214.98/215.00 B:59.96/60.00 X:33.93/36.00 A:49.34/0.00 @:87 B@:58 HBR@:55 W:?
+RX        <<  T:215.02/215.00 B:59.91/60.00 X:33.84/36.00 A:49.32/0.00 @:86 B@:79 HBR@:55 W:9
+RX        <<  T:215.02/215.00 B:59.97/60.00 X:33.89/36.00 A:49.32/0.00 @:86 B@:52 HBR@:55 W:8
+RX        << echo:busy: processing
+RX        <<  T:215.14/215.00 B:59.98/60.00 X:33.99/36.00 A:49.30/0.00 @:81 B@:47 HBR@:55 W:7
+RX        <<  T:215.21/215.00 B:59.98/60.00 X:34.05/36.00 A:49.30/0.00 @:79 B@:48 HBR@:55 W:6
+RX        << echo:busy: processing
+RX        <<  T:215.34/215.00 B:59.97/60.00 X:34.03/36.00 A:49.34/0.00 @:75 B@:54 HBR@:55 W:5
+RX        <<  T:215.43/215.00 B:60.00/60.00 X:34.05/36.00 A:49.35/0.00 @:72 B@:44 HBR@:55 W:4
+RX        << echo:busy: processing
+RX        <<  T:215.53/215.00 B:60.00/60.00 X:34.14/36.00 A:49.30/0.00 @:70 B@:46 HBR@:55 W:3
+RX        <<  T:215.61/215.00 B:59.94/60.00 X:34.20/36.00 A:49.34/0.00 @:68 B@:70 HBR@:55 W:2
+RX        << echo:busy: processing
+RX        <<  T:215.58/215.00 B:60.02/60.00 X:34.25/36.00 A:49.30/0.00 @:71 B@:38 HBR@:55 W:1
+RX        <<  T:215.58/215.00 B:60.02/60.00 X:34.29/36.00 A:49.34/0.00 @:72 B@:40 HBR@:55 W:0
+RX        << echo:busy: processing
+RX        << ok
+TX 10/1044   M109 S215
+RX        << ok
+TX 11/1044   M204 P2500 R1500 T3000
+RX        << ok
+TX 12/1044   G1 Z5.000 F600
+RX        << ok
+TX 13/1044   G1 X10.000 Y5.000 F3000
+RX        << ok
+TX 14/1044   G1 Z0.200 F300
+RX        << ok
+TX 15/1044   M573
+RX        << echo:M573: material=PLA target=215��C
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:M573 diag_x dx=10.00 de=0.000 fr=20.00mm/s exp=500ms obs=532ms
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:M573 purge_1 dx=20.00 de=19.000 fr=5.00mm/s exp=3412ms obs=6624ms
+RX        << echo:M573 zero_flow_1 dx=0.00 de=0.000 fr=0.00mm/s exp=200ms obs=199ms
+RX        << echo:M573 slow_in_1 dx=5.00 de=0.229 fr=20.00mm/s exp=250ms obs=282ms
+RX        << echo:M573 fast_1 dx=20.00 de=0.915 fr=100.00mm/s exp=200ms obs=296ms
+RX        << echo:M573 slow_out_1 dx=6.00 de=0.275 fr=20.00mm/s exp=300ms obs=331ms
+RX        << echo:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << echo:M573 purge_2 dx=31.00 de=10.000 fr=10.83mm/s exp=2654ms obs=2787ms
+RX        << echo:M573 slow_in_2 dx=5.00 de=0.229 fr=20.00mm/s exp=250ms obs=281ms
+RX        << echo:M573 fast_2 dx=20.00 de=0.915 fr=100.00mm/s exp=200ms obs=295ms
+RX        << echo:M573 slow_out_2 dx=6.00 de=0.275 fr=20.00mm/s exp=300ms obs=331ms
+RX        << echo:M573: captured 1509 samples (0 dropped)
+RX        << BEGIN PA_CAPTURE
+RX        << PA_SAMPLES=1509 PA_DROPPED=0
+RX        << PA_PHASE,pulse1_start,1441193650
+RX        << PA_PHASE,zero_flow_1,1441193650
+RX        << PA_PHASE,slow_in_1,1441393658
+RX        << PA_PHASE,fast_1,1441676702
+RX        << PA_PHASE,slow_out_1,1441973653
+RX        << PA_PHASE,pulse1_end,1442305655
+RX        << PA_PHASE,purge2_start,1442305655
+RX        << PA_PHASE,purge2_end,1445093418
+RX        << PA_PHASE,pulse2_start,1445093635
+RX        << PA_PHASE,slow_in_2,1445093636
+RX        << PA_PHASE,fast_2,1445375633
+RX        << PA_PHASE,slow_out_2,1445671651
+RX        << PA_PHASE,pulse2_end,1446003633
+RX        << PA,1441192007,2674.099
+RX        << PA,1441195195,2528.141
+RX        << PA,1441198383,2416.742
+RX        << PA,1441201571,2346.624
+RX        << PA,1441204758,2256.730
+RX        << PA,1441207946,2150.534
+RX        << PA,1441211133,2077.440
+RX        << PA,1441214321,2033.069
+RX        << PA,1441217509,1948.186
+RX        << PA,1441220697,1883.059
+RX        << PA,1441223884,1838.976
+RX        << PA,1441227072,1779.571
+RX        << PA,1441230260,1713.005
+RX        << PA,1441233448,1683.360
+RX        << PA,1441236636,1645.939
+RX        << PA,1441239824,1597.786
+RX        << PA,1441243012,1550.074
+RX        << PA,1441246200,1522.445
+RX        << PA,1441249388,1467.994
+RX        << PA,1441252576,1438.253
+RX        << PA,1441255763,1422.586
+RX        << PA,1441258952,1370.170
+RX        << PA,1441262140,1347.014
+RX        << PA,1441265328,1341.139
+RX        << PA,1441268515,1289.434
+RX        << PA,1441271703,1233.754
+RX        << PA,1441274890,1233.043
+RX        << PA,1441278078,1208.045
+RX        << PA,1441281266,1183.642
+RX        << PA,1441284454,1156.608
+RX        << PA,1441287642,1135.834
+RX        << PA,1441290830,1116.518
+RX        << PA,1441294018,1099.104
+RX        << PA,1441297206,1073.626
+RX        << PA,1441300393,1055.040
+RX        << PA,1441303581,1046.803
+RX        << PA,1441306769,1032.902
+RX        << PA,1441309957,998.746
+RX        << PA,1441313145,991.315
+RX        << PA,1441316333,981.197
+RX        << PA,1441319521,971.309
+RX        << PA,1441322709,953.779
+RX        << PA,1441325896,938.995
+RX        << PA,1441329085,927.725
+RX        << PA,1441332273,902.112
+RX        << PA,1441335461,889.632
+RX        << PA,1441338649,884.102
+RX        << PA,1441341836,869.971
+RX        << PA,1441345024,855.686
+RX        << PA,1441348212,829.709
+RX        << PA,1441351399,818.093
+RX        << PA,1441354587,820.147
+RX        << PA,1441357775,799.411
+RX        << PA,1441360962,785.434
+RX        << PA,1441364150,786.413
+RX        << PA,1441367338,769.248
+RX        << PA,1441370525,759.072
+RX        << PA,1441373713,760.262
+RX        << PA,1441376900,755.578
+RX        << PA,1441380088,752.026
+RX        << PA,1441383275,743.386
+RX        << PA,1441386463,730.771
+RX        << PA,1441389651,712.666
+RX        << PA,1441392838,699.706
+RX        << PA,1441396026,694.080
+RX        << PA,1441399213,687.974
+RX        << PA,1441402401,677.242
+RX        << PA,1441405589,684.326
+RX        << PA,1441408776,664.454
+RX        << PA,1441411964,605.050
+RX        << PA,1441415151,572.294
+RX        << PA,1441418339,617.318
+RX        << PA,1441421527,659.520
+RX        << PA,1441424714,685.901
+RX        << PA,1441427902,718.272
+RX        << PA,1441431090,735.590
+RX        << PA,1441434278,747.149
+RX        << PA,1441437466,780.595
+RX        << PA,1441440654,810.394
+RX        << PA,1441443842,781.325
+RX        << PA,1441447031,775.680
+RX        << PA,1441450219,790.099
+RX        << PA,1441453409,789.120
+RX        << PA,1441456594,806.592
+RX        << PA,1441459782,823.987
+RX        << PA,1441462971,813.926
+RX        << PA,1441466159,827.712
+RX        << PA,1441469347,847.584
+RX        << PA,1441472535,853.805
+RX        << PA,1441475723,854.458
+RX        << PA,1441478912,841.843
+RX        << PA,1441482100,871.334
+RX        << PA,1441485288,865.862
+RX        << PA,1441488476,863.366
+RX        << PA,1441491664,854.938
+RX        << PA,1441494852,847.834
+RX        << PA,1441498041,874.598
+RX        << PA,1441501229,883.142
+RX        << PA,1441504417,898.042
+RX        << PA,1441507605,884.947
+RX        << PA,1441510793,867.494
+RX        << PA,1441513982,900.442
+RX        << PA,1441517170,901.018
+RX        << PA,1441520358,907.315
+RX        << PA,1441523545,890.266
+RX        << PA,1441526733,879.379
+RX        << PA,1441529922,906.125
+RX        << PA,1441533110,914.131
+RX        << PA,1441536299,921.024
+RX        << PA,1441539487,920.832
+RX        << PA,1441542675,904.320
+RX        << PA,1441545863,935.712
+RX        << PA,1441549051,929.683
+RX        << PA,1441552239,929.971
+RX        << PA,1441555427,934.771
+RX        << PA,1441558615,920.237
+RX        << PA,1441561803,936.941
+RX        << PA,1441564992,936.845
+RX        << PA,1441568180,959.942
+RX        << PA,1441571368,945.120
+RX        << PA,1441574556,921.600
+RX        << PA,1441577745,942.163
+RX        << PA,1441580933,948.422
+RX        << PA,1441584121,941.491
+RX        << PA,1441587309,928.915
+RX        << PA,1441590497,921.715
+RX        << PA,1441593686,936.845
+RX        << PA,1441596873,938.765
+RX        << PA,1441600062,949.210
+RX        << PA,1441603250,944.083
+RX        << PA,1441606437,919.814
+RX        << PA,1441609626,952.493
+RX        << PA,1441612814,957.485
+RX        << PA,1441616002,982.368
+RX        << PA,1441619191,972.979
+RX        << PA,1441622379,938.419
+RX        << PA,1441625567,948.768
+RX        << PA,1441628754,954.509
+RX        << PA,1441631943,963.264
+RX        << PA,1441635130,959.712
+RX        << PA,1441638319,936.864
+RX        << PA,1441641507,935.501
+RX        << PA,1441644695,950.784
+RX        << PA,1441647882,964.858
+RX        << PA,1441651070,966.086
+RX        << PA,1441654258,944.890
+RX        << PA,1441657446,975.610
+RX        << PA,1441660635,973.056
+RX        << PA,1441663822,988.531
+RX        << PA,1441667011,989.088
+RX        << PA,1441670199,943.296
+RX        << PA,1441673387,891.898
+RX        << PA,1441676576,845.875
+RX        << PA,1441679764,846.586
+RX        << PA,1441682951,795.187
+RX        << PA,1441686139,791.635
+RX        << PA,1441689327,755.597
+RX        << PA,1441692515,720.058
+RX        << PA,1441695703,691.123
+RX        << PA,1441698891,684.941
+RX        << PA,1441702079,697.594
+RX        << PA,1441705267,715.949
+RX        << PA,1441708455,728.410
+RX        << PA,1441711643,767.578
+RX        << PA,1441714831,774.144
+RX        << PA,1441718019,791.962
+RX        << PA,1441721207,850.099
+RX        << PA,1441724395,855.322
+RX        << PA,1441727583,848.218
+RX        << PA,1441730771,931.699
+RX        << PA,1441733959,968.275
+RX        << PA,1441737146,1015.814
+RX        << PA,1441740334,1067.866
+RX        << PA,1441743522,1137.946
+RX        << PA,1441746709,1180.742
+RX        << PA,1441749897,1263.091
+RX        << PA,1441753085,1335.360
+RX        << PA,1441756273,1417.056
+RX        << PA,1441759464,1489.939
+RX        << PA,1441762650,1549.747
+RX        << PA,1441765837,1616.448
+RX        << PA,1441769026,1691.520
+RX        << PA,1441772214,1770.163
+RX        << PA,1441775402,1837.210
+RX        << PA,1441778590,1895.616
+RX        << PA,1441781777,1933.459
+RX        << PA,1441784965,1963.853
+RX        << PA,1441788153,2019.034
+RX        << PA,1441791341,2039.251
+RX        << PA,1441794529,2072.832
+RX        << PA,1441797716,2110.886
+RX        << PA,1441800904,2127.091
+RX        << PA,1441804092,2194.541
+RX        << PA,1441807280,2265.581
+RX        << PA,1441810468,2284.224
+RX        << PA,1441813655,2305.901
+RX        << PA,1441816843,2374.963
+RX        << PA,1441820031,2404.877
+RX        << PA,1441823219,2429.914
+RX        << PA,1441826406,2482.867
+RX        << PA,1441829594,2488.646
+RX        << PA,1441832781,2522.803
+RX        << PA,1441835969,2579.155
+RX        << PA,1441839157,2606.592
+RX        << PA,1441842345,2655.360
+RX        << PA,1441845533,2690.458
+RX        << PA,1441848721,2698.848
+RX        << PA,1441851909,2728.455
+RX        << PA,1441855096,2775.955
+RX        << PA,1441858284,2828.448
+RX        << PA,1441861472,2856.864
+RX        << PA,1441864660,2869.517
+RX        << PA,1441867848,2860.147
+RX        << PA,1441871035,2891.808
+RX        << PA,1441874223,2929.267
+RX        << PA,1441877411,2942.419
+RX        << PA,1441880599,2954.438
+RX        << PA,1441883787,2969.856
+RX        << PA,1441886975,2980.742
+RX        << PA,1441890163,3010.464
+RX        << PA,1441893350,3029.818
+RX        << PA,1441896538,3023.866
+RX        << PA,1441899726,3046.675
+RX        << PA,1441902914,3045.542
+RX        << PA,1441906102,3047.463
+RX        << PA,1441909290,3041.184
+RX        << PA,1441912477,3014.227
+RX        << PA,1441915665,2991.859
+RX        << PA,1441918853,2977.210
+RX        << PA,1441922041,2932.589
+RX        << PA,1441925228,2906.611
+RX        << PA,1441928416,2864.448
+RX        << PA,1441931604,2829.024
+RX        << PA,1441934791,2788.147
+RX        << PA,1441937979,2770.560
+RX        << PA,1441941167,2681.683
+RX        << PA,1441944355,2680.032
+RX        << PA,1441947543,2596.627
+RX        << PA,1441950730,2526.125
+RX        << PA,1441953918,2501.741
+RX        << PA,1441957106,2417.990
+RX        << PA,1441960294,2362.714
+RX        << PA,1441963482,2318.631
+RX        << PA,1441966670,2238.547
+RX        << PA,1441969858,2152.666
+RX        << PA,1441973046,2101.594
+RX        << PA,1441976234,2028.902
+RX        << PA,1441979422,1922.861
+RX        << PA,1441982610,1880.391
+RX        << PA,1441985798,1843.680
+RX        << PA,1441988986,1782.202
+RX        << PA,1441992174,1698.336
+RX        << PA,1441995362,1654.272
+RX        << PA,1441998551,1638.317
+RX        << PA,1442001739,1659.437
+RX        << PA,1442004926,1629.927
+RX        << PA,1442008114,1648.013
+RX        << PA,1442011302,1665.638
+RX        << PA,1442014490,1661.472
+RX        << PA,1442017678,1673.261
+RX        << PA,1442020866,1646.957
+RX        << PA,1442024054,1608.096
+RX        << PA,1442027241,1603.066
+RX        << PA,1442030429,1606.502
+RX        << PA,1442033617,1616.237
+RX        << PA,1442036805,1600.512
+RX        << PA,1442039993,1566.278
+RX        << PA,1442043181,1567.392
+RX        << PA,1442046369,1574.362
+RX        << PA,1442049557,1584.000
+RX        << PA,1442052745,1569.734
+RX        << PA,1442055933,1541.357
+RX        << PA,1442059121,1552.051
+RX        << PA,1442062309,1553.126
+RX        << PA,1442065497,1569.523
+RX        << PA,1442068685,1546.733
+RX        << PA,1442071873,1511.174
+RX        << PA,1442075062,1536.000
+RX        << PA,1442078250,1547.078
+RX        << PA,1442081437,1555.949
+RX        << PA,1442084626,1545.600
+RX        << PA,1442087813,1526.534
+RX        << PA,1442091002,1536.192
+RX        << PA,1442094190,1536.230
+RX        << PA,1442097378,1546.157
+RX        << PA,1442100566,1541.990
+RX        << PA,1442103754,1527.533
+RX        << PA,1442106946,1520.467
+RX        << PA,1442110130,1524.883
+RX        << PA,1442113319,1541.606
+RX        << PA,1442116506,1532.371
+RX        << PA,1442119694,1507.027
+RX        << PA,1442122882,1501.459
+RX        << PA,1442126070,1495.584
+RX        << PA,1442129259,1514.784
+RX        << PA,1442132447,1503.245
+RX        << PA,1442135635,1487.405
+RX        << PA,1442138823,1485.101
+RX        << PA,1442142011,1479.149
+RX        << PA,1442145199,1507.085
+RX        << PA,1442148387,1488.826
+RX        << PA,1442151575,1476.173
+RX        << PA,1442154763,1477.210
+RX        << PA,1442157951,1459.949
+RX        << PA,1442161139,1460.275
+RX        << PA,1442164327,1446.758
+RX        << PA,1442167515,1413.869
+RX        << PA,1442170703,1429.440
+RX        << PA,1442173891,1429.286
+RX        << PA,1442177079,1435.622
+RX        << PA,1442180266,1417.920
+RX        << PA,1442183454,1379.386
+RX        << PA,1442186642,1373.971
+RX        << PA,1442189829,1390.157
+RX        << PA,1442193017,1396.992
+RX        << PA,1442196205,1373.837
+RX        << PA,1442199393,1354.752
+RX        << PA,1442202581,1357.382
+RX        << PA,1442205768,1344.672
+RX        << PA,1442208956,1350.355
+RX        << PA,1442212144,1316.160
+RX        << PA,1442215332,1315.258
+RX        << PA,1442218519,1321.075
+RX        << PA,1442221707,1303.757
+RX        << PA,1442224894,1327.219
+RX        << PA,1442228081,1310.381
+RX        << PA,1442231269,1271.386
+RX        << PA,1442234456,1296.135
+RX        << PA,1442237644,1302.182
+RX        << PA,1442240832,1298.266
+RX        << PA,1442244020,1285.978
+RX        << PA,1442247207,1245.715
+RX        << PA,1442250395,1236.807
+RX        << PA,1442253583,1226.938
+RX        << PA,1442256771,1240.224
+RX        << PA,1442259960,1236.269
+RX        << PA,1442263147,1214.438
+RX        << PA,1442266335,1211.866
+RX        << PA,1442269523,1205.856
+RX        << PA,1442272711,1224.307
+RX        << PA,1442275899,1221.754
+RX        << PA,1442279087,1193.261
+RX        << PA,1442282274,1187.194
+RX        << PA,1442285462,1190.803
+RX        << PA,1442288650,1214.534
+RX        << PA,1442291838,1217.683
+RX        << PA,1442295026,1180.685
+RX        << PA,1442298214,1176.211
+RX        << PA,1442301402,1133.549
+RX        << PA,1442304590,1058.150
+RX        << PA,1442307778,1042.445
+RX        << PA,1442310966,1007.942
+RX        << PA,1442314154,981.139
+RX        << PA,1442317342,966.701
+RX        << PA,1442320530,947.962
+RX        << PA,1442323719,930.547
+RX        << PA,1442326906,920.717
+RX        << PA,1442330093,930.682
+RX        << PA,1442333281,955.008
+RX        << PA,1442336467,925.229
+RX        << PA,1442339655,977.030
+RX        << PA,1442342842,1010.880
+RX        << PA,1442346030,1018.003
+RX        << PA,1442349218,1057.690
+RX        << PA,1442352406,1077.677
+RX        << PA,1442355594,1091.174
+RX        << PA,1442358781,1123.430
+RX        << PA,1442361969,1165.517
+RX        << PA,1442365156,1195.296
+RX        << PA,1442368344,1178.976
+RX        << PA,1442371531,1209.600
+RX        << PA,1442374718,1221.562
+RX        << PA,1442377906,1243.411
+RX        << PA,1442381094,1261.978
+RX        << PA,1442384281,1286.074
+RX        << PA,1442387468,1319.290
+RX        << PA,1442390656,1321.901
+RX        << PA,1442393844,1374.240
+RX        << PA,1442397032,1362.931
+RX        << PA,1442400219,1387.795
+RX        << PA,1442403407,1387.776
+RX        << PA,1442406594,1427.290
+RX        << PA,1442409781,1419.514
+RX        << PA,1442412968,1434.067
+RX        << PA,1442416155,1427.578
+RX        << PA,1442419342,1469.952
+RX        << PA,1442422529,1451.962
+RX        << PA,1442425716,1469.703
+RX        << PA,1442428903,1469.549
+RX        << PA,1442432091,1525.498
+RX        << PA,1442435278,1521.331
+RX        << PA,1442438466,1540.186
+RX        << PA,1442441653,1524.615
+RX        << PA,1442444840,1568.006
+RX        << PA,1442448028,1563.763
+RX        << PA,1442451215,1586.726
+RX        << PA,1442454403,1568.006
+RX        << PA,1442457590,1580.986
+RX        << PA,1442460777,1572.461
+RX        << PA,1442463964,1638.528
+RX        << PA,1442467152,1624.224
+RX        << PA,1442470339,1657.843
+RX        << PA,1442473527,1665.255
+RX        << PA,1442476715,1719.015
+RX        << PA,1442479902,1706.438
+RX        << PA,1442483089,1734.202
+RX        << PA,1442486277,1701.005
+RX        << PA,1442489464,1736.275
+RX        << PA,1442492652,1749.658
+RX        << PA,1442495839,1767.802
+RX        << PA,1442499026,1730.054
+RX        << PA,1442502214,1732.416
+RX        << PA,1442505402,1748.966
+RX        << PA,1442508590,1777.229
+RX        << PA,1442511778,1771.834
+RX        << PA,1442514966,1783.622
+RX        << PA,1442518153,1782.029
+RX        << PA,1442521341,1785.811
+RX        << PA,1442524528,1786.119
+RX        << PA,1442527717,1789.728
+RX        << PA,1442530905,1787.059
+RX        << PA,1442534092,1780.320
+RX        << PA,1442537280,1789.613
+RX        << PA,1442540468,1808.698
+RX        << PA,1442543656,1791.552
+RX        << PA,1442546845,1776.634
+RX        << PA,1442550033,1816.877
+RX        << PA,1442553221,1830.182
+RX        << PA,1442556409,1846.426
+RX        << PA,1442559597,1819.795
+RX        << PA,1442562785,1814.726
+RX        << PA,1442565976,1828.858
+RX        << PA,1442569161,1870.733
+RX        << PA,1442572349,1844.870
+RX        << PA,1442575537,1830.854
+RX        << PA,1442578725,1819.795
+RX        << PA,1442581913,1845.312
+RX        << PA,1442585102,1851.456
+RX        << PA,1442588290,1855.565
+RX        << PA,1442591478,1840.339
+RX        << PA,1442594666,1881.754
+RX        << PA,1442597854,1883.271
+RX        << PA,1442601042,1902.413
+RX        << PA,1442604230,1883.194
+RX        << PA,1442607418,1887.437
+RX        << PA,1442610605,1872.327
+RX        << PA,1442613793,1885.018
+RX        << PA,1442616980,1880.429
+RX        << PA,1442620168,1898.573
+RX        << PA,1442623356,1885.958
+RX        << PA,1442626543,1917.024
+RX        << PA,1442629731,1927.008
+RX        << PA,1442632919,1939.738
+RX        << PA,1442636107,1900.973
+RX        << PA,1442639295,1906.464
+RX        << PA,1442642483,1932.403
+RX        << PA,1442645671,1960.627
+RX        << PA,1442648859,1931.213
+RX        << PA,1442652047,1921.363
+RX        << PA,1442655235,1941.485
+RX        << PA,1442658422,1954.061
+RX        << PA,1442661610,1934.995
+RX        << PA,1442664798,1933.325
+RX        << PA,1442667985,1947.552
+RX        << PA,1442671173,1964.371
+RX        << PA,1442674361,1958.611
+RX        << PA,1442677549,1953.216
+RX        << PA,1442680737,1939.373
+RX        << PA,1442683925,1949.703
+RX        << PA,1442687113,1976.333
+RX        << PA,1442690301,1993.306
+RX        << PA,1442693490,1995.015
+RX        << PA,1442696677,2003.846
+RX        << PA,1442699865,2005.517
+RX        << PA,1442703053,2029.863
+RX        << PA,1442706241,2068.512
+RX        << PA,1442709429,2067.629
+RX        << PA,1442712617,2074.311
+RX        << PA,1442715804,2094.509
+RX        << PA,1442718993,2115.341
+RX        << PA,1442722181,2130.413
+RX        << PA,1442725368,2146.906
+RX        << PA,1442728556,2164.512
+RX        << PA,1442731744,2183.846
+RX        << PA,1442734932,2175.149
+RX        << PA,1442738120,2157.101
+RX        << PA,1442741308,2152.262
+RX        << PA,1442744496,2177.530
+RX        << PA,1442747684,2183.962
+RX        << PA,1442750872,2183.443
+RX        << PA,1442754060,2140.205
+RX        << PA,1442757248,2124.480
+RX        << PA,1442760436,2102.534
+RX        << PA,1442763624,2129.415
+RX        << PA,1442766811,2094.566
+RX        << PA,1442769999,2087.770
+RX        << PA,1442773187,2061.754
+RX        << PA,1442776374,2080.339
+RX        << PA,1442779562,2064.346
+RX        << PA,1442782750,2095.546
+RX        << PA,1442785938,2050.176
+RX        << PA,1442789126,2057.990
+RX        << PA,1442792314,2061.216
+RX        << PA,1442795501,2084.928
+RX        << PA,1442798689,2050.042
+RX        << PA,1442801877,2049.754
+RX        << PA,1442805065,2047.450
+RX        << PA,1442808253,2063.501
+RX        << PA,1442811441,2039.520
+RX        << PA,1442814628,2048.659
+RX        << PA,1442817815,2037.427
+RX        << PA,1442821003,2062.483
+RX        << PA,1442824190,2073.005
+RX        << PA,1442827378,2091.283
+RX        << PA,1442830565,2059.987
+RX        << PA,1442833753,2060.467
+RX        << PA,1442836940,2051.655
+RX        << PA,1442840127,2062.426
+RX        << PA,1442843315,2066.746
+RX        << PA,1442846502,2060.602
+RX        << PA,1442849690,2043.725
+RX        << PA,1442852878,2064.077
+RX        << PA,1442856066,2066.842
+RX        << PA,1442859254,2057.069
+RX        << PA,1442862441,2061.274
+RX        << PA,1442865629,2079.667
+RX        << PA,1442868817,2084.583
+RX        << PA,1442872005,2083.623
+RX        << PA,1442875192,2073.293
+RX        << PA,1442878380,2073.735
+RX        << PA,1442881568,2090.650
+RX        << PA,1442884756,2075.846
+RX        << PA,1442887943,2087.578
+RX        << PA,1442891131,2081.664
+RX        << PA,1442894319,2091.283
+RX        << PA,1442897505,2078.016
+RX        << PA,1442900693,2088.384
+RX        << PA,1442903880,2074.829
+RX        << PA,1442907068,2096.986
+RX        << PA,1442910255,2093.261
+RX        << PA,1442913442,2096.851
+RX        << PA,1442916629,2101.978
+RX        << PA,1442919817,2126.707
+RX        << PA,1442923005,2094.586
+RX        << PA,1442926192,2110.061
+RX        << PA,1442929380,2094.605
+RX        << PA,1442932566,2107.642
+RX        << PA,1442935754,2081.453
+RX        << PA,1442938942,2089.421
+RX        << PA,1442942129,2080.435
+RX        << PA,1442945316,2116.455
+RX        << PA,1442948504,2103.341
+RX        << PA,1442951691,2109.427
+RX        << PA,1442954879,2106.874
+RX        << PA,1442958067,2128.147
+RX        << PA,1442961255,2103.610
+RX        << PA,1442964442,2107.411
+RX        << PA,1442967630,2084.352
+RX        << PA,1442970817,2106.931
+RX        << PA,1442974005,2102.688
+RX        << PA,1442977192,2107.123
+RX        << PA,1442980380,2097.351
+RX        << PA,1442983568,2107.814
+RX        << PA,1442986756,2123.693
+RX        << PA,1442989943,2141.491
+RX        << PA,1442993131,2122.483
+RX        << PA,1442996319,2108.851
+RX        << PA,1442999506,2099.923
+RX        << PA,1443002694,2133.101
+RX        << PA,1443005881,2112.749
+RX        << PA,1443009069,2084.967
+RX        << PA,1443012256,2069.722
+RX        << PA,1443015444,2093.645
+RX        << PA,1443018632,2119.239
+RX        << PA,1443021819,2132.544
+RX        << PA,1443025007,2133.101
+RX        << PA,1443028195,2108.352
+RX        << PA,1443031382,2138.189
+RX        << PA,1443034569,2124.595
+RX        << PA,1443037756,2114.823
+RX        << PA,1443040943,2125.747
+RX        << PA,1443044130,2142.643
+RX        << PA,1443047317,2127.763
+RX        << PA,1443050504,2128.531
+RX        << PA,1443053691,2118.586
+RX        << PA,1443056878,2133.351
+RX        << PA,1443060066,2122.311
+RX        << PA,1443063253,2134.368
+RX        << PA,1443066440,2136.039
+RX        << PA,1443069628,2131.315
+RX        << PA,1443072816,2101.747
+RX        << PA,1443076006,2130.663
+RX        << PA,1443079192,2135.981
+RX        << PA,1443082379,2156.774
+RX        << PA,1443085566,2110.003
+RX        << PA,1443088753,2114.247
+RX        << PA,1443091940,2123.904
+RX        << PA,1443095128,2153.088
+RX        << PA,1443098316,2142.701
+RX        << PA,1443101503,2147.040
+RX        << PA,1443104691,2142.643
+RX        << PA,1443107879,2172.307
+RX        << PA,1443111067,2147.559
+RX        << PA,1443114254,2157.965
+RX        << PA,1443117442,2149.517
+RX        << PA,1443120630,2214.144
+RX        << PA,1443123817,2242.234
+RX        << PA,1443127005,2276.487
+RX        << PA,1443130193,2255.674
+RX        << PA,1443133381,2274.317
+RX        << PA,1443136569,2307.725
+RX        << PA,1443139756,2341.075
+RX        << PA,1443142944,2361.619
+RX        << PA,1443146132,2380.551
+RX        << PA,1443149319,2373.274
+RX        << PA,1443152506,2402.803
+RX        << PA,1443155694,2411.597
+RX        << PA,1443158882,2414.976
+RX        << PA,1443162069,2396.506
+RX        << PA,1443165257,2445.619
+RX        << PA,1443168445,2453.069
+RX        << PA,1443171632,2433.773
+RX        << PA,1443174820,2435.866
+RX        << PA,1443178008,2449.690
+RX        << PA,1443181196,2488.781
+RX        << PA,1443184384,2478.355
+RX        << PA,1443187572,2480.755
+RX        << PA,1443190760,2473.882
+RX        << PA,1443193948,2467.277
+RX        << PA,1443197136,2489.779
+RX        << PA,1443200324,2500.416
+RX        << PA,1443203512,2481.581
+RX        << PA,1443206699,2477.357
+RX        << PA,1443209887,2461.709
+RX        << PA,1443213076,2458.080
+RX        << PA,1443216263,2452.685
+RX        << PA,1443219451,2466.490
+RX        << PA,1443222639,2453.299
+RX        << PA,1443225827,2471.597
+RX        << PA,1443229015,2488.282
+RX        << PA,1443232203,2489.837
+RX        << PA,1443235391,2436.941
+RX        << PA,1443238580,2448.922
+RX        << PA,1443241768,2474.765
+RX        << PA,1443244956,2521.325
+RX        << PA,1443248144,2481.408
+RX        << PA,1443251331,2472.403
+RX        << PA,1443254519,2477.779
+RX        << PA,1443257707,2515.891
+RX        << PA,1443260894,2505.735
+RX        << PA,1443264082,2508.423
+RX        << PA,1443267270,2481.389
+RX        << PA,1443270458,2487.341
+RX        << PA,1443273646,2449.958
+RX        << PA,1443276835,2472.826
+RX        << PA,1443280022,2536.474
+RX        << PA,1443283210,2658.221
+RX        << PA,1443286398,2746.291
+RX        << PA,1443289589,2776.531
+RX        << PA,1443292774,2902.944
+RX        << PA,1443295962,2989.325
+RX        << PA,1443299150,3063.514
+RX        << PA,1443302338,3125.875
+RX        << PA,1443305525,3212.755
+RX        << PA,1443308713,3288.595
+RX        << PA,1443311900,3307.757
+RX        << PA,1443315088,3381.235
+RX        << PA,1443318276,3457.287
+RX        << PA,1443321464,3509.664
+RX        << PA,1443324651,3519.821
+RX        << PA,1443327839,3563.347
+RX        << PA,1443331026,3628.896
+RX        << PA,1443334214,3631.123
+RX        << PA,1443337401,3667.680
+RX        << PA,1443340588,3670.810
+RX        << PA,1443343776,3720.576
+RX        << PA,1443346962,3773.587
+RX        << PA,1443350150,3802.829
+RX        << PA,1443353337,3846.720
+RX        << PA,1443356525,3853.402
+RX        << PA,1443359712,3893.165
+RX        << PA,1443362899,3905.261
+RX        << PA,1443366087,3944.928
+RX        << PA,1443369275,3992.352
+RX        << PA,1443372462,4043.309
+RX        << PA,1443375649,4094.266
+RX        << PA,1443378837,4107.936
+RX        << PA,1443382025,4133.434
+RX        << PA,1443385212,4139.635
+RX        << PA,1443388400,4169.472
+RX        << PA,1443391588,4191.552
+RX        << PA,1443394775,4210.752
+RX        << PA,1443397963,4203.456
+RX        << PA,1443401150,4179.034
+RX        << PA,1443404338,4219.814
+RX        << PA,1443407526,4219.027
+RX        << PA,1443410713,4226.803
+RX        << PA,1443413901,4267.949
+RX        << PA,1443417088,4302.893
+RX        << PA,1443420276,4329.351
+RX        << PA,1443423463,4372.589
+RX        << PA,1443426650,4408.743
+RX        << PA,1443429837,4420.013
+RX        << PA,1443433025,4484.352
+RX        << PA,1443436212,4514.458
+RX        << PA,1443439399,4543.738
+RX        << PA,1443442587,4546.195
+RX        << PA,1443445774,4536.135
+RX        << PA,1443448961,4537.363
+RX        << PA,1443452148,4528.301
+RX        << PA,1443455335,4527.975
+RX        << PA,1443458523,4482.183
+RX        << PA,1443461710,4477.287
+RX        << PA,1443464897,4469.626
+RX        << PA,1443468084,4465.978
+RX        << PA,1443471271,4470.644
+RX        << PA,1443474458,4449.773
+RX        << PA,1443477645,4445.165
+RX        << PA,1443480832,4435.834
+RX        << PA,1443484019,4441.190
+RX        << PA,1443487206,4436.256
+RX        << PA,1443490393,4443.207
+RX        << PA,1443493581,4467.706
+RX        << PA,1443496768,4428.807
+RX        << PA,1443499955,4437.715
+RX        << PA,1443503143,4449.408
+RX        << PA,1443506330,4442.957
+RX        << PA,1443509518,4451.770
+RX        << PA,1443512705,4494.106
+RX        << PA,1443515893,4495.200
+RX        << PA,1443519081,4502.592
+RX        << PA,1443522269,4575.802
+RX        << PA,1443525456,4609.920
+RX        << PA,1443528644,4625.664
+RX        << PA,1443531832,4636.704
+RX        << PA,1443535020,4634.477
+RX        << PA,1443538208,4612.512
+RX        << PA,1443541395,4601.357
+RX        << PA,1443544583,4590.682
+RX        << PA,1443547771,4550.323
+RX        << PA,1443550959,4568.832
+RX        << PA,1443554147,4545.504
+RX        << PA,1443557334,4521.523
+RX        << PA,1443560522,4502.938
+RX        << PA,1443563709,4499.462
+RX        << PA,1443566897,4485.197
+RX        << PA,1443570085,4471.412
+RX        << PA,1443573273,4483.027
+RX        << PA,1443576461,4453.901
+RX        << PA,1443579649,4456.627
+RX        << PA,1443582837,4474.944
+RX        << PA,1443586025,4448.237
+RX        << PA,1443589213,4457.895
+RX        << PA,1443592401,4456.320
+RX        << PA,1443595589,4454.516
+RX        << PA,1443598777,4443.898
+RX        << PA,1443601965,4460.563
+RX        << PA,1443605152,4451.635
+RX        << PA,1443608340,4446.413
+RX        << PA,1443611527,4472.237
+RX        << PA,1443614714,4453.997
+RX        << PA,1443617901,4462.080
+RX        << PA,1443621089,4455.303
+RX        << PA,1443624276,4442.996
+RX        << PA,1443627464,4451.328
+RX        << PA,1443630651,4462.368
+RX        << PA,1443633839,4450.541
+RX        << PA,1443637027,4391.597
+RX        << PA,1443640215,4428.691
+RX        << PA,1443643402,4459.239
+RX        << PA,1443646590,4468.627
+RX        << PA,1443649777,4490.150
+RX        << PA,1443652965,4502.477
+RX        << PA,1443656152,4528.032
+RX        << PA,1443659340,4570.599
+RX        << PA,1443662528,4595.098
+RX        << PA,1443665715,4574.899
+RX        << PA,1443668903,4592.275
+RX        << PA,1443672091,4577.760
+RX        << PA,1443675279,4558.887
+RX        << PA,1443678466,4555.757
+RX        << PA,1443681653,4532.410
+RX        << PA,1443684841,4533.235
+RX        << PA,1443688028,4510.599
+RX        << PA,1443691216,4495.872
+RX        << PA,1443694403,4460.199
+RX        << PA,1443697590,4449.140
+RX        << PA,1443700778,4469.261
+RX        << PA,1443703965,4453.287
+RX        << PA,1443707153,4457.952
+RX        << PA,1443710341,4445.107
+RX        << PA,1443713528,4429.268
+RX        << PA,1443716716,4438.714
+RX        << PA,1443719903,4468.570
+RX        << PA,1443723091,4448.314
+RX        << PA,1443726279,4431.802
+RX        << PA,1443729467,4466.688
+RX        << PA,1443732655,4460.967
+RX        << PA,1443735842,4505.204
+RX        << PA,1443739031,4523.789
+RX        << PA,1443742218,4534.560
+RX        << PA,1443745406,4548.269
+RX        << PA,1443748593,4548.269
+RX        << PA,1443751781,4511.348
+RX        << PA,1443754968,4467.168
+RX        << PA,1443758156,4483.814
+RX        << PA,1443761344,4455.687
+RX        << PA,1443764531,4439.194
+RX        << PA,1443767719,4420.109
+RX        << PA,1443770907,4398.048
+RX        << PA,1443774095,4393.268
+RX        << PA,1443777282,4384.570
+RX        << PA,1443780470,4407.956
+RX        << PA,1443783658,4357.479
+RX        << PA,1443786845,4356.960
+RX        << PA,1443790033,4339.526
+RX        << PA,1443793220,4322.074
+RX        << PA,1443796408,4350.874
+RX        << PA,1443799596,4333.421
+RX        << PA,1443802783,4323.341
+RX        << PA,1443805971,4313.952
+RX        << PA,1443809159,4320.979
+RX        << PA,1443812347,4306.982
+RX        << PA,1443815535,4317.812
+RX        << PA,1443818723,4333.363
+RX        << PA,1443821911,4322.630
+RX        << PA,1443825099,4338.259
+RX        << PA,1443828287,4328.103
+RX        << PA,1443831475,4331.674
+RX        << PA,1443834664,4347.015
+RX        << PA,1443837852,4365.408
+RX        << PA,1443841040,4351.546
+RX        << PA,1443844228,4341.696
+RX        << PA,1443847416,4375.334
+RX        << PA,1443850604,4400.294
+RX        << PA,1443853792,4456.455
+RX        << PA,1443856980,4504.109
+RX        << PA,1443860168,4511.540
+RX        << PA,1443863356,4525.114
+RX        << PA,1443866543,4532.487
+RX        << PA,1443869731,4518.259
+RX        << PA,1443872919,4488.538
+RX        << PA,1443876107,4502.112
+RX        << PA,1443879294,4474.522
+RX        << PA,1443882481,4439.194
+RX        << PA,1443885669,4429.190
+RX        << PA,1443888856,4391.731
+RX        << PA,1443892045,4387.085
+RX        << PA,1443895232,4373.779
+RX        << PA,1443898420,4376.007
+RX        << PA,1443901607,4369.306
+RX        << PA,1443904795,4372.147
+RX        << PA,1443907982,4356.135
+RX        << PA,1443911169,4358.304
+RX        << PA,1443914357,4381.171
+RX        << PA,1443917545,4361.568
+RX        << PA,1443920733,4363.853
+RX        << PA,1443923921,4359.053
+RX        << PA,1443927108,4352.813
+RX        << PA,1443930298,4318.867
+RX        << PA,1443933484,4324.147
+RX        << PA,1443936671,4352.928
+RX        << PA,1443939859,4332.883
+RX        << PA,1443943050,4349.050
+RX        << PA,1443946235,4361.645
+RX        << PA,1443949422,4397.799
+RX        << PA,1443952610,4401.293
+RX        << PA,1443955797,4411.930
+RX        << PA,1443958985,4413.888
+RX        << PA,1443962173,4386.682
+RX        << PA,1443965361,4391.117
+RX        << PA,1443968549,4379.674
+RX        << PA,1443971736,4376.429
+RX        << PA,1443974924,4353.581
+RX        << PA,1443978112,4334.784
+RX        << PA,1443981300,4317.581
+RX        << PA,1443984487,4301.664
+RX        << PA,1443987675,4305.043
+RX        << PA,1443990862,4284.960
+RX        << PA,1443994050,4300.858
+RX        << PA,1443997237,4292.372
+RX        << PA,1444000425,4295.482
+RX        << PA,1444003613,4279.219
+RX        << PA,1444006800,4261.479
+RX        << PA,1444009988,4269.408
+RX        << PA,1444013176,4281.927
+RX        << PA,1444016364,4293.082
+RX        << PA,1444019551,4249.402
+RX        << PA,1444022739,4266.605
+RX        << PA,1444025927,4273.997
+RX        << PA,1444029114,4271.175
+RX        << PA,1444032302,4294.925
+RX        << PA,1444035490,4282.963
+RX        << PA,1444038677,4269.734
+RX        << PA,1444041865,4266.989
+RX        << PA,1444045052,4271.482
+RX        << PA,1444048240,4264.243
+RX        << PA,1444051427,4273.306
+RX        << PA,1444054614,4287.149
+RX        << PA,1444057802,4267.027
+RX        << PA,1444060990,4274.304
+RX        << PA,1444064177,4272.461
+RX        << PA,1444067365,4300.724
+RX        << PA,1444070552,4326.317
+RX        << PA,1444073740,4364.909
+RX        << PA,1444076927,4396.685
+RX        << PA,1444080115,4395.936
+RX        << PA,1444083303,4427.309
+RX        << PA,1444086491,4445.684
+RX        << PA,1444089679,4452.461
+RX        << PA,1444092866,4447.354
+RX        << PA,1444096054,4413.370
+RX        << PA,1444099242,4374.010
+RX        << PA,1444102429,4343.578
+RX        << PA,1444105617,4349.875
+RX        << PA,1444108804,4308.461
+RX        << PA,1444111992,4316.007
+RX        << PA,1444115180,4299.936
+RX        << PA,1444118368,4270.752
+RX        << PA,1444121555,4265.069
+RX        << PA,1444124743,4258.061
+RX        << PA,1444127930,4268.947
+RX        << PA,1444131118,4260.346
+RX        << PA,1444134306,4288.071
+RX        << PA,1444137493,4268.275
+RX        << PA,1444140680,4258.618
+RX        << PA,1444143868,4281.927
+RX        << PA,1444147055,4304.372
+RX        << PA,1444150243,4328.352
+RX        << PA,1444153431,4317.773
+RX        << PA,1444156619,4308.135
+RX        << PA,1444159806,4305.946
+RX        << PA,1444162995,4318.733
+RX        << PA,1444166182,4332.269
+RX        << PA,1444169370,4328.410
+RX        << PA,1444172558,4358.285
+RX        << PA,1444175745,4343.386
+RX        << PA,1444178933,4351.526
+RX        << PA,1444182120,4329.523
+RX        << PA,1444185308,4322.842
+RX        << PA,1444188496,4317.178
+RX        << PA,1444191683,4286.861
+RX        << PA,1444194871,4264.877
+RX        << PA,1444198059,4221.600
+RX        << PA,1444201246,4249.920
+RX        << PA,1444204434,4290.221
+RX        << PA,1444207621,4335.149
+RX        << PA,1444210809,4381.056
+RX        << PA,1444213997,4414.119
+RX        << PA,1444217184,4436.391
+RX        << PA,1444220372,4470.259
+RX        << PA,1444223559,4495.738
+RX        << PA,1444226747,4528.416
+RX        << PA,1444229935,4516.781
+RX        << PA,1444233123,4542.451
+RX        << PA,1444236311,4567.642
+RX        << PA,1444239499,4569.389
+RX        << PA,1444242687,4585.575
+RX        << PA,1444245874,4584.979
+RX        << PA,1444249062,4588.973
+RX        << PA,1444252249,4579.776
+RX        << PA,1444255437,4594.771
+RX        << PA,1444258624,4617.447
+RX        << PA,1444261812,4637.453
+RX        << PA,1444264999,4643.885
+RX        << PA,1444268187,4695.053
+RX        << PA,1444271375,4717.210
+RX        << PA,1444274563,4765.037
+RX        << PA,1444277751,4767.706
+RX        << PA,1444280938,4806.701
+RX        << PA,1444284126,4861.978
+RX        << PA,1444287314,4898.784
+RX        << PA,1444290501,4897.171
+RX        << PA,1444293688,4870.483
+RX        << PA,1444296875,4875.571
+RX        << PA,1444300063,4862.573
+RX        << PA,1444303251,4843.008
+RX        << PA,1444306439,4810.272
+RX        << PA,1444309627,4791.322
+RX        << PA,1444312814,4778.400
+RX        << PA,1444316003,4792.858
+RX        << PA,1444319191,4789.632
+RX        << PA,1444322379,4785.773
+RX        << PA,1444325567,4740.480
+RX        << PA,1444328755,4762.637
+RX        << PA,1444331943,4780.512
+RX        << PA,1444335131,4786.541
+RX        << PA,1444338319,4785.523
+RX        << PA,1444341507,4780.436
+RX        << PA,1444344694,4823.482
+RX        << PA,1444347882,4876.051
+RX        << PA,1444351070,4878.029
+RX        << PA,1444354258,4882.810
+RX        << PA,1444357446,4881.542
+RX        << PA,1444360634,4859.655
+RX        << PA,1444363821,4833.062
+RX        << PA,1444367010,4780.032
+RX        << PA,1444370197,4765.690
+RX        << PA,1444373386,4691.367
+RX        << PA,1444376573,4700.602
+RX        << PA,1444379761,4708.205
+RX        << PA,1444382949,4716.115
+RX        << PA,1444386137,4705.997
+RX        << PA,1444389325,4698.644
+RX        << PA,1444392512,4699.392
+RX        << PA,1444395700,4706.727
+RX        << PA,1444398888,4726.695
+RX        << PA,1444402076,4723.565
+RX        << PA,1444405264,4701.792
+RX        << PA,1444408451,4716.211
+RX        << PA,1444411639,4735.162
+RX        << PA,1444414827,4720.724
+RX        << PA,1444418014,4745.050
+RX        << PA,1444421202,4723.565
+RX        << PA,1444424389,4744.147
+RX        << PA,1444427577,4745.703
+RX        << PA,1444430765,4756.474
+RX        << PA,1444433953,4734.605
+RX        << PA,1444437141,4720.646
+RX        << PA,1444440329,4729.997
+RX        << PA,1444443517,4752.576
+RX        << PA,1444446705,4783.834
+RX        << PA,1444449892,4812.480
+RX        << PA,1444453080,4841.664
+RX        << PA,1444456268,4885.786
+RX        << PA,1444459455,4885.056
+RX        << PA,1444462643,4861.670
+RX        << PA,1444465831,4873.863
+RX        << PA,1444469019,4835.559
+RX        << PA,1444472206,4822.848
+RX        << PA,1444475394,4800.346
+RX        << PA,1444478582,4771.469
+RX        << PA,1444481769,4735.450
+RX        << PA,1444484957,4733.319
+RX        << PA,1444488144,4725.735
+RX        << PA,1444491332,4727.175
+RX        << PA,1444494519,4710.029
+RX        << PA,1444497707,4715.386
+RX        << PA,1444500895,4719.802
+RX        << PA,1444504083,4720.589
+RX        << PA,1444507271,4716.288
+RX        << PA,1444510458,4687.604
+RX        << PA,1444513646,4709.895
+RX        << PA,1444516834,4701.715
+RX        << PA,1444520022,4726.407
+RX        << PA,1444523209,4747.450
+RX        << PA,1444526397,4782.797
+RX        << PA,1444529584,4773.869
+RX        << PA,1444532772,4782.989
+RX        << PA,1444535959,4808.391
+RX        << PA,1444539147,4831.507
+RX        << PA,1444542335,4797.140
+RX        << PA,1444545522,4780.301
+RX        << PA,1444548709,4786.195
+RX        << PA,1444551896,4779.821
+RX        << PA,1444555084,4766.400
+RX        << PA,1444558272,4746.874
+RX        << PA,1444561460,4752.230
+RX        << PA,1444564647,4730.477
+RX        << PA,1444567835,4728.749
+RX        << PA,1444571022,4729.018
+RX        << PA,1444574210,4729.498
+RX        << PA,1444577398,4698.029
+RX        << PA,1444580585,4701.082
+RX        << PA,1444583773,4711.469
+RX        << PA,1444586960,4732.800
+RX        << PA,1444590148,4724.928
+RX        << PA,1444593335,4729.018
+RX        << PA,1444596523,4732.493
+RX        << PA,1444599712,4722.279
+RX        << PA,1444602899,4711.200
+RX        << PA,1444606086,4714.387
+RX        << PA,1444609274,4708.378
+RX        << PA,1444612461,4685.280
+RX        << PA,1444615649,4693.075
+RX        << PA,1444618836,4706.074
+RX        << PA,1444622024,4728.192
+RX        << PA,1444625211,4679.309
+RX        << PA,1444628399,4679.443
+RX        << PA,1444631586,4696.589
+RX        << PA,1444634774,4739.175
+RX        << PA,1444637962,4738.867
+RX        << PA,1444641149,4745.568
+RX        << PA,1444644337,4782.797
+RX        << PA,1444647525,4798.771
+RX        << PA,1444650713,4800.480
+RX        << PA,1444653900,4793.933
+RX        << PA,1444657088,4779.994
+RX        << PA,1444660275,4751.271
+RX        << PA,1444663463,4755.168
+RX        << PA,1444666650,4748.294
+RX        << PA,1444669838,4749.197
+RX        << PA,1444673025,4724.563
+RX        << PA,1444676213,4728.327
+RX        << PA,1444679400,4731.744
+RX        << PA,1444682587,4744.685
+RX        << PA,1444685775,4730.055
+RX        << PA,1444688962,4724.429
+RX        << PA,1444692149,4737.062
+RX        << PA,1444695337,4731.956
+RX        << PA,1444698525,4722.317
+RX        << PA,1444701713,4701.754
+RX        << PA,1444704900,4702.042
+RX        << PA,1444708088,4743.379
+RX        << PA,1444711275,4769.684
+RX        << PA,1444714463,4799.405
+RX        << PA,1444717651,4805.741
+RX        << PA,1444720838,4742.957
+RX        << PA,1444724026,4762.464
+RX        << PA,1444727215,4761.293
+RX        << PA,1444730402,4762.675
+RX        << PA,1444733590,4720.167
+RX        << PA,1444736778,4691.002
+RX        << PA,1444739966,4680.730
+RX        << PA,1444743154,4701.120
+RX        << PA,1444746342,4696.339
+RX        << PA,1444749529,4701.235
+RX        << PA,1444752717,4693.978
+RX        << PA,1444755905,4702.138
+RX        << PA,1444759093,4723.507
+RX        << PA,1444762281,4699.124
+RX        << PA,1444765469,4696.378
+RX        << PA,1444768657,4682.554
+RX        << PA,1444771844,4687.892
+RX        << PA,1444775032,4700.832
+RX        << PA,1444778219,4745.376
+RX        << PA,1444781407,4720.685
+RX        << PA,1444784594,4737.907
+RX        << PA,1444787782,4745.626
+RX        << PA,1444790969,4746.912
+RX        << PA,1444794157,4746.086
+RX        << PA,1444797344,4763.770
+RX        << PA,1444800532,4772.275
+RX        << PA,1444803719,4804.339
+RX        << PA,1444806907,4835.175
+RX        << PA,1444810094,4856.544
+RX        << PA,1444813282,4869.466
+RX        << PA,1444816469,4843.219
+RX        << PA,1444819657,4844.832
+RX        << PA,1444822844,4816.167
+RX        << PA,1444826032,4823.981
+RX        << PA,1444829219,4792.992
+RX        << PA,1444832407,4762.714
+RX        << PA,1444835594,4761.024
+RX        << PA,1444838781,4759.124
+RX        << PA,1444841968,4765.632
+RX        << PA,1444845156,4761.850
+RX        << PA,1444848343,4767.821
+RX        << PA,1444851530,4801.037
+RX        << PA,1444854718,4781.472
+RX        << PA,1444857905,4754.535
+RX        << PA,1444861093,4751.232
+RX        << PA,1444864281,4740.365
+RX        << PA,1444867469,4752.883
+RX        << PA,1444870657,4735.623
+RX        << PA,1444873844,4768.531
+RX        << PA,1444877032,4765.651
+RX        << PA,1444880219,4763.655
+RX        << PA,1444883407,4802.266
+RX        << PA,1444886595,4812.039
+RX        << PA,1444889783,4779.667
+RX        << PA,1444892971,4769.779
+RX        << PA,1444896159,4766.323
+RX        << PA,1444899346,4769.204
+RX        << PA,1444902534,4743.687
+RX        << PA,1444905722,4753.268
+RX        << PA,1444908909,4769.837
+RX        << PA,1444912097,4751.348
+RX        << PA,1444915284,4757.799
+RX        << PA,1444918472,4756.819
+RX        << PA,1444921659,4768.109
+RX        << PA,1444924847,4741.901
+RX        << PA,1444928035,4754.535
+RX        << PA,1444931223,4750.502
+RX        << PA,1444934410,4766.247
+RX        << PA,1444937598,4780.090
+RX        << PA,1444940785,4767.571
+RX        << PA,1444943973,4749.504
+RX        << PA,1444947161,4762.311
+RX        << PA,1444950349,4687.412
+RX        << PA,1444953536,4456.916
+RX        << PA,1444956724,4214.189
+RX        << PA,1444959911,3932.295
+RX        << PA,1444963099,3728.352
+RX        << PA,1444966287,3562.541
+RX        << PA,1444969475,3412.051
+RX        << PA,1444972663,3249.869
+RX        << PA,1444975851,3117.504
+RX        << PA,1444979040,3007.814
+RX        << PA,1444982228,2829.888
+RX        << PA,1444985416,2725.863
+RX        << PA,1444988604,2637.523
+RX        << PA,1444991792,2548.282
+RX        << PA,1444994980,2405.952
+RX        << PA,1444998168,2333.837
+RX        << PA,1445001355,2248.858
+RX        << PA,1445004543,2147.750
+RX        << PA,1445007731,2097.658
+RX        << PA,1445010919,2016.230
+RX        << PA,1445014107,1910.343
+RX        << PA,1445017294,1794.547
+RX        << PA,1445020482,1733.299
+RX        << PA,1445023670,1616.813
+RX        << PA,1445026857,1598.246
+RX        << PA,1445030045,1538.400
+RX        << PA,1445033232,1490.803
+RX        << PA,1445036420,1484.755
+RX        << PA,1445039609,1444.339
+RX        << PA,1445042797,1379.155
+RX        << PA,1445045984,1383.091
+RX        << PA,1445049172,1383.514
+RX        << PA,1445052359,1324.550
+RX        << PA,1445055547,1319.059
+RX        << PA,1445058735,1286.285
+RX        << PA,1445061923,1244.314
+RX        << PA,1445065111,1175.501
+RX        << PA,1445068299,1189.555
+RX        << PA,1445071487,1176.922
+RX        << PA,1445074675,1134.931
+RX        << PA,1445077863,1135.699
+RX        << PA,1445081051,1133.126
+RX        << PA,1445084239,1095.552
+RX        << PA,1445087427,1040.045
+RX        << PA,1445090615,1016.083
+RX        << PA,1445093802,1004.141
+RX        << PA,1445096990,970.522
+RX        << PA,1445100178,944.851
+RX        << PA,1445103366,941.280
+RX        << PA,1445106554,901.920
+RX        << PA,1445109742,863.174
+RX        << PA,1445112930,830.515
+RX        << PA,1445116118,834.432
+RX        << PA,1445119306,855.802
+RX        << PA,1445122494,868.954
+RX        << PA,1445125682,925.843
+RX        << PA,1445128870,950.189
+RX        << PA,1445132058,954.413
+RX        << PA,1445135246,977.242
+RX        << PA,1445138434,1008.422
+RX        << PA,1445141622,1031.789
+RX        << PA,1445144810,1047.667
+RX        << PA,1445147997,1040.928
+RX        << PA,1445151186,1043.386
+RX        << PA,1445154374,1064.064
+RX        << PA,1445157564,1099.565
+RX        << PA,1445160749,1112.582
+RX        << PA,1445163937,1084.608
+RX        << PA,1445167125,1082.304
+RX        << PA,1445170313,1093.862
+RX        << PA,1445173501,1103.271
+RX        << PA,1445176689,1143.418
+RX        << PA,1445179876,1148.928
+RX        << PA,1445183065,1129.325
+RX        << PA,1445186252,1128.442
+RX        << PA,1445189440,1156.973
+RX        << PA,1445192628,1174.214
+RX        << PA,1445195816,1172.678
+RX        << PA,1445199003,1160.179
+RX        << PA,1445202191,1171.450
+RX        << PA,1445205379,1177.152
+RX        << PA,1445208567,1196.544
+RX        << PA,1445211755,1184.083
+RX        << PA,1445214943,1185.312
+RX        << PA,1445218131,1182.125
+RX        << PA,1445221319,1183.968
+RX        << PA,1445224506,1205.779
+RX        << PA,1445227694,1195.315
+RX        << PA,1445230882,1198.522
+RX        << PA,1445234069,1201.018
+RX        << PA,1445237257,1186.906
+RX        << PA,1445240445,1199.674
+RX        << PA,1445243633,1197.715
+RX        << PA,1445246820,1184.947
+RX        << PA,1445250007,1189.555
+RX        << PA,1445253195,1204.493
+RX        << PA,1445256383,1203.398
+RX        << PA,1445259571,1208.966
+RX        << PA,1445262758,1210.963
+RX        << PA,1445265946,1221.830
+RX        << PA,1445269134,1225.651
+RX        << PA,1445272321,1233.293
+RX        << PA,1445275509,1208.352
+RX        << PA,1445278697,1215.437
+RX        << PA,1445281885,1221.178
+RX        << PA,1445285073,1218.086
+RX        << PA,1445288261,1231.584
+RX        << PA,1445291449,1225.843
+RX        << PA,1445294636,1211.482
+RX        << PA,1445297824,1206.375
+RX        << PA,1445301012,1224.576
+RX        << PA,1445304200,1229.990
+RX        << PA,1445307388,1217.837
+RX        << PA,1445310576,1233.350
+RX        << PA,1445313763,1236.307
+RX        << PA,1445316951,1232.218
+RX        << PA,1445320139,1250.995
+RX        << PA,1445323327,1237.286
+RX        << PA,1445326515,1231.546
+RX        << PA,1445329703,1256.563
+RX        << PA,1445332891,1257.888
+RX        << PA,1445336079,1257.158
+RX        << PA,1445339266,1241.146
+RX        << PA,1445342454,1226.861
+RX        << PA,1445345643,1234.982
+RX        << PA,1445348831,1236.902
+RX        << PA,1445352019,1256.237
+RX        << PA,1445355207,1243.047
+RX        << PA,1445358395,1245.043
+RX        << PA,1445361583,1248.518
+RX        << PA,1445364772,1245.158
+RX        << PA,1445367960,1243.642
+RX        << PA,1445371148,1240.954
+RX        << PA,1445374336,1162.080
+RX        << PA,1445377523,1110.970
+RX        << PA,1445380711,1080.749
+RX        << PA,1445383898,1047.341
+RX        << PA,1445387086,1033.440
+RX        << PA,1445390274,995.712
+RX        << PA,1445393461,928.109
+RX        << PA,1445396649,891.187
+RX        << PA,1445399837,899.155
+RX        << PA,1445403025,921.600
+RX        << PA,1445406213,939.245
+RX        << PA,1445409401,950.726
+RX        << PA,1445412589,993.696
+RX        << PA,1445415776,1034.381
+RX        << PA,1445418964,1063.757
+RX        << PA,1445422152,1124.621
+RX        << PA,1445425340,1145.107
+RX        << PA,1445428528,1166.362
+RX        << PA,1445431715,1222.886
+RX        << PA,1445434903,1244.448
+RX        << PA,1445438091,1313.031
+RX        << PA,1445441279,1368.864
+RX        << PA,1445444466,1447.622
+RX        << PA,1445447654,1509.638
+RX        << PA,1445450842,1583.885
+RX        << PA,1445454031,1664.141
+RX        << PA,1445457219,1728.807
+RX        << PA,1445460407,1803.456
+RX        << PA,1445463595,1867.162
+RX        << PA,1445466783,1961.088
+RX        << PA,1445469971,2065.690
+RX        << PA,1445473162,2178.183
+RX        << PA,1445476347,2289.850
+RX        << PA,1445479535,2383.392
+RX        << PA,1445482723,2433.370
+RX        << PA,1445485911,2482.714
+RX        << PA,1445489099,2566.944
+RX        << PA,1445492286,2626.522
+RX        << PA,1445495475,2658.931
+RX        << PA,1445498663,2693.645
+RX        << PA,1445501850,2754.240
+RX        << PA,1445505038,2808.883
+RX        << PA,1445508226,2832.903
+RX        << PA,1445511414,2894.573
+RX        << PA,1445514602,2934.375
+RX        << PA,1445517790,2945.779
+RX        << PA,1445520977,2970.432
+RX        << PA,1445524165,3014.035
+RX        << PA,1445527353,3060.000
+RX        << PA,1445530540,3075.552
+RX        << PA,1445533728,3063.898
+RX        << PA,1445536916,3108.807
+RX        << PA,1445540104,3144.442
+RX        << PA,1445543291,3148.416
+RX        << PA,1445546479,3181.190
+RX        << PA,1445549666,3219.398
+RX        << PA,1445552854,3225.389
+RX        << PA,1445556041,3213.216
+RX        << PA,1445559229,3251.059
+RX        << PA,1445562416,3301.459
+RX        << PA,1445565603,3274.195
+RX        << PA,1445568791,3273.043
+RX        << PA,1445571978,3309.984
+RX        << PA,1445575166,3299.271
+RX        << PA,1445578353,3288.423
+RX        << PA,1445581541,3322.464
+RX        << PA,1445584728,3327.207
+RX        << PA,1445587916,3320.640
+RX        << PA,1445591103,3340.608
+RX        << PA,1445594290,3367.527
+RX        << PA,1445597478,3389.357
+RX        << PA,1445600665,3385.997
+RX        << PA,1445603852,3377.933
+RX        << PA,1445607040,3341.645
+RX        << PA,1445610227,3294.144
+RX        << PA,1445613415,3259.392
+RX        << PA,1445616602,3241.594
+RX        << PA,1445619790,3221.491
+RX        << PA,1445622977,3158.535
+RX        << PA,1445626164,3112.666
+RX        << PA,1445629352,3075.111
+RX        << PA,1445632539,3015.111
+RX        << PA,1445635727,2955.648
+RX        << PA,1445638914,2905.920
+RX        << PA,1445642102,2834.112
+RX        << PA,1445645289,2814.797
+RX        << PA,1445648476,2744.448
+RX        << PA,1445651663,2652.653
+RX        << PA,1445654851,2590.906
+RX        << PA,1445658038,2526.355
+RX        << PA,1445661226,2448.269
+RX        << PA,1445664413,2401.114
+RX        << PA,1445667600,2324.621
+RX        << PA,1445670788,2223.859
+RX        << PA,1445673976,2153.165
+RX        << PA,1445677163,2084.736
+RX        << PA,1445680354,2009.031
+RX        << PA,1445683538,1949.798
+RX        << PA,1445686726,1863.879
+RX        << PA,1445689914,1767.168
+RX        << PA,1445693102,1724.294
+RX        << PA,1445696290,1699.642
+RX        << PA,1445699477,1708.762
+RX        << PA,1445702665,1718.151
+RX        << PA,1445705852,1711.296
+RX        << PA,1445709040,1705.594
+RX        << PA,1445712228,1730.170
+RX        << PA,1445715415,1719.552
+RX        << PA,1445718603,1719.917
+RX        << PA,1445721791,1703.309
+RX        << PA,1445724979,1667.271
+RX        << PA,1445728167,1684.147
+RX        << PA,1445731354,1685.261
+RX        << PA,1445734542,1687.795
+RX        << PA,1445737730,1640.986
+RX        << PA,1445740918,1596.634
+RX        << PA,1445744106,1606.906
+RX        << PA,1445747294,1608.461
+RX        << PA,1445750481,1603.104
+RX        << PA,1445753669,1583.290
+RX        << PA,1445756857,1546.099
+RX        << PA,1445760045,1531.392
+RX        << PA,1445763233,1518.221
+RX        << PA,1445766420,1537.344
+RX        << PA,1445769607,1529.165
+RX        << PA,1445772794,1482.163
+RX        << PA,1445775982,1477.325
+RX        << PA,1445779170,1473.389
+RX        << PA,1445782358,1481.990
+RX        << PA,1445785545,1472.429
+RX        << PA,1445788733,1436.486
+RX        << PA,1445791920,1423.488
+RX        << PA,1445795108,1432.858
+RX        << PA,1445798296,1427.597
+RX        << PA,1445801483,1413.504
+RX        << PA,1445804671,1375.296
+RX        << PA,1445807859,1377.946
+RX        << PA,1445811047,1389.677
+RX        << PA,1445814235,1392.499
+RX        << PA,1445817422,1378.445
+RX        << PA,1445820609,1355.520
+RX        << PA,1445823797,1342.310
+RX        << PA,1445826984,1336.819
+RX        << PA,1445830172,1356.883
+RX        << PA,1445833360,1353.658
+RX        << PA,1445836547,1308.768
+RX        << PA,1445839734,1307.117
+RX        << PA,1445842921,1313.894
+RX        << PA,1445846109,1327.738
+RX        << PA,1445849296,1317.581
+RX        << PA,1445852484,1281.946
+RX        << PA,1445855672,1270.618
+RX        << PA,1445858859,1270.790
+RX        << PA,1445862047,1282.138
+RX        << PA,1445865235,1280.640
+RX        << PA,1445868422,1251.802
+RX        << PA,1445871610,1237.306
+RX        << PA,1445874798,1240.416
+RX        << PA,1445877985,1274.035
+RX        << PA,1445881173,1280.218
+RX        << PA,1445884361,1251.802
+RX        << PA,1445887548,1236.941
+RX        << PA,1445890736,1240.589
+RX        << PA,1445893923,1251.917
+RX        << PA,1445897111,1246.618
+RX        << PA,1445900298,1220.698
+RX        << PA,1445903485,1215.495
+RX        << PA,1445906673,1229.952
+RX        << PA,1445909861,1230.394
+RX        << PA,1445913048,1223.098
+RX        << PA,1445916237,1219.872
+RX        << PA,1445919425,1215.226
+RX        << PA,1445922613,1208.083
+RX        << PA,1445925801,1212.807
+RX        << PA,1445928989,1230.720
+RX        << PA,1445932176,1204.090
+RX        << PA,1445935364,1181.530
+RX        << PA,1445938551,1193.760
+RX        << PA,1445941739,1202.573
+RX        << PA,1445944926,1205.971
+RX        << PA,1445948114,1182.029
+RX        << PA,1445951302,1174.522
+RX        << PA,1445954489,1179.187
+RX        << PA,1445957678,1188.115
+RX        << PA,1445960865,1216.013
+RX        << PA,1445964053,1187.943
+RX        << PA,1445967242,1172.371
+RX        << PA,1445970429,1185.581
+RX        << PA,1445973617,1182.336
+RX        << PA,1445976805,1183.373
+RX        << PA,1445979993,1167.744
+RX        << PA,1445983181,1177.018
+RX        << PA,1445986369,1193.472
+RX        << PA,1445989557,1184.966
+RX        << PA,1445992745,1181.395
+RX        << PA,1445995933,1182.778
+RX        << PA,1445999121,1116.326
+RX        << END PA_CAPTURE
+RX        << ok
+TX 16/1044   G1 X20 Y15.500 F7200
+RX        << ok
+TX 17/1044   G1 X120.0 Y15.500 E4.5733 F1200
+RX        << ok
+TX 18/1044   G1 E-0.400 F2400
+RX        << ok
+TX 19/1044   G1 X130.0 F7200
+RX        << ok
+TX 20/1044   G1 Z0.200 F600
+RX        << ok
+TX 21/1044   G1 X61.000 Y58.000 F7200
+RX        << e
+RX        << cho:busy: processing
+RX        << ok
+TX 22/1044   G1 E0.400 F2400
+RX        << ok
+TX 23/1044   G1 X64.000 Y58.000 E0.1372 F1200
+RX        << ok
+TX 24/1044   G1 X64.000 Y62.000 E0.1829 F1200
+RX        << ok
+TX 25/1044   G1 X61.000 Y62.000 E0.1372 F1200
+RX        << ok
+PROGRESS 25/1044 (2.4%) ETA 2:29:09  T:215.58/215.00  B:60.02/60.00
+TX 26/1044   G1 X61.000 Y58.000 E0.1829 F1200
+RX        << ok
+TX 27/1044   G1 E-0.400 F2400
+RX        << ok
+TX 28/1044   G1 X65.750 Y58.000 F7200
+RX        << ok
+TX 29/1044   G1 E0.400 F2400
+RX        << ok
+TX 30/1044   G1 X67.250 Y58.000 E0.0686 F1200
+RX        << ok
+TX 31/1044   G1 E-0.400 F2400
+RX        << ok
+TX 32/1044   G1 X69.000 Y58.000 F7200
+RX        << ok
+TX 33/1044   G1 E0.400 F2400
+RX        << ok
+TX 34/1044   G1 X72.000 Y58.000 E0.1372 F1200
+RX        << ok
+TX 35/1044   G1 X72.000 Y62.000 E0.1829 F1200
+RX        << ok
+TX 36/1044   G1 X69.000 Y62.000 E0.1372 F1200
+RX        << ok
+TX 37/1044   G1 X69.000 Y58.000 E0.1829 F1200
+RX        << ok
+TX 38/1044   G1 E-0.400 F2400
+RX        << ok
+TX 39/1044   G1 X73.000 Y62.000 F7200
+RX        << ok
+TX 40/1044   G1 E0.400 F2400
+RX        << ok
+TX 41/1044   G1 X73.000 Y60.000 E0.0915 F1200
+RX        << ok
+TX 42/1044   G1 X76.000 Y60.000 E0.1372 F1200
+RX        << ok
+TX 43/1044   G1 X76.000 Y62.000 E0.0915 F1200
+RX        << ok
+TX 44/1044   G1 X76.000 Y58.000 E0.1829 F1200
+RX        << ok
+TX 45/1044   G1 E-0.400 F2400
+RX        << ok
+TX 46/1044   G1 X77.000 Y58.000 F7200
+RX        << ok
+TX 47/1044   G1 E0.400 F2400
+RX        << ok
+TX 48/1044   G1 X80.000 Y58.000 E0.1372 F1200
+RX        << ok
+TX 49/1044   G1 X80.000 Y62.000 E0.1829 F1200
+RX        << ok
+TX 50/1044   G1 X77.000 Y62.000 E0.1372 F1200
+RX        << ok
+PROGRESS 50/1044 (4.8%) ETA 1:13:41  T:215.58/215.00  B:60.02/60.00
+TX 51/1044   G1 X77.000 Y58.000 E0.1829 F1200
+RX        << ok
+TX 52/1044   G1 E-0.400 F2400
+RX        << ok
+TX 53/1044   M900 K0.0400
+RX        << e
+RX        << cho:busy: processing
+RX        << ok
+TX 54/1044   G1 X85.000 Y60.000 F7200
+RX        << ok
+TX 55/1044   G1 E0.400 F2400
+RX        << ok
+TX 56/1044   G1 X110.000 E1.1433 F1200
+RX        << ok
+TX 57/1044   G1 X140.000 E1.3720 F6000
+RX        << ok
+TX 58/1044   G1 X165.000 E1.1433 F1200
+RX        << ok
+TX 59/1044   G1 E-0.400 F2400
+RX        << ok
+TX 60/1044   M900 K0.0430
+RX        << e
+RX        << cho:busy: processing
+RX        << ok
+TX 61/1044   G1 X85.000 Y63.000 F7200
+RX        << ok
+TX 62/1044   G1 E0.400 F2400
+RX        << ok
+TX 63/1044   G1 X110.000 E1.1433 F1200
+RX        << ok
+TX 64/1044   G1 X140.000 E1.3720 F6000
+RX        << ok
+TX 65/1044   G1 X165.000 E1.1433 F1200
+RX        << ok
+TX 66/1044   G1 E-0.400 F2400
+RX        << ok
+TX 67/1044   M900 K0.0460
+RX        << e
+RX        << cho:busy: processing
+RX        << ok
+TX 68/1044   G1 X85.000 Y66.000 F7200
+RX        << ok
+TX 69/1044   G1 E0.400 F2400
+RX        << ok
+TX 70/1044   G1 X110.000 E1.1433 F1200
+RX        << ok
+TX 71/1044   G1 X140.000 E1.3720 F6000
+RX        << ok
+TX 72/1044   G1 X165.000 E1.1433 F1200
+RX        << ok
+TX 73/1044   G1 E-0.400 F2400
+RX        << ok
+TX 74/1044   G1 X61.000 Y67.000 F7200
+RX        << ok
+TX 75/1044   G1 E0.400 F2400
+RX        << ok
+PROGRESS 75/1044 (7.2%) ETA 0:50:37  T:215.58/215.00  B:60.02/60.00
+TX 76/1044   G1 X64.000 Y67.000 E0.1372 F1200
+RX        << ok
+TX 77/1044   G1 X64.000 Y71.000 E0.1829 F1200
+RX        << ok
+TX 78/1044   G1 X61.000 Y71.000 E0.1372 F1200
+RX        << ok
+TX 79/1044   G1 X61.000 Y67.000 E0.1829 F1200
+RX        << ok
+TX 80/1044   G1 E-0.400 F2400
+RX        << ok
+TX 81/1044   G1 X65.750 Y67.000 F7200
+RX        << ok
+TX 82/1044   G1 E0.400 F2400
+RX        << ok
+TX 83/1044   G1 X67.250 Y67.000 E0.0686 F1200
+RX        << ok
+TX 84/1044   G1 E-0.400 F2400
+RX        << ok
+TX 85/1044   G1 X69.000 Y67.000 F7200
+RX        << ok
+TX 86/1044   G1 E0.400 F2400
+RX        << ok
+TX 87/1044   G1 X72.000 Y67.000 E0.1372 F1200
+RX        << ok
+TX 88/1044   G1 X72.000 Y71.000 E0.1829 F1200
+RX        << ok
+TX 89/1044   G1 X69.000 Y71.000 E0.1372 F1200
+RX        << ok
+TX 90/1044   G1 X69.000 Y67.000 E0.1829 F1200
+RX        << ok
+TX 91/1044   G1 E-0.400 F2400
+RX        << ok
+TX 92/1044   G1 X73.000 Y71.000 F7200
+RX        << ok
+TX 93/1044   G1 E0.400 F2400
+RX        << ok
+TX 94/1044   G1 X73.000 Y69.000 E0.0915 F1200
+RX        << ok
+TX 95/1044   G1 X76.000 Y69.000 E0.1372 F1200
+RX        << ok
+TX 96/1044   G1 X76.000 Y71.000 E0.0915 F1200
+RX        << ok
+TX 97/1044   G1 X76.000 Y67.000 E0.1829 F1200
+RX        << ok
+TX 98/1044   G1 E-0.400 F2400
+RX        << ok
+TX 99/1044   G1 X77.000 Y67.000 F7200
+RX        << ok
+TX 100/1044   G1 E0.400 F2400
+RX        << ok
+PROGRESS 100/1044 (9.6%) ETA 0:37:20  T:215.58/215.00  B:60.02/60.00
+TX 101/1044   G1 X80.000 Y67.000 E0.1372 F1200
+RX        << ok
+TX 102/1044   G1 X80.000 Y71.000 E0.1829 F1200
+RX        << ok
+TX 103/1044   G1 X77.000 Y71.000 E0.1372 F1200
+RX        << ok
+TX 104/1044   G1 X77.000 Y69.000 E0.0915 F1200
+RX        << ok
+TX 105/1044   G1 X80.000 Y69.000 E0.1372 F1200
+RX        << ok
+TX 106/1044   G1 E-0.400 F2400
+RX        << ok
+TX 107/1044   M900 K0.0490
+RX        << e
+RX        << cho:busy: processing
+RX        << ok
+TX 108/1044   G1 X85.000 Y69.000 F7200
+RX        << ok
+TX 109/1044   G1 E0.400 F2400
+RX        << ok
+TX 110/1044   G1 X110.000 E1.1433 F1200
+RX        << ok
+TX 111/1044   G1 X140.000 E1.3720 F6000
+RX        << ok
+TX 112/1044   G1 X165.000 E1.1433 F1200
+RX        << ok
+TX 113/1044   G1 E-0.400 F2400
+RX        << ok
+TX 114/1044   M900 K0.0520
+RX        << e
+RX        << cho:busy: processing
+RX        << ok
+TX 115/1044   G1 X85.000 Y72.000 F7200
+RX        << ok
+TX 116/1044   G1 E0.400 F2400
+RX        << ok
+TX 117/1044   G1 X110.000 E1.1433 F1200
+RX        << ok
+TX 118/1044   G1 X140.000 E1.3720 F6000
+RX        << ok
+TX 119/1044   G1 X165.000 E1.1433 F1200
+RX        << ok
+TX 120/1044   G1 E-0.400 F2400
+RX        << ok
+TX 121/1044   M900 K0.0550
+RX        << e
+RX        << cho:busy: processing
+RX        << ok
+TX 122/1044   G1 X85.000 Y75.000 F7200
+RX        << ok
+TX 123/1044   G1 E0.400 F2400
+RX        << ok
+TX 124/1044   G1 X110.000 E1.1433 F1200
+RX        << ok
+TX 125/1044   G1 X140.000 E1.3720 F6000
+RX        << ok
+PROGRESS 125/1044 (12.0%) ETA 0:30:22  T:215.58/215.00  B:60.02/60.00
+TX 126/1044   G1 X165.000 E1.1433 F1200
+RX        << ok
+TX 127/1044   G1 E-0.400 F2400
+RX        << ok
+TX 128/1044   G1 X61.000 Y76.000 F7200
+RX        << o
+RX        << k
+PROGRESS 128/1044 (12.3%) ETA 0:30:19  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:31:02  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:31:46  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:32:30  T:215.58/215.00  B:60.02/60.00
+RX        << Done printing file
+PROGRESS 128/1044 (12.3%) ETA 0:33:12  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:33:56  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:34:40  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:35:24  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:36:08  T:215.58/215.00  B:60.02/60.00
+RX        << echo:enqueueing "G90"
+RX        << echo:enqueueing "M82"
+RX        << echo:enqueueing "G92 E0"
+RX        << X:61.00 Y:76.00 Z:0.20 E:0.00 Count X:6100 Y:7600 Z:15
+RX        << echo:enqueueing "G123 X61.000000 Y76.000000 Z0.037500 E0.000000"
+RX        << echo:enqueueing "G123 X61.000000 Y76.000000 Z8.000000 E0.000000"
+RX        << echo:enqueueing "G123 X61.000000 Y76.000000 Z44.000000 E0.000000"
+RX        << echo:enqueueing "G123 X61.000000 Y76.000000 Z47.000000 E0.000000"
+RX        << echo:enqueueing "G123 X61.000000 Y76.000000 Z53.000000 E0.000000"
+RX        << echo:enqueueing "G123 X61.000000 Y76.000000 Z85.000000 E0.000000"
+RX        << echo:enqueueing "G123 X61.000000 Y76.000000 Z88.000000 E0.000000"
+RX        << e
+RX        << cho:busy: processing
+RX        << e
+RX        << cho:busy: processing
+RX        << e
+RX        << cho:busy: processing
+PROGRESS 128/1044 (12.3%) ETA 0:37:28  T:215.58/215.00  B:60.02/60.00
+RX        << echo:enqueueing "M18 X Y E"
+PROGRESS 128/1044 (12.3%) ETA 0:38:06  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:38:50  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:39:34  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:40:17  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:41:01  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:41:45  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:42:29  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:43:13  T:215.58/215.00  B:60.02/60.00
+PROGRESS 128/1044 (12.3%) ETA 0:43:56  T:215.58/215.00  B:60.02/60.00
+STREAM_ERR ack timeout at line 128: G1 X61.000 Y76.000 F7200

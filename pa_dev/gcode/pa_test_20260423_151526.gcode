@@ -18,8 +18,8 @@ M204 P2500 R1500 T3000
 ; --- M573 baseline pressure capture (pre-print) ---
 G1 Z5.000 F600        ; raise Z for safety
 G1 X10.000 Y5.000 F3000  ; park near front-left
+G1 Z0.200 F300        ; drop to first-layer height before M573
 M573                  ; capture loadcell-derived pressure curve (~5 s)
-G1 Z0.200 F600
 G1 X20 Y15.500 F7200
 G1 X120.0 Y15.500 E4.5733 F1200  ; purge line
 G1 E-0.400 F2400  ; retract
