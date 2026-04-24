@@ -157,17 +157,49 @@ void echo_move_timing(const char *tag, float dx_mm, float de_mm,
     SERIAL_ECHOLN(buf.data());
 }
 
-// Run one sub-phase: mark start, plan, synchronize, echo timing.
-// MarkPhase is called after the synchronize so the next phase's start
-// timestamp is also the current phase's end timestamp — giving
-// unambiguous boundaries for off-line analysis.
+// Run one sub-phase: queue the move, wait until the stepper ISR picks
+// up the block, THEN mark the phase, synchronize, echo timing.
+//
+// C1 rev (2026-04-24): MarkPhase was previously called BEFORE
+// plan_move_by() and recorded the queue-time timestamp. On MK4S with a
+// non-empty planner (or even a cold trapezoid-planning pass), the gap
+// between queue-time and execute-time is measurable — enough to bias
+// any τ fit using the mark as t=0. See .auto-memory/b1_geometry_result.md
+// for the H1/H2 discussion. We poll planner.movesplanned_processed() to
+// detect the moment the stepper ISR promotes our block from "queued" to
+// "being processed," then mark right after that transition. Cost: a few
+// microseconds of tight-poll per subphase, bounded by a 10 ms timeout
+// that falls back to queue-time marking with a serial warning if the
+// poll ever overruns.
 void run_subphase(pa_calibration::Capture &cap, const SubPhase &sp) {
-    const uint32_t t0 = ticks_us();
-    cap.MarkPhase(sp.name, t0);
     const float dx = geom().dir * sp.dx_mm;
+    const uint32_t t_queued = ticks_us();
+    const uint8_t processed_before = planner.movesplanned_processed();
     plan_move_by(sp.feedrate_mm_s, dx, 0.0f, 0.0f, sp.de_mm);
+    // Wait for the stepper ISR to start processing this block. Wrap-safe
+    // because movesplanned_processed() returns a uint8_t mod
+    // BLOCK_BUFFER_SIZE and we compare for inequality.
+    constexpr uint32_t kStepperPickupTimeout_us = 10'000;
+    uint32_t t_mark = ticks_us();
+    while (planner.movesplanned_processed() == processed_before) {
+        t_mark = ticks_us();
+        if (t_mark - t_queued > kStepperPickupTimeout_us) {
+            // Stepper never picked up the block within 10 ms — something
+            // is wrong (queue stalled? zero-length move dropped?). Fall
+            // back to queue-time mark so the capture isn't lost, and log
+            // a warning so off-line analysis knows to treat this phase's
+            // timestamp as queue-time rather than execute-time.
+            t_mark = t_queued;
+            SERIAL_ECHO_START();
+            SERIAL_ECHOLNPAIR(
+                "M573 WARN stepper pickup timeout, queue-time mark for ",
+                sp.name);
+            break;
+        }
+    }
+    cap.MarkPhase(sp.name, t_mark);
     planner.synchronize();
-    const uint32_t observed_us = ticks_us() - t0;
+    const uint32_t observed_us = ticks_us() - t_mark;
     echo_move_timing(sp.name, sp.dx_mm, sp.de_mm, sp.feedrate_mm_s,
                      sp.expected_ms, observed_us);
 }
