@@ -145,6 +145,68 @@ def _mean_last(seg: list[tuple[int, float]], n: int) -> float:
     return sum(v for _, v in tail) / len(tail)
 
 
+def _find_plateau_F_inf(fast_seg: list[tuple[int, float]]
+                        ) -> tuple[float, int, float]:
+    """Find F_inf as the mean of the flattest post-rise window in fast_seg.
+
+    Background: naïve F_inf = mean(last 30 % of fast) is biased whenever the
+    trailing ~50 ms of the fast window includes the extruder-decel dip
+    (nozzle pressure releases as feedrate ramps from cruise to 0 at the
+    end of the move). On the MK4S bed-contact pulse that dip pulls F_inf
+    LOW by ~200 g; on the free-air pulse a different edge effect pulls it
+    HIGH by ~50 g. The bias propagates asymmetrically: it barely moves τ_thr
+    but catastrophically biases τ_loglin (factor of 2–3×) because log(r)
+    diverges as r → 0. Plateau detection sidesteps both.
+
+    Algorithm: slide a W-sample window across fast_seg, pick the window
+    with minimum stddev whose mean is in the upper half of the seg's
+    value range (this gates against picking a pre-rise flat region if the
+    signal barely rose). W = clamp(n // 5, 16, 40) — ~50 to ~125 ms at
+    320 Hz, matching the ≥180 ms plateau window that B1 geometry delivers.
+
+    Returns (plateau_mean, start_index, plateau_std). If fast_seg is too
+    short or no window qualifies, falls back to last-30 % naïve and
+    returns (naïve_mean, -1, inf) so the caller can detect the fallback.
+    """
+    n = len(fast_seg)
+    fallback_n = max(10, int(n * 0.3))
+    fallback = _mean_last(fast_seg, fallback_n) if fallback_n else 0.0
+    MIN_W, MAX_W = 16, 40
+    if n < 2 * MIN_W:
+        return (fallback, -1, float("inf"))
+
+    W = max(MIN_W, min(MAX_W, n // 5))
+    vals = [v for _, v in fast_seg]
+    v_min = min(vals)
+    v_max = max(vals)
+    rise_gate = v_min + 0.5 * (v_max - v_min)
+
+    # O(1) window stats via cumulative sums.
+    cs = [0.0] * (n + 1)
+    cs2 = [0.0] * (n + 1)
+    for i, (_, v) in enumerate(fast_seg):
+        cs[i + 1] = cs[i] + v
+        cs2[i + 1] = cs2[i] + v * v
+
+    best_std = float("inf")
+    best_start = -1
+    best_mean = fallback
+    for i in range(n - W + 1):
+        m = (cs[i + W] - cs[i]) / W
+        if m < rise_gate:
+            continue
+        var = max(0.0, (cs2[i + W] - cs2[i]) / W - m * m)
+        std = math.sqrt(var)
+        if std < best_std:
+            best_std = std
+            best_start = i
+            best_mean = m
+
+    if best_start < 0:
+        return (fallback, -1, float("inf"))
+    return (best_mean, best_start, best_std)
+
+
 def _slice(samples: list[tuple[int, float]],
            t0_us: int, t1_us: int) -> list[tuple[int, float]]:
     # Samples are time-ordered; a linear scan is cheaper than bisect for the
@@ -392,36 +454,99 @@ def fit_pulse(cap: Capture, pulse: str,
 
     fast_seg = _slice(samples, t_fast_start, t_fast_end)
 
-    # Naïve F_inf: mean of last 30 % of fast. This is a good estimate only if
-    # the fast window is long enough for the signal to have reached plateau
-    # (t_fast_end  ≥  ~5τ). For PLA (τ≈55 ms) in a 296 ms fast window that's
-    # fine, but for PETG (τ≈80 ms) and stiffer materials (τ≈120 ms) the tail
-    # is still rising and F_inf_naïve is biased low, which would bias τ low.
-    # We correct this below with one refinement pass.
-    n_plateau = max(10, int(len(fast_seg) * 0.3)) if fast_seg else 0
-    F_inf_naive = _mean_last(fast_seg, n_plateau) if n_plateau else F_0
+    # F_inf: use plateau detection instead of a fixed last-30 % window.
+    # The B1 pulse geometry delivers a ≥180 ms true plateau mid-way
+    # through the fast window, BUT the trailing ~50 ms is contaminated by
+    # extruder-decel dip (when the commanded cruise ends and feedrate
+    # ramps to zero, nozzle pressure releases). "Last 30 %" catches that
+    # dip; plateau detection finds the flat middle zone and uses its
+    # mean. See _find_plateau_F_inf for the bias rationale.
+    #
+    # If plateau detection falls through (short fast_seg, or no flat
+    # window qualifies), we fall back to the naïve last-30 % mean — same
+    # behaviour as before the patch.
+    F_inf_naive, plat_start, plat_std = _find_plateau_F_inf(fast_seg)
+    plateau_found = plat_start >= 0
 
-    # Mid-time of the tail window, relative to fast_start. Used by the
-    # refinement step below: we model  F̄_tail ≈ F(t_tail_mid)  and back out
-    # a corrected F_inf that's self-consistent with the τ estimate.
-    if n_plateau and fast_seg:
-        tail_start_t = fast_seg[-n_plateau][0]
+    # Mid-time of the window whose mean we're treating as F_inf. If
+    # plateau detection succeeded, use the plateau window's midpoint;
+    # otherwise use the naïve last-30 % midpoint (matches pre-patch
+    # behaviour for the refinement step below).
+    if plateau_found and fast_seg:
+        plat_W = max(16, min(40, len(fast_seg) // 5))
+        mid_idx = plat_start + plat_W // 2
+        mid_idx = min(mid_idx, len(fast_seg) - 1)
+        t_tail_mid_s = (fast_seg[mid_idx][0] - t_fast_start) / 1e6
+    elif fast_seg:
+        n_fallback = max(10, int(len(fast_seg) * 0.3))
+        tail_start_t = fast_seg[-n_fallback][0]
         tail_end_t = fast_seg[-1][0]
         t_tail_mid_s = ((tail_start_t + tail_end_t) / 2 - t_fast_start) / 1e6
     else:
         t_tail_mid_s = 0.0
 
     # --- Method 1: 63 % threshold with self-consistency refinement -----------
-    # Pass 1: threshold against the naïve F_inf.
+    # Pass 1: threshold against F_inf_naive.
     # Pass 2+: given τ₁, back-correct F_inf using the first-order model:
     #     F̄_tail  =  F_inf − (F_inf − F_0) · exp(−t_tail_mid / τ)
     #  →  F_inf   =  (F̄_tail − F_0 · e) / (1 − e)    where e = exp(−t_mid/τ)
     # Then re-run the threshold. Typically converges in 2–3 passes.
     # Each pass: one exp() call, one divide — fine for Cortex-M4F firmware.
+    #
+    # IMPORTANT: only run the refinement when the F_inf estimate came
+    # from the last-30 % FALLBACK. If plateau detection succeeded, the
+    # window we averaged is (by construction) flat, so F_inf_naive is
+    # already the plateau asymptote and the refinement would drift it
+    # UP by assuming the window is still rising. On the C1.1 capture
+    # this drift moved F_inf 4254 → 4383 g and inflated τ_thr by 11 ms.
     F_inf = F_inf_naive
     tau_thr: Optional[float] = _threshold_cross(fast_seg, t_fast_start,
                                                 F_0, F_inf)
-    MAX_ITERS = 4
+    # Refinement corrects F_inf when the tail isn't yet at plateau.
+    #
+    # Disambiguating "true physical plateau" vs "first-order window that
+    # looks flat but is still rising" is the crux here. The cheap tell is
+    # the within-window linear slope:
+    #   - Real capture @ K≈80 ms, F_inf≈4255 g: plateau is physically flat
+    #     (signal reached steady state; slope ≈ 0 ± noise).
+    #   - Synth first-order K=85 ms over the 296 ms window: plateau window
+    #     ends at 97 % of asymptote; predicted first-order slope within
+    #     window is ≈ 2 g/s out of dF≈9 g → detectable positive rise.
+    # So: if we detect a significant positive slope, the signal is still
+    # rising and refinement should correct F_inf upward. If the window is
+    # truly flat, skip refinement — it would drift F_inf away from truth.
+    skip_refine = False
+    if plateau_found:
+        plat_W = max(16, min(40, len(fast_seg) // 5))
+        plat_end = min(plat_start + plat_W, len(fast_seg))
+        # Linear regression of load vs. time within the plateau window.
+        xs_p: list[float] = []
+        ys_p: list[float] = []
+        for i in range(plat_start, plat_end):
+            t_us, v = fast_seg[i]
+            xs_p.append((t_us - fast_seg[plat_start][0]) / 1e6)
+            ys_p.append(v)
+        n_p = len(xs_p)
+        if n_p >= 4:
+            sx = sum(xs_p)
+            sy = sum(ys_p)
+            sxx = sum(x * x for x in xs_p)
+            sxy = sum(x * y for x, y in zip(xs_p, ys_p))
+            denom = n_p * sxx - sx * sx
+            if abs(denom) > 1e-12:
+                slope = (n_p * sxy - sx * sy) / denom  # g/s
+                # σ of slope for a flat (noise-only) window with evenly
+                # spaced samples at rate dt: ≈ sqrt(12)*σ / (N^1.5 * dt).
+                # dt from the window itself.
+                dt = (xs_p[-1] - xs_p[0]) / max(1, n_p - 1)
+                sigma_slope = (math.sqrt(12.0) * (base_sigma or 0.0)
+                               / (n_p ** 1.5 * max(dt, 1e-6)))
+                # "Truly flat" iff slope isn't significantly positive
+                # (t-stat < 2). Using signed slope — only a still-rising
+                # window needs refinement.
+                if sigma_slope > 0 and slope < 2.0 * sigma_slope:
+                    skip_refine = True
+    MAX_ITERS = 0 if skip_refine else 4
     for _ in range(MAX_ITERS):
         if tau_thr is None or tau_thr <= 0 or t_tail_mid_s <= 0:
             break
@@ -459,6 +584,28 @@ def fit_pulse(cap: Capture, pulse: str,
             horizon_s = 0.5 * ((fast_seg[-1][0] - fast_seg[0][0]) / 1e6)
         horizon_us = int(horizon_s * 1e6)
 
+        # Residual gate — reject samples where |r| is so small that a tiny
+        # F_inf bias poisons the log. Two components:
+        #   - 2·fast_sigma: fast-phase noise floor. Use the plateau-window
+        #     std when available; fall back to baseline_sigma otherwise.
+        #     Baseline sigma on a real capture reflects XY-motion during
+        #     slow_in (~614 g on C1.1) — ~100× larger than the quiet noise
+        #     during fast_N (~6 g). Using base_sigma here wrongly truncates
+        #     the loglin fit to the first ~40 % of the rise on real data.
+        #   - 5 % of |dF|: F_inf-bias floor. Even a 0.3 % bias in F_inf is
+        #     enough to wreck log(r) near plateau — where true r << |dF|·5 %.
+        #     This cap stops the regression from "seeing" samples inside
+        #     the zone where the residual is smaller than the plausible
+        #     F_inf estimation error. Found by the K=85 ms synth case
+        #     where F_inf was 0.03 g low and log-lin drifted 21 ms short.
+        if plateau_found and plat_std < float("inf"):
+            fast_sigma = plat_std
+        else:
+            fast_sigma = base_sigma or 0.0
+        r_gate = max(1e-4,
+                     fast_sigma * 2.0,
+                     abs(dF) * 0.05)
+
         xs: list[float] = []
         ys: list[float] = []
         for t, v in fast_seg:
@@ -468,7 +615,7 @@ def fit_pulse(cap: Capture, pulse: str,
             r = F_inf - v
             # Near the plateau the residual is dominated by noise; the log is
             # ill-defined and overshoot flips sign. Drop those points.
-            if abs(r) < max(1e-4, (base_sigma or 0.0) * 2.0):
+            if abs(r) < r_gate:
                 continue
             if (r > 0) != (dF > 0):
                 continue  # residual has flipped past plateau — discard

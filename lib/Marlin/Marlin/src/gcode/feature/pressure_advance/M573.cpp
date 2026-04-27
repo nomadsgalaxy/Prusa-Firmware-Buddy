@@ -473,4 +473,13 @@ void GcodeSuite::M573() {
 
     cap.DumpToSerial();
 
-    // Restore static tare before ret
+    // Restore static tare before returning. M573 called Tare(Continuous)
+    // above which leaves tareMode=Continuous and threshold=-40 g active.
+    // Without this reset the 3x more sensitive continuous threshold stays
+    // in effect for the rest of the print: any F7200 travel at 2500 mm/s^2
+    // generates enough inertial force (>40 g) to fire crash detection
+    // mid-move, halting the printer ~5 min into the PA sweep.
+    loadcell.Tare();
+}
+
+#endif // HAS_LOADCELL()
